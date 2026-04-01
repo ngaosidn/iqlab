@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import React from 'react';
+import ShareCardModal from './ShareCardModal';
+import { createClient } from '@/lib/supabase';
 
 interface Verse {
   ayat: number;
@@ -80,6 +82,24 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
   const [popupVolume, setPopupVolume] = useState(1);
   const [showPopupExplanation, setShowPopupExplanation] = useState(false);
   const [showPopupVideo, setShowPopupVideo] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [sharingVerse, setSharingVerse] = useState<{
+    teks_arab: string;
+    terjemahan: string;
+    ayat: number;
+    surahName: string;
+    surahNumber: number;
+  } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -743,8 +763,14 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                       </button>
 
                       <button
-                        className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 hover:bg-emerald-500 hover:text-white transition-all text-emerald-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 text-[10px] sm:text-xs font-bold whitespace-nowrap"
-                        onClick={() => setAhkamPopup({ ayat: verse.ayat })}
+                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 transition-all text-emerald-700 flex items-center justify-center gap-1.5 shadow-sm text-[10px] sm:text-xs font-bold whitespace-nowrap ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:bg-emerald-500 hover:text-white active:scale-95'}`}
+                        onClick={() => {
+                          if (!isLoggedIn) {
+                            alert('Fitur Premium: Silakan Login terlebih dahulu untuk melihat hukum Tajwid! ✨');
+                            return;
+                          }
+                          setAhkamPopup({ ayat: verse.ayat });
+                        }}
                         title="Ahkam Tajwid"
                       >
                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
@@ -754,15 +780,43 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                       </button>
 
                       <button
-                        className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-purple-200 bg-purple-50/50 hover:bg-purple-500 hover:text-white transition-all text-purple-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 text-[10px] sm:text-xs font-bold"
+                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/50 transition-all text-indigo-700 flex items-center justify-center gap-1.5 shadow-sm text-[10px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:bg-indigo-600 hover:text-white active:scale-95'}`}
                         onClick={() => {
-                          alert(`Fitur Kirim Bacaan Ayat ${verse.ayat} segera hadir!`);
+                          if (!isLoggedIn) {
+                            alert('Fitur Premium: Silakan Login terlebih dahulu untuk membagikan Ayat! ✨');
+                            return;
+                          }
+                          setSharingVerse({
+                            teks_arab: verse.teks_arab,
+                            terjemahan: verse.terjemahan,
+                            ayat: verse.ayat,
+                            surahName: surahName,
+                            surahNumber: surahNumber
+                          });
+                          setIsShareModalOpen(true);
                         }}
-                        title="Kirim Bacaan"
+                        title="Bagikan Ayat"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                         </svg>
+                        Share
+                      </button>
+
+                      <button
+                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/50 transition-all text-rose-700 flex items-center justify-center gap-1.5 shadow-sm text-[10px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:bg-rose-500 hover:text-white active:scale-95'}`}
+                        onClick={() => { 
+                          if (!isLoggedIn) {
+                            alert('Fitur Premium: Silakan Login terlebih dahulu untuk mengirim pesan Ayat! ✨');
+                            return;
+                          }
+                          alert('Fitur Kirim Ayat saat ini sedang dalam pengembangan!'); 
+                        }}
+                        title="Kirim Ayat via Chat"
+                      >
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                         </svg>
                         Kirim
                       </button>
                     </div>
@@ -1249,6 +1303,12 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
           </div>
         )}
       </div>
+
+      <ShareCardModal 
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        verse={sharingVerse}
+      />
     </div>
   );
 }
