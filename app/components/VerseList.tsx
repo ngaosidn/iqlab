@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -5,6 +6,7 @@ import axios from 'axios';
 import React from 'react';
 import ShareCardModal from './ShareCardModal';
 import { createClient } from '@/lib/supabase';
+import { FcGoogle } from 'react-icons/fc';
 
 interface Verse {
   ayat: number;
@@ -91,6 +93,18 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
     surahNumber: number;
   } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  const handleLogin = async () => {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: typeof window !== 'undefined' ? window.location.origin : '',
+      },
+    });
+    if (error) alert('Login Gagal: ' + error.message);
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -606,35 +620,38 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
   }, [verses, currentPage]);
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-2 z-50">
-      <div className="bg-gradient-to-br from-green-100 via-white to-green-50 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-gray-100 sm:p-0 p-0">
-        <div className="p-3 sm:p-5 border-b border-gray-200 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-between sm:items-center bg-gradient-to-r from-green-50 to-green-100 rounded-t-3xl">
-          <h2 className="text-base sm:text-lg md:text-xl font-bold text-gray-800 tracking-wide leading-tight line-clamp-1 sm:line-clamp-none">
-            {surahNumber}. {surahName || 'Surah'}
-            <span className="ml-1 text-xs sm:text-sm text-green-600 font-medium">
-              {startAyat && endAyat && startAyat !== endAyat ? `(${startAyat}-${endAyat})` : startAyat ? `(${startAyat})` : ''}
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="bg-white/80 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.12)] w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/60 overflow-hidden transform transition-all">
+        <div className="p-4 sm:p-5 border-b border-white/40 bg-gradient-to-r from-white/60 to-white/30 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between sm:items-center relative z-10">
+          <h2 className="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-2">
+            <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-100/60 text-blue-700 font-bold text-sm border border-blue-100/30">
+              {surahNumber}
+            </span>
+            <span>{surahName || 'Surah'}</span>
+            <span className="text-xs sm:text-sm text-indigo-500 bg-indigo-50/50 px-2 py-0.5 rounded-lg ml-1">
+              {startAyat && endAyat && startAyat !== endAyat ? `Ayat ${startAyat}-${endAyat}` : startAyat ? `Ayat ${startAyat}` : 'Semua Ayat'}
             </span>
           </h2>
-          <div className="flex items-center justify-between sm:justify-end gap-3 translate-y-[-2px] sm:translate-y-0">
-            <label className="flex items-center gap-1.5 flex-1 sm:flex-none">
-              <span className="font-bold text-green-800 text-[10px] sm:text-xs uppercase tracking-tight">Mushaf :</span>
+          <div className="flex items-center justify-between sm:justify-end gap-3 mt-1 sm:mt-0">
+            <label className="flex items-center gap-2 bg-white/50 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white shadow-sm">
+              <span className="font-bold text-slate-600 text-[10px] sm:text-xs uppercase tracking-wider">Mushaf</span>
               <select
-                className="flex-1 sm:flex-none border border-green-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400 text-xs text-gray-800 bg-white shadow-sm"
+                className="bg-transparent text-xs font-bold text-blue-600 focus:outline-none focus:ring-0 cursor-pointer"
                 value={mushafFont}
                 onChange={e => setMushafFont(e.target.value)}
               >
-                <option value="">Default</option>
+                <option value="">Default (Uthmani)</option>
                 <option value="Madina">Madina</option>
-                <option value="Kemenag">Kemenag</option>
+                <option value="Kemenag">Kemenag (Indo)</option>
                 <option value="Indopak">Indopak</option>
               </select>
             </label>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-red-500 p-1.5 hover:bg-white rounded-full transition-all duration-200 shadow-sm border border-transparent hover:border-red-100"
+              className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100"
               aria-label="Tutup"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -708,26 +725,29 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                 return (
                 <div
                   key={verse.ayat}
-                  className="bg-gradient-to-br from-indigo-50 to-white rounded-2xl p-3 sm:p-5 shadow border border-indigo-50 flex flex-col gap-2 sm:gap-3 hover:shadow-lg hover:border-indigo-200 transition-all duration-300"
+                  className="bg-white/60 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/80 hover:shadow-[0_8px_25px_rgb(59,130,246,0.12)] hover:-translate-y-0.5 hover:border-blue-200/50 flex flex-col gap-3 transition-all duration-300 overflow-hidden relative group"
                 >
+                  <div className="absolute -left-4 -top-4 text-[6rem] font-bold text-blue-50/40 opacity-30 group-hover:text-blue-100/50 group-hover:scale-110 transition-all duration-500 pointer-events-none z-0">
+                    {verse.ayat}
+                  </div>
+                  
                   {/* Header Ayat: Pro App Layout */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 relative z-10 border-b border-slate-100/50 pb-3">
                     {/* Sisi Kiri: Info Utama */}
-                    <div className="flex items-center gap-2">
-                       <div className="relative group">
-                        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full blur opacity-25 group-hover:opacity-50 transition duration-300"></div>
-                        <span className="relative inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white text-indigo-700 font-extrabold text-xs sm:text-sm shadow-md border border-indigo-100 italic">
+                    <div className="flex items-center gap-3">
+                       <div className="relative">
+                        <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                        <span className="relative inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-white to-blue-50 text-indigo-700 font-extrabold text-[15px] sm:text-base shadow-sm border border-indigo-100/50">
                           {verse.ayat}
                         </span>
                       </div>
-                      <div className="flex flex-col -space-y-0.5">
-                        <span className="text-[10px] text-gray-400 font-extrabold uppercase tracking-widest">Ayat</span>
-                        <div className="h-0.5 w-4 bg-indigo-200 rounded-full"></div>
+                      <div className="flex flex-col mb-0.5">
+                        <span className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em]">Ayat Ke</span>
                       </div>
                       
                       {/* Play Button: Primary Action */}
                       <button
-                        className="ml-2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-110 active:scale-95 transition-all duration-200"
+                        className="ml-2 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-[0_4px_15px_rgb(79,70,229,0.3)] hover:shadow-[0_6px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
                         onClick={() => handlePlay(verse.ayat)}
                         aria-label="Putar Audio"
                       >
@@ -744,9 +764,9 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                     </div>
 
                     {/* Sisi Kanan: Fitur Pendukung */}
-                    <div className="flex items-center flex-wrap gap-2 sm:gap-2.5">
+                    <div className="flex items-center flex-wrap gap-2">
                       <button
-                        className="flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-yellow-200 bg-yellow-50/50 hover:bg-yellow-500 hover:text-white transition-all text-yellow-700 flex items-center justify-center gap-1.5 shadow-sm active:scale-95 text-[10px] sm:text-xs font-bold"
+                        className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-amber-100/50 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-400 hover:to-orange-500 hover:border-amber-400 hover:text-white hover:shadow-md transition-all duration-300 text-amber-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold"
                         onClick={() => {
                           const tafsirAyat = tafsirList.find((t) => t.ayat === verse.ayat);
                           setShowTafsir({
@@ -756,34 +776,34 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                         }}
                         title="Lihat Tafsir"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
                         </svg>
                         Tafsir
                       </button>
 
                       <button
-                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-emerald-200 bg-emerald-50/50 transition-all text-emerald-700 flex items-center justify-center gap-1.5 shadow-sm text-[10px] sm:text-xs font-bold whitespace-nowrap ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:bg-emerald-500 hover:text-white active:scale-95'}`}
+                        className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-emerald-100/50 bg-gradient-to-r from-emerald-50 to-teal-50 transition-all duration-300 text-emerald-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold whitespace-nowrap ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:from-emerald-400 hover:to-teal-500 hover:border-emerald-400 hover:text-white hover:shadow-md'}`}
                         onClick={() => {
                           if (!isLoggedIn) {
-                            alert('Fitur Premium: Silakan Login terlebih dahulu untuk melihat hukum Tajwid! ✨');
+                            setShowAuthModal(true);
                             return;
                           }
                           setAhkamPopup({ ayat: verse.ayat });
                         }}
                         title="Ahkam Tajwid"
                       >
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.01 1.912a15.998 15.998 0 01-3.388-1.62m11.125-9.378c.854-.53 1.874-.32 2.476.495.601.816.483 1.969-.328 2.684l-5.63 4.96c-.347.306-.78.473-1.23.473h-.033c-.45 0-.883-.167-1.23-.473l-5.63-4.96c-.811-.715-.929-1.868-.328-2.684.602-.815 1.622-1.025 2.476-.495l4.712 2.923a1.5 1.5 0 001.768 0l4.712-2.923z" />
                         </svg>
                         Tajwid
                       </button>
 
                       <button
-                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/50 transition-all text-indigo-700 flex items-center justify-center gap-1.5 shadow-sm text-[10px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:bg-indigo-600 hover:text-white active:scale-95'}`}
+                        className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50 transition-all duration-300 text-blue-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:from-blue-500 hover:to-indigo-600 hover:border-blue-500 hover:text-white hover:shadow-md'}`}
                         onClick={() => {
                           if (!isLoggedIn) {
-                            alert('Fitur Premium: Silakan Login terlebih dahulu untuk membagikan Ayat! ✨');
+                            setShowAuthModal(true);
                             return;
                           }
                           setSharingVerse({
@@ -804,17 +824,17 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                       </button>
 
                       <button
-                        className={`flex-1 sm:flex-none px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50/50 transition-all text-rose-700 flex items-center justify-center gap-1.5 shadow-sm text-[10px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:bg-rose-500 hover:text-white active:scale-95'}`}
+                        className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-rose-100/50 bg-gradient-to-r from-rose-50 to-pink-50 transition-all duration-300 text-rose-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:from-rose-400 hover:to-pink-500 hover:border-rose-400 hover:text-white hover:shadow-md'}`}
                         onClick={() => { 
                           if (!isLoggedIn) {
-                            alert('Fitur Premium: Silakan Login terlebih dahulu untuk mengirim pesan Ayat! ✨');
+                            setShowAuthModal(true);
                             return;
                           }
                           alert('Fitur Kirim Ayat saat ini sedang dalam pengembangan!'); 
                         }}
                         title="Kirim Ayat via Chat"
                       >
-                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                          </svg>
                         Kirim
@@ -1303,6 +1323,53 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
           </div>
         )}
       </div>
+
+      {/* Auth Required Modal */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300">
+          <div
+            className="absolute inset-0"
+            onClick={() => setShowAuthModal(false)}
+          ></div>
+          <div className="relative bg-white/90 backdrop-blur-xl w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl border border-white/20 animate-in slide-in-from-bottom duration-500 ease-out">
+            {/* Decorative Element */}
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full sm:hidden"></div>
+
+            <div className="flex flex-col items-center text-center space-y-6 pt-4 sm:pt-0">
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-5 rounded-[2rem] shadow-xl shadow-blue-500/20 rotate-3">
+                <FcGoogle className="w-10 h-10 brightness-0 invert" />
+              </div>
+
+              <div className="space-y-2">
+                <h3 className="text-2xl font-black text-slate-800 font-poppins tracking-tight">Eits, Login dulu! 🛑</h3>
+                <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                  Menu ini khusus untuk pengguna terdaftar. Yuk, login sebentar dengan Google untuk akses penuh!
+                </p>
+              </div>
+
+              <div className="w-full space-y-3">
+                <button
+                  onClick={() => {
+                    setShowAuthModal(false);
+                    handleLogin();
+                  }}
+                  className="w-full flex items-center justify-center gap-3 bg-slate-900 text-white p-4 rounded-2xl font-bold hover:bg-slate-800 transition-all active:scale-[0.98] shadow-lg shadow-slate-900/10"
+                >
+                  <FcGoogle className="w-6 h-6" />
+                  <span>Lanjut dengan Google</span>
+                </button>
+
+                <button
+                  onClick={() => setShowAuthModal(false)}
+                  className="w-full p-4 text-slate-400 font-bold text-sm hover:text-slate-600 transition-colors uppercase tracking-widest"
+                >
+                  Nanti Saja
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ShareCardModal 
         isOpen={isShareModalOpen}

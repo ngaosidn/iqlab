@@ -269,6 +269,7 @@ export default function Home() {
       };
       return newMessages;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, router, authLoading, possibleLoggedIn]);
 
   // State untuk PWA install prompt

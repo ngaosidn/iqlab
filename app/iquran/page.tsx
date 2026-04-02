@@ -45,6 +45,7 @@ interface Message {
   };
   isRandom?: boolean;
   quickActions?: Array<{ label: string; value: string; icon?: string }>;
+  isGuide?: boolean;
 }
 
 interface TafsirData {
@@ -121,6 +122,11 @@ export default function QuranChat() {
           try {
             const parsedMessages = JSON.parse(savedMessages);
             if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+              // Ensure old welcome messages are upgraded
+              if (parsedMessages[0].type === 'bot' && parsedMessages[0].content.includes('Selamat datang')) {
+                parsedMessages[0].isGuide = true;
+                parsedMessages[0].content = `Assalamu'alaikum! Selamat datang di Interactive Quran! ✨\n\nBerikut panduan penggunaan dan contoh perintah yang bisa digunakan:`;
+              }
               console.log('Setting messages from localStorage:', parsedMessages);
               setMessages(parsedMessages);
               setIsLoading(false);
@@ -133,14 +139,8 @@ export default function QuranChat() {
         // If no messages were loaded or error occurred, set initial message
         setMessages([{
           type: 'bot',
-          content: `Selamat datang di QuranChat! ✨\n\nSilakan pilih menu cepat di bawah ini atau ketik apa yang ingin Anda cari:`,
-          quickActions: [
-            { label: 'Daftar Surah', value: 'daftar', icon: '📚' },
-            { label: 'Cari Kata', value: 'cari ', icon: '🔎' },
-            { label: 'Nasihat Acak', value: 'acak', icon: '🎲' },
-            { label: 'Surah Yasin', value: 'Yasin', icon: '📖' },
-            { label: 'Al-Fatihah', value: '1', icon: '🔢' }
-          ]
+          isGuide: true,
+          content: `Assalamu'alaikum! Selamat datang di Interactive Quran! ✨\n\nBerikut panduan penggunaan dan contoh perintah yang bisa digunakan:`
         }]);
         setIsLoading(false);
       }
@@ -1016,8 +1016,8 @@ export default function QuranChat() {
       <div className="w-full max-w-md mx-auto sticky top-0 z-10">
         <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 rounded-b-[2rem] px-6 pt-8 pb-6 relative shadow-2xl shadow-blue-900/30 overflow-hidden border-b border-white/10">
           {/* Subtle Background Pattern */}
-          <div className="absolute inset-0 opacity-10 pointer-events-none" 
-               style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}>
+          <div className="absolute inset-0 opacity-10 pointer-events-none"
+            style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '24px 24px' }}>
           </div>
           {/* Shimmer Effect */}
           <div className="shimmer-overlay" />
@@ -1046,7 +1046,7 @@ export default function QuranChat() {
                 <IoArrowBack className="w-6 h-6" />
               </button>
             </div>
-            
+
             <div className="space-y-1 translate-x-1">
               <div className="text-white text-base font-bold font-poppins tracking-wide drop-shadow-sm">Ahlan Bikum! 👋</div>
               <div className="text-blue-100 text-xs font-medium font-poppins opacity-90">Mau baca dan tadabbur ayat apa hari ini? ✨</div>
@@ -1064,14 +1064,117 @@ export default function QuranChat() {
                 <Image src="https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?semt=ais_hybrid&w=740" alt="Bot" width={32} height={32} className="rounded-full object-cover mt-1" />
               )}
               <div
-                className={`rounded-2xl px-4 py-2.5 shadow-sm max-w-[85%] text-sm leading-relaxed transition-all relative overflow-hidden
+                className={`rounded-[1.25rem] px-4 py-3 max-w-[85%] text-[14px] leading-relaxed transition-all relative overflow-hidden
                   ${msg.type === 'user'
-                    ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-none'
-                    : 'bg-white/80 backdrop-blur-sm text-slate-800 border border-blue-50 rounded-bl-none shadow-blue-900/5' }
+                    ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white rounded-br-none shadow-md shadow-blue-600/20 ring-1 ring-black/5'
+                    : 'bg-white/75 backdrop-blur-xl text-slate-800 rounded-bl-none shadow-lg shadow-blue-900/10 border border-white/60 ring-1 ring-black/5'}
                 `}
               >
-                <div className="whitespace-pre-wrap font-medium">{msg.content}</div>
-                
+                {msg.isGuide ? (
+                  <div className="w-full flex flex-col gap-3">
+                    <div className="text-gray-800 text-[15px] font-bold border-b border-blue-100 pb-2 mb-1 flex items-center gap-2">
+                      <span className="text-xl">✨</span> Panduan QuranChat
+                    </div>
+                    <div className="text-gray-600 text-sm leading-relaxed mb-2 font-medium">
+                      Assalamu&apos;alaikum! Silakan ketik perintah di bawah ini untuk berinteraksi:
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      {/* Section 1 */}
+                      <div className="bg-gradient-to-br from-blue-50 to-indigo-50/80 rounded-xl p-3 border border-blue-100/60 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-2 font-bold text-blue-700 mb-2.5 text-xs uppercase tracking-wide">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-[13px] shadow-sm">📚</span>
+                          Tampilkan Surah
+                        </div>
+                        <ul className="space-y-2 text-[13px] text-slate-600 font-medium ml-1">
+                          <li className="flex items-start gap-2">
+                            <span className="text-blue-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">Semua Surah:</strong> Ketik <span className="text-blue-700 bg-white border border-blue-100 px-1.5 py-0.5 rounded shadow-sm">Daftar</span></div>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-blue-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">Info Spesifik:</strong> Ketik nama/angka <br />(Contoh: <span className="text-blue-700 bg-white border border-blue-100 px-1.5 py-0.5 rounded shadow-sm">Yasin</span> atau <span className="text-blue-700 bg-white border border-blue-100 px-1.5 py-0.5 rounded shadow-sm">36</span>)</div>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Section 2 */}
+                      <div className="bg-gradient-to-br from-emerald-50 to-teal-50/80 rounded-xl p-3 border border-emerald-100/60 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-2 font-bold text-emerald-700 mb-2.5 text-xs uppercase tracking-wide">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-[13px] shadow-sm">📖</span>
+                          Baca Ayat
+                        </div>
+                        <ul className="space-y-2 text-[13px] text-slate-600 font-medium ml-1">
+                          <li className="flex items-start gap-2">
+                            <span className="text-emerald-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">1 Ayat:</strong> Ketik surah & ayat <br />(Contoh: <span className="text-emerald-700 bg-white border border-emerald-100 px-1.5 py-0.5 rounded shadow-sm">Al Baqarah 255</span> atau <span className="text-emerald-700 bg-white border border-emerald-100 px-1.5 py-0.5 rounded shadow-sm">2 255</span>)</div>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-emerald-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">Rentang:</strong> Ketik surah & batas <br />(Contoh: <span className="text-emerald-700 bg-white border border-emerald-100 px-1.5 py-0.5 rounded shadow-sm">Al Mulk 1-5</span> atau <span className="text-emerald-700 bg-white border border-emerald-100 px-1.5 py-0.5 rounded shadow-sm">67 1-5</span>)</div>
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Section 3 */}
+                      <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50/80 rounded-xl p-3 border border-purple-100/60 shadow-sm transition-all hover:shadow-md">
+                        <div className="flex items-center gap-2 font-bold text-purple-700 mb-2.5 text-xs uppercase tracking-wide">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-[13px] shadow-sm">🔎</span>
+                          Pencarian & Menu
+                        </div>
+                        <ul className="space-y-2 text-[13px] text-slate-600 font-medium ml-1">
+                          <li className="flex items-start gap-2">
+                            <span className="text-purple-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">Cari Topik:</strong> Ketik <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Cari sabar</span></div>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-purple-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">Ayat Acak:</strong> Ketik <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Acak</span> atau <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Nasihat</span></div>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-purple-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">Ke Beranda:</strong> Ketik <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Menu</span></div>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                ) : msg.content.includes('✨ Informasi Surah') && msg.surah ? (
+                  <div className="flex flex-col w-full min-w-[200px]">
+                    <div className="flex items-center gap-3 mb-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/30 text-white font-bold text-sm shrink-0">
+                        {msg.surah.id}
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-gray-800 text-[15px] leading-tight truncate">Surah {msg.surah.name_simple}</span>
+                        <span className="text-lg text-blue-600 surah-name-arabic leading-tight">{msg.surah.name_arabic}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <div className="flex flex-col bg-slate-50/80 rounded-xl p-2.5 border border-slate-100/80 shadow-sm transition-colors hover:bg-slate-100/80">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Arti Nama</span>
+                        <span className="text-xs font-bold text-slate-700 truncate">{msg.surah.translated_name?.name || '-'}</span>
+                      </div>
+                      <div className="flex flex-col bg-slate-50/80 rounded-xl p-2.5 border border-slate-100/80 shadow-sm transition-colors hover:bg-slate-100/80">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Diturunkan</span>
+                        <span className="text-xs font-bold text-slate-700 truncate">{msg.surah.revelation_place === 'makkah' ? 'Makkiyah' : 'Madaniyah'}</span>
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50/60 rounded-xl p-2.5 border border-blue-100/60 flex items-center justify-between shadow-sm">
+                      <span className="text-xs text-indigo-800 font-bold flex items-center gap-1.5 ml-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+                        </svg>
+                        Total Ayat
+                      </span>
+                      <span className="text-[11px] font-bold text-white bg-indigo-500 px-2.5 py-1 rounded-md shadow-sm">{msg.surah.verses_count} Ayat</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="whitespace-pre-wrap font-medium">{msg.content}</div>
+                )}
+
                 {msg.quickActions && (
                   <div className="flex flex-wrap gap-2 mt-4 mb-1">
                     {msg.quickActions.map((action, actionIdx) => (
@@ -1080,9 +1183,9 @@ export default function QuranChat() {
                         onClick={() => {
                           // Trigger search manually if it's a direct command
                           if (action.value === 'daftar' || action.value === 'acak' || action.value === '1') {
-                             handleSend(undefined, action.value);
+                            handleSend(undefined, action.value);
                           } else {
-                             setInput(action.value);
+                            setInput(action.value);
                           }
                         }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full border border-blue-100 hover:bg-blue-100 hover:border-blue-200 transition-all text-xs font-bold shadow-sm active:scale-95"
@@ -1094,77 +1197,77 @@ export default function QuranChat() {
                   </div>
                 )}
                 {msg.surah && !msg.ayat && (
-                  <div className="grid grid-cols-2 gap-2.5 mt-4">
+                  <div className="flex flex-col gap-2 mt-3 w-full">
                     <button
-                      className="group relative flex items-center justify-center gap-2 bg-gradient-to-br from-indigo-500 to-indigo-700 text-white py-2 px-4 rounded-xl font-bold text-[11px] shadow-md shadow-indigo-200 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden"
+                      className="group relative flex flex-row items-center justify-center gap-2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white py-3 px-4 rounded-xl font-bold text-sm shadow-md shadow-indigo-200/50 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden w-full"
                       onClick={() => handleSurahSelect(msg.surah!)}
                     >
-                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 shrink-0">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                       </svg>
-                      <span>Baca Surah</span>
+                      <span className="truncate">Baca Surah Penuh</span>
                     </button>
                     <button
-                      className="group relative flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-emerald-700 text-white py-2 px-4 rounded-xl font-bold text-[11px] shadow-md shadow-emerald-200 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden"
+                      className="group relative flex flex-row items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white py-3 px-4 rounded-xl font-bold text-sm shadow-md shadow-emerald-200/50 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden w-full"
                       onClick={() => handleAyatClick(msg.surah!, 1, { start: 1, end: msg.surah!.verses_count })}
                     >
-                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 shrink-0">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
                       </svg>
-                      <span>Baca per ayat</span>
+                      <span className="truncate">Jelajahi per Ayat</span>
                     </button>
                   </div>
                 )}
                 {msg.wordSearchResults && (
-                  <div className="mt-2 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+                  <div className="mt-3 grid grid-cols-1 gap-3.5 max-h-[60vh] overflow-y-auto pr-1">
                     {msg.wordSearchResults.map((result, index) => (
                       <div
                         key={`${result.surah.id}-${result.verse_number}-${index}`}
-                        className="flex flex-col gap-2 p-4 bg-white rounded-xl border border-blue-100 shadow hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all group relative max-w-full"
+                        className="flex flex-col gap-3 p-4 bg-gradient-to-br from-white to-blue-50/30 rounded-[1rem] border border-blue-100/60 shadow-sm hover:shadow-md hover:border-blue-300 hover:from-blue-50/50 hover:to-indigo-50/50 cursor-pointer transition-all duration-200 group relative max-w-full"
                         onClick={() => handleAyatClick(result.surah, result.verse_number)}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-lg shadow group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                        <div className="flex items-center gap-3 border-b border-blue-50 pb-3">
+                          <span className="flex items-center justify-center w-10 h-10 rounded-xl bg-blue-100/80 text-blue-700 font-bold text-base shadow-sm group-hover:bg-gradient-to-br group-hover:from-blue-500 group-hover:to-indigo-600 group-hover:text-white transition-all shrink-0">
                             {result.surah.id}
                           </span>
                           <div className="flex flex-col flex-1 min-w-0">
-                            <span className="font-semibold text-gray-800 truncate text-base">
-                              Surah {result.surah.name_simple} ({result.surah.name_arabic})
+                            <span className="font-bold text-slate-800 truncate text-[14px]">
+                              Surah {result.surah.name_simple}
                             </span>
-                            <span className="text-blue-500">Ayat {result.verse_number}</span>
+                            <span className="text-[12px] font-bold text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-md inline-block w-fit mt-0.5">Ayat {result.verse_number}</span>
                           </div>
                         </div>
-                        <div className="font-uthmani text-right text-lg">{result.text_uthmani}</div>
-                        <div className="text-gray-600 text-sm">{result.translation}</div>
+                        <div className="font-arabic text-right text-xl leading-loose text-slate-800">{result.text_uthmani}</div>
+                        <div className="text-slate-600 text-[13px] leading-relaxed font-medium">{result.translation}</div>
                       </div>
                     ))}
                   </div>
                 )}
                 {msg.surahs && (
-                  <div className="mt-2 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+                  <div className="mt-3 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto pr-1">
                     {msg.surahs.map((surah) => (
                       <div
                         key={surah.id}
-                        className="flex items-center gap-3 p-4 bg-white rounded-xl border border-blue-100 shadow hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all group relative max-w-full"
+                        className="flex items-center gap-3.5 p-3.5 bg-gradient-to-br from-white to-blue-50/30 rounded-[1rem] border border-blue-100/60 shadow-sm hover:shadow-md hover:border-blue-300 hover:from-blue-50/50 hover:to-indigo-50/50 cursor-pointer transition-all duration-200 group relative max-w-full"
                         onClick={() => handleAyatClick(surah, 0)}
                       >
-                        <span className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-700 font-bold text-lg shadow group-hover:bg-blue-600 group-hover:text-white transition-all shrink-0">
+                        <span className="flex items-center justify-center w-11 h-11 rounded-xl bg-blue-100/80 text-blue-700 font-bold text-[17px] shadow-sm group-hover:bg-gradient-to-br group-hover:from-blue-500 group-hover:to-indigo-600 group-hover:text-white transition-all shrink-0">
                           {surah.id}
                         </span>
                         <div className="flex flex-col flex-1 min-w-0">
-                          <span className="font-semibold text-gray-800 truncate text-base">{surah.name_simple}</span>
-                          <span className="text-blue-500 surah-name-arabic leading-tight truncate">{surah.name_arabic}</span>
+                          <span className="font-bold text-slate-800 truncate text-[15px]">{surah.name_simple}</span>
+                          <span className="text-blue-600 surah-name-arabic leading-tight truncate text-lg -mt-0.5">{surah.name_arabic}</span>
                           {surah.translated_name?.name && (
-                            <span className="text-xs italic text-gray-500 truncate">{surah.translated_name.name}</span>
+                            <span className="text-[11px] font-medium text-slate-500 truncate mt-0.5">{surah.translated_name.name}</span>
                           )}
                         </div>
-                        <div className="flex flex-col items-end justify-center gap-1 shrink-0">
-                          <span className="flex items-center justify-center h-7 px-3 rounded-full bg-blue-50 text-blue-700 font-bold text-xs border border-blue-200 whitespace-nowrap">
+                        <div className="flex flex-col items-end justify-center gap-1.5 shrink-0">
+                          <span className="flex items-center justify-center py-1 px-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-[10px] uppercase tracking-wide border border-indigo-100/50 whitespace-nowrap">
                             {surah.verses_count} ayat
                           </span>
-                          <span className="text-[11px] italic text-gray-500 whitespace-nowrap">{surah.revelation_place === 'makkah' ? 'Makkiyah' : 'Madaniyah'}</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">{surah.revelation_place === 'makkah' ? 'Makkiyah' : 'Madaniyah'}</span>
                         </div>
                       </div>
                     ))}
@@ -1172,20 +1275,24 @@ export default function QuranChat() {
                 )}
                 {msg.ayat && msg.surah && (
                   <button
-                    className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold shadow hover:bg-indigo-700 transition"
+                    className="mt-3 group relative flex items-center justify-center gap-2 bg-gradient-to-br from-blue-500 to-indigo-600 text-white py-2.5 px-5 rounded-xl font-bold text-sm shadow-md shadow-indigo-200 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden w-full"
                     onClick={() => {
                       if (msg.surah && msg.ayat) {
                         handleAyatClick(msg.surah, msg.ayat, msg.ayatRange);
                       }
                     }}
                   >
-                    Lihat Ayat
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
+                    </svg>
+                    <span>Lihat Ayat</span>
                   </button>
                 )}
                 {msg.wordSearchSummary && (
-                  <div className="mt-2">
+                  <div className="mt-3">
                     <button
-                      className="px-4 py-2 bg-indigo-600 text-white rounded-lg font-semibold shadow hover:bg-indigo-700 transition"
+                      className="group relative flex items-center justify-center gap-2 bg-gradient-to-br from-purple-500 to-fuchsia-600 text-white py-2.5 px-5 rounded-xl font-bold text-sm shadow-md shadow-purple-200 hover:shadow-lg hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden w-full"
                       onClick={() => {
                         if (msg.wordSearchSummary) {
                           setWordSearchData({
@@ -1197,7 +1304,11 @@ export default function QuranChat() {
                         }
                       }}
                     >
-                      Lihat {msg.wordSearchSummary.results.length} Ayat
+                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                      </svg>
+                      <span>Lihat {msg.wordSearchSummary.results.length} Ayat</span>
                     </button>
                   </div>
                 )}
@@ -1237,14 +1348,8 @@ export default function QuranChat() {
             onClick={() => {
               setMessages([{
                 type: 'bot',
-                content: `Silakan gunakan menu cepat di bawah ini untuk memulai pencarian Anda:`,
-                quickActions: [
-                  { label: 'Daftar Surah', value: 'daftar', icon: '📚' },
-                  { label: 'Cari Kata', value: 'cari ', icon: '🔎' },
-                  { label: 'Nasihat Acak', value: 'acak', icon: '🎲' },
-                  { label: 'Surah Yasin', value: 'Yasin', icon: '📖' },
-                  { label: 'Al-Fatihah', value: '1', icon: '🔢' }
-                ]
+                isGuide: true,
+                content: `Assalamu'alaikum! Selamat datang di Interactive Quran! ✨\n\nBerikut panduan penggunaan dan contoh perintah yang bisa digunakan:`
               }]);
               localStorage.removeItem('quranChatHistory');
             }}
@@ -1263,8 +1368,8 @@ export default function QuranChat() {
             type="submit"
             disabled={isLoading || !input.trim()}
             className={`flex items-center justify-center rounded-xl px-4 py-2 font-semibold shadow transition-all shrink-0 ${isLoading || !input.trim()
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 active:scale-95'
+              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700 hover:scale-105 active:scale-95'
               }`}
           >
             Kirim
@@ -1406,32 +1511,44 @@ export default function QuranChat() {
       )}
       {/* Add Surah Image Modal */}
       {showSurahImage && selectedSurahImage && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[95vh] flex flex-col border border-gray-100 p-3 sm:p-6 relative">
-            <button
-              className="absolute top-2 right-2 text-white bg-red-500 hover:bg-red-600 rounded-lg text-2xl p-2 shadow transition-all"
-              style={{ minWidth: 40, minHeight: 40 }}
-              onClick={() => {
-                setShowSurahImage(false);
-                setSelectedSurahImage(null);
-                setCurrentPage(1);
-                setImageSrc(null);
-              }}
-            >×</button>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.12)] w-full max-w-4xl max-h-[95vh] flex flex-col border border-white/60 overflow-hidden transform transition-all relative">
+            
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-white/40 bg-gradient-to-r from-white/60 to-white/30 flex flex-row items-center justify-between relative z-10 shrink-0">
+              <h3 className="text-lg sm:text-xl font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-2">
+                <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-blue-100/60 text-blue-700 font-bold text-sm border border-blue-100/30">
+                  {selectedSurahImage.id}
+                </span>
+                <span>Surah {selectedSurahImage.name_simple}</span>
+                <span className="text-[16px] sm:text-[18px] text-indigo-500 font-arabic ml-1 opacity-90 mt-1">
+                  {selectedSurahImage.name_arabic}
+                </span>
+              </h3>
+              <button
+                className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 flex-shrink-0"
+                onClick={() => {
+                  setShowSurahImage(false);
+                  setSelectedSurahImage(null);
+                  setCurrentPage(1);
+                  setImageSrc(null);
+                }}
+                aria-label="Tutup"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-            <h3 className="text-lg sm:text-xl font-bold mb-4 text-blue-700 pr-8">
-              Surah {selectedSurahImage.name_simple} ({selectedSurahImage.name_arabic})
-            </h3>
-
-            <div className="flex-1 overflow-y-auto">
-              <div className="relative w-full h-auto min-h-[200px]">
+            {/* Scrollable image area */}
+            <div className="flex-1 overflow-y-auto w-full p-2 sm:p-4 bg-slate-50/50">
+              <div className="relative w-full h-full min-h-[300px] flex items-center justify-center rounded-2xl overflow-hidden bg-white/40 border border-white/50 shadow-sm">
                 {isImageLoading ? (
-                  <div className="w-full h-[200px] flex items-center justify-center bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 ) : imageSrc ? (
                   <Image
@@ -1439,10 +1556,9 @@ export default function QuranChat() {
                     alt={`Surah ${selectedSurahImage.name_simple} Halaman ${currentPage}`}
                     width={1000}
                     height={1500}
-                    className="w-full h-auto object-contain"
+                    className="w-full h-auto object-contain max-h-max"
                     loading="lazy"
                     onError={(e) => {
-                      // Fallback to original URL if cache fails
                       const originalUrl = `https://raw.githubusercontent.com/ngaosidn/dbQuranImages/main/${getImageNumber(selectedSurahImage.id, currentPage)}.webp`;
                       if (e.currentTarget.src !== originalUrl) {
                         setImageSrc(originalUrl);
@@ -1453,25 +1569,35 @@ export default function QuranChat() {
               </div>
             </div>
 
-            <div className="mt-4 flex items-center justify-between gap-2 sm:gap-4">
+            {/* Footer Navigation */}
+            <div className="p-4 sm:p-5 border-t border-white/40 bg-white/60 flex items-center justify-between gap-4 shrink-0">
               <button
-                className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-blue-600 text-white text-xl sm:text-2xl rounded-lg font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-12 h-12 flex items-center justify-center bg-white text-slate-800 rounded-xl font-semibold shadow-sm border border-slate-200 hover:bg-slate-50 hover:shadow hover:border-slate-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed group active:scale-95"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === getTotalPages(selectedSurahImage.id) || isImageLoading}
                 aria-label="Halaman berikutnya"
               >
-                ←
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 group-hover:-translate-x-1 transition-transform">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
               </button>
-              <span className="text-gray-600 font-medium text-sm sm:text-base whitespace-nowrap">
-                Halaman {currentPage} dari {getTotalPages(selectedSurahImage.id)}
-              </span>
+              
+              <div className="flex flex-col items-center justify-center bg-indigo-50/50 px-6 py-2 rounded-xl border border-indigo-100/50">
+                <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Halaman</span>
+                <span className="text-slate-700 font-extrabold text-[15px]">
+                  {currentPage} <span className="text-slate-400 font-medium mx-0.5">/</span> {getTotalPages(selectedSurahImage.id)}
+                </span>
+              </div>
+              
               <button
-                className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-blue-600 text-white text-xl sm:text-2xl rounded-lg font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-12 h-12 flex items-center justify-center bg-white text-slate-800 rounded-xl font-semibold shadow-sm border border-slate-200 hover:bg-slate-50 hover:shadow hover:border-slate-300 transition-all disabled:opacity-40 disabled:cursor-not-allowed group active:scale-95"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1 || isImageLoading}
                 aria-label="Halaman sebelumnya"
               >
-                →
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 group-hover:translate-x-1 transition-transform">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
               </button>
             </div>
           </div>
@@ -1479,48 +1605,65 @@ export default function QuranChat() {
       )}
       {/* Add Caching Progress Modal */}
       {isCaching && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
-            <h3 className="text-lg font-bold mb-4 text-blue-700">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-sm p-8 relative border border-white/50 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-blue-50 flex items-center justify-center rounded-2xl mb-4 relative overflow-hidden">
+               <div className="absolute inset-0 bg-gradient-to-tr from-blue-100 to-indigo-50 opacity-50"></div>
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-blue-500 animate-bounce relative z-10">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+               </svg>
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-slate-800">
               Mengunduh Gambar Surah
             </h3>
-            <div className="space-y-4">
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <p className="text-sm text-slate-500 mb-6">Mohon tunggu sebentar, kami sedang menyiapkan lembaran surah terbaik untuk Anda.</p>
+            <div className="w-full space-y-3">
+              <div className="w-full bg-slate-100/80 rounded-full h-3 overflow-hidden shadow-inner flex">
                 <div
-                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-300 relative"
                   style={{ width: `${(cachingProgress / cachingTotal) * 100}%` }}
-                ></div>
+                >
+                   <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
               </div>
-              <p className="text-sm text-gray-600 text-center">
-                Mengunduh {cachingProgress} dari {cachingTotal} halaman
-              </p>
+              <div className="flex justify-between items-center px-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Progress</span>
+                <span className="text-sm font-extrabold text-blue-600">
+                  {cachingProgress} / {cachingTotal}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       )}
       {/* Initial Cache Prompt Modal */}
       {showInitialCachePrompt && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
-            <h3 className="text-lg font-bold mb-4 text-blue-700">
-              Download Gambar Al-Quran
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-sm p-8 relative border border-white/50 text-center flex flex-col items-center">
+            <div className="w-20 h-20 bg-gradient-to-tr from-blue-100 to-indigo-100 flex items-center justify-center rounded-[1.5rem] mb-6 shadow-sm border border-white">
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-indigo-600">
+                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21h-7.5a2.25 2.25 0 01-2.25-2.25V5.25A2.25 2.25 0 018.25 3h7.5A2.25 2.25 0 0118 5.25v13.5A2.25 2.25 0 0115.75 21z" />
+               </svg>
+            </div>
+            <h3 className="text-xl font-extrabold mb-3 text-slate-800">
+              Unduh Mushaf Lengkap?
             </h3>
-            <p className="text-gray-600 mb-6">
-              Untuk pengalaman terbaik, Anda dapat mengunduh semua gambar Al-Quran sekaligus. Ini akan memakan waktu beberapa saat, tapi akan membuat aplikasi lebih cepat saat digunakan.
+            <p className="text-[13px] text-slate-500 mb-8 leading-relaxed">
+              Untuk pengalaman membaca terbaik tanpa jeda loading, pro user kami sangat menyarankan mengunduh semua halaman Al-Quran ke perangkat sekarang.
             </p>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 w-full">
               <button
                 onClick={cacheAllSurahImages}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold shadow hover:bg-blue-700 transition"
+                className="w-full px-4 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-[0_4px_15px_rgb(79,70,229,0.25)] hover:shadow-[0_6px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5 transition-all duration-300"
               >
-                Download Sekarang
+                Unduh Semua Sekaligus
               </button>
               <button
                 onClick={() => {
                   setShowInitialCachePrompt(false);
                   localStorage.setItem('hasShownInitialCachePrompt', 'true');
                 }}
-                className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-semibold shadow hover:bg-gray-200 transition"
+                className="w-full px-4 py-3.5 bg-slate-50 text-slate-600 rounded-xl font-bold shadow-sm border border-slate-200 hover:bg-slate-100 transition-all duration-300"
               >
                 Nanti Saja
               </button>
@@ -1530,21 +1673,33 @@ export default function QuranChat() {
       )}
       {/* Caching All Progress Modal */}
       {isCachingAll && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
-            <h3 className="text-lg font-bold mb-4 text-blue-700">
-              Mengunduh Semua Gambar
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-sm p-8 relative border border-white/50 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-gradient-to-tr from-blue-100 to-indigo-100 flex items-center justify-center rounded-2xl mb-4 relative overflow-hidden shadow-sm">
+               <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-indigo-600 relative z-10 animate-[spin_3s_linear_infinite]">
+                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+               </svg>
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-slate-800">
+              Mengunduh Mushaf Pro
             </h3>
-            <div className="space-y-4">
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <p className="text-[13px] text-slate-500 mb-6 leading-relaxed">Berjalan di latar belakang. Proses ini bisa memakan waktu tergantung kecepatan koneksi internet Anda.</p>
+            <div className="w-full space-y-3">
+              <div className="w-full bg-slate-100/80 rounded-full h-3 overflow-hidden shadow-inner flex">
                 <div
-                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full rounded-full transition-all duration-300 relative"
                   style={{ width: `${(cachingAllProgress / cachingAllTotal) * 100}%` }}
-                ></div>
+                >
+                   <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
               </div>
-              <p className="text-sm text-gray-600 text-center">
-                Mengunduh {cachingAllProgress} dari {cachingAllTotal} halaman
-              </p>
+              <div className="flex justify-between items-center px-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Persentase</span>
+                <span className="text-sm font-extrabold text-blue-600">
+                  {Math.round((cachingAllProgress / cachingAllTotal) * 100)}%
+                </span>
+              </div>
             </div>
           </div>
         </div>
