@@ -1006,6 +1006,7 @@ export default function QuranChat() {
     const imageCache = await caches.open('quran-images');
     const dataCache = await caches.open('quran-local-data');
     const htmlCache = await caches.open('app-shell-html');
+    const startUrlCache = await caches.open('start-url');
     let currentProgress = 0;
     
     // 1. Cache App Shell HTML (Beranda & iQuran)
@@ -1013,7 +1014,13 @@ export default function QuranChat() {
       try {
         const response = await fetch(route);
         if (response.ok) {
-          await htmlCache.put(route, response);
+          await htmlCache.put(route, response.clone());
+          // Khusus root '/', simpan juga di cache 'start-url' bawaan next-pwa
+          if (route === '/') {
+            await startUrlCache.put(route, response.clone());
+            // Next-PWA start-url expects ?utm_source=homescreen sometimes, safe to put both
+            await startUrlCache.put('/?utm_source=homescreen', response.clone());
+          }
         }
         currentProgress++;
         setCachingAllProgress(currentProgress);
