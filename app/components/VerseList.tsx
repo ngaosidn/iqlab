@@ -1117,10 +1117,10 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
         )}
         {/* Pop up interaktif sederhana */}
         {activePopup && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-2">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 relative">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-2 animate-in fade-in duration-300">
+            <div className="bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl border border-white/20 w-full max-w-md max-h-[90vh] overflow-y-auto p-6 relative">
               <button
-                className="absolute top-2 right-2 text-gray-600 hover:text-red-500 rounded-lg text-2xl p-1 transition-colors"
+                className="absolute top-3 right-3 text-gray-400 hover:text-red-500 bg-white/50 hover:bg-red-50 rounded-xl text-xl p-1.5 transition-all shadow-sm border border-white/60 active:scale-95"
                 onClick={() => setActivePopup(null)}
               >
                 ×
@@ -1245,10 +1245,10 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
         )}
         {/* Gambar penjelasan full screen */}
         {showPopupExplanation && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
             <button
               type="button"
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center text-2xl shadow-lg"
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center text-2xl shadow-lg transition-all border border-white/20 hover:scale-105 active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowPopupExplanation(false);
@@ -1291,10 +1291,10 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
 
         {/* Pop up video penjelasan (YouTube) */}
         {showPopupVideo && ahkamPopupContent?.video_url && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[61] p-4">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[111] p-4 animate-in fade-in duration-300">
             <button
               type="button"
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center text-2xl shadow-lg"
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center text-2xl shadow-lg transition-all border border-white/20 hover:scale-105 active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
                 setShowPopupVideo(false);

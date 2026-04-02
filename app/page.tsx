@@ -527,24 +527,35 @@ export default function Home() {
         </div>
         {/* PWA Install Prompt */}
         {showInstallPrompt && isMobileBrowser && deferredPrompt && !isStandalone && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 w-full max-w-sm mx-auto">
-              <h2 className="text-lg font-bold mb-2">Install App</h2>
-              <p className="mb-4 text-gray-600 text-center text-sm sm:text-base">Install aplikasi ini di perangkat Anda untuk pengalaman terbaik di Android!</p>
-              <div className="flex flex-col sm:flex-row gap-2">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 animate-in fade-in duration-300">
+            <div className="relative bg-white/95 backdrop-blur-xl w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-8 shadow-2xl border border-white/20 animate-in slide-in-from-bottom duration-500 ease-out text-center flex flex-col items-center">
+              {/* Decorative Element */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full sm:hidden"></div>
+
+              <div className="w-16 h-16 bg-gradient-to-tr from-blue-100 to-indigo-100 flex items-center justify-center rounded-2xl mb-4 shadow-sm border border-white">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-indigo-600">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                </svg>
+              </div>
+
+              <h3 className="text-xl font-extrabold mb-2 text-slate-800">
+                Install QuranChat App
+              </h3>
+              
+              <p className="text-[13px] text-slate-500 mb-6 leading-relaxed">
+                Install aplikasi ini di perangkat Anda untuk pengalaman belajar Quran terbaik, lebih cepat, dan bisa diakses offline!
+              </p>
+
+              <div className="flex flex-col gap-3 w-full">
                 <button
-                  className="bg-blue-600 text-white px-4 py-2 rounded font-semibold w-full sm:w-auto"
+                  className="w-full px-4 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-[0_4px_15px_rgb(79,70,229,0.25)] hover:shadow-[0_6px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5 transition-all duration-300"
                   onClick={async () => {
                     if (deferredPrompt) {
                       try {
-                        // Show the install prompt
                         await deferredPrompt.prompt();
-                        // Wait for the user to respond to the prompt
                         const { outcome } = await deferredPrompt.userChoice;
                         console.log(`User response to the install prompt: ${outcome}`);
-                        // We no longer need the prompt. Clear it up
                         setDeferredPrompt(null);
-                        // Hide the install prompt
                         setShowInstallPrompt(false);
                       } catch (error) {
                         console.error('Error during install prompt:', error);
@@ -553,13 +564,13 @@ export default function Home() {
                     }
                   }}
                 >
-                  Install
+                  Install Sekarang
                 </button>
                 <button
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded font-semibold w-full sm:w-auto"
+                  className="w-full px-4 py-3.5 bg-slate-50 text-slate-600 rounded-xl font-bold shadow-sm border border-slate-200 hover:bg-slate-100 transition-all duration-300"
                   onClick={() => setShowInstallPrompt(false)}
                 >
-                  Nanti saja
+                  Nanti Saja
                 </button>
               </div>
             </div>

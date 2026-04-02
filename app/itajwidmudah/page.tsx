@@ -622,8 +622,9 @@ export default function RTM() {
       </div>
 
       {/* Menu Slide Up */}
-      <div className={`fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto z-10 bg-white rounded-t-2xl shadow-lg transition-transform duration-300 ease-in-out ${showMenu ? '-translate-y-[40px]' : 'translate-y-full'}`}>
-        <div className="p-4 pb-8 space-y-1.5">
+      <div className={`fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto z-10 bg-white/95 backdrop-blur-xl rounded-t-[2.5rem] shadow-[0_-8px_30px_rgb(0,0,0,0.12)] border-t border-white/60 transition-transform duration-500 ease-out ${showMenu ? '-translate-y-[40px]' : 'translate-y-full'}`}>
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 bg-slate-200 rounded-full"></div>
+        <div className="p-5 pt-8 pb-10 space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => handleMenuClick('mad')}
@@ -686,20 +687,33 @@ export default function RTM() {
       {/* Image Modal */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300"
           onClick={() => setSelectedImage(null)}
         >
-          <Image 
-            src={selectedImage}
-            alt="Tajwid Explanation"
-            width={800}
-            height={600}
-            className="max-w-full max-h-[90vh] object-contain"
-            onError={(e) => {
-              console.error('Modal image failed to load:', e);
+          <button
+            type="button"
+            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-gray-800 flex items-center justify-center text-2xl shadow-lg transition-all active:scale-95"
+            onClick={(e) => {
+              e.stopPropagation();
               setSelectedImage(null);
             }}
-          />
+            aria-label="Tutup"
+          >
+            ×
+          </button>
+          <div className="relative isolate" onClick={(e) => e.stopPropagation()}>
+            <Image 
+              src={selectedImage}
+              alt="Tajwid Explanation"
+              width={800}
+              height={600}
+              className="max-w-full max-h-[90vh] object-contain rounded-[1.5rem] shadow-2xl"
+              onError={(e) => {
+                console.error('Modal image failed to load:', e);
+                setSelectedImage(null);
+              }}
+            />
+          </div>
         </div>
       )}
     </div>
