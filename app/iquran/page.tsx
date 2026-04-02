@@ -984,7 +984,13 @@ export default function QuranChat() {
       totalPages += getTotalPages(surahId);
     }
     
-    // List file JSON essential yang butuh didownload untuk fitur bot
+    // 1. List App Shell (Mangkok HTML)
+    const htmlRoutes = [
+      '/',
+      '/iquran'
+    ];
+
+    // 2. List file JSON essential (Isi Data Bot)
     const jsonFiles = [
       '/data/verse.json',
       '/data/indopak.json',
@@ -994,14 +1000,29 @@ export default function QuranChat() {
       '/data/interactive-rules.json'
     ];
 
-    setCachingAllTotal(totalPages + jsonFiles.length);
+    setCachingAllTotal(totalPages + jsonFiles.length + htmlRoutes.length);
     setCachingAllProgress(0);
 
     const imageCache = await caches.open('quran-images');
     const dataCache = await caches.open('quran-local-data');
+    const htmlCache = await caches.open('app-shell-html');
     let currentProgress = 0;
     
-    // 1. Cache Semua JSON Data Bot (Word Search & Rules)
+    // 1. Cache App Shell HTML (Beranda & iQuran)
+    for (const route of htmlRoutes) {
+      try {
+        const response = await fetch(route);
+        if (response.ok) {
+          await htmlCache.put(route, response);
+        }
+        currentProgress++;
+        setCachingAllProgress(currentProgress);
+      } catch (error) {
+        console.error(`Error caching HTML route ${route}:`, error);
+      }
+    }
+    
+    // 2. Cache Semua JSON Data Bot (Word Search & Rules)
     for (const fileUrl of jsonFiles) {
       try {
         const response = await fetch(fileUrl);
