@@ -539,7 +539,7 @@ export default function Home() {
               </div>
 
               <h3 className="text-xl font-extrabold mb-2 text-slate-800">
-                Install QuranChat App
+                Install I-Qlab App
               </h3>
               
               <p className="text-[13px] text-slate-500 mb-6 leading-relaxed">

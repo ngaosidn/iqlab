@@ -73,7 +73,7 @@ interface SingleAyatData {
   }>;
 }
 
-export default function QuranChat() {
+export default function InteractiveQuran() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1145,7 +1145,7 @@ export default function QuranChat() {
                 {msg.isGuide ? (
                   <div className="w-full flex flex-col gap-3">
                     <div className="text-gray-800 text-[15px] font-bold border-b border-blue-100 pb-2 mb-1 flex items-center gap-2">
-                      <span className="text-xl">✨</span> Panduan QuranChat
+                      <span className="text-xl">✨</span> Panduan Interactive Quran
                     </div>
                     <div className="text-gray-600 text-sm leading-relaxed mb-2 font-medium">
                       Assalamu&apos;alaikum! Silakan ketik perintah di bawah ini untuk berinteraksi:
@@ -1701,7 +1701,7 @@ export default function QuranChat() {
               <div>
                 <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2 uppercase tracking-widest">Fitur Sedang Diperbaiki</h3>
                 <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
-                  Kami sedang menyempurnakan tampilan rincian ayat agar sesuai dengan standar premium QuranChat. Mohon tunggu sebentar ya! 🛠️✨
+                  Kami sedang menyempurnakan tampilan rincian ayat agar sesuai dengan standar premium Interactive Quran. Mohon tunggu sebentar ya! 🛠️✨
                 </p>
               </div>
             </div>

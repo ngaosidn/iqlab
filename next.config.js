@@ -82,6 +82,9 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
   runtimeCaching: customRuntimeCaching,
   buildExcludes: [/middleware-manifest.json$/],
+  fallbacks: {
+    document: '/offline.html',
+  }
 });
 
 /** @type {import('next').NextConfig} */
