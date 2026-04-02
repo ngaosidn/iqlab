@@ -97,6 +97,35 @@ export default function InteractiveQuran() {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [isDownloadingDB, setIsDownloadingDB] = useState(false);
+  const [dbCached, setDbCached] = useState(false);
+  const [imagesCached, setImagesCached] = useState(false);
+  const [searchScope, setSearchScope] = useState<'all' | 'arabic' | 'translation'>('all');
+
+  // Check cache status
+  const checkCacheStatus = useCallback(async () => {
+    const dbCache = await caches.open('quran-data-cache-v1');
+    const dbKeys = await dbCache.keys();
+    setDbCached(dbKeys.length > 0);
+
+    const imgCache = await caches.open('quran-images');
+    const imgKeys = await imgCache.keys();
+    setImagesCached(imgKeys.length > 0);
+  }, []);
+
+  useEffect(() => {
+    checkCacheStatus();
+  }, [checkCacheStatus]);
+
+  const deleteCache = async (type: 'db' | 'images') => {
+    if (type === 'db') {
+      await caches.delete('quran-data-cache-v1');
+      setDbCached(false);
+    } else {
+      await caches.delete('quran-images');
+      setImagesCached(false);
+    }
+    alert(`🗑️ Cache ${type === 'db' ? 'Database' : 'Gambar'} berhasil dihapus!`);
+  };
   const [cachedSurahs, setCachedSurahs] = useState<Set<number>>(() => {
     // Inisialisasi dari localStorage saat komponen mount
     if (typeof window !== 'undefined') {
@@ -275,48 +304,61 @@ export default function InteractiveQuran() {
     return debouncedSearch(input);
   }, [input, debouncedSearch, allSurahs]);
 
-  // Word search function
-  const searchWordInQuran = useCallback(async (query: string): Promise<WordSearchResult[]> => {
+  // Word Search Logic (Mencari kata di seluruh Al-Quran)
+  const searchWordInQuran = useCallback(async (word: string): Promise<WordSearchResult[]> => {
+    if (!word || word.length < 2) return [];
+    setIsLoading(true);
+
     try {
-      setIsLoading(true);
-      const results: WordSearchResult[] = [];
-      const searchQuery = query.toLowerCase();
-
-      // Escape special characters to prevent regex crash (Solusi 3)
-      const escapeRegExp = (string: string) => {
-        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      };
-      const safeSearchQuery = escapeRegExp(searchQuery);
-
-      // In-memory caching logic (Solusi 1)
       if (!quranDataRef.current) {
-        const response = await fetch('/data/verse.json');
-        quranDataRef.current = await response.json();
+        // Coba ambil dari Cache dulu!
+        const cache = await caches.open('quran-data-cache-v1');
+        const cachedRes = await cache.match('/data/verse.json');
+        
+        let dataToUse;
+        if (cachedRes) {
+          console.log("⚡ [Search] Loading data from Cache Storage!");
+          dataToUse = await cachedRes.json();
+        } else {
+          console.log("🌐 [Search] Cache empty, fetching from network...");
+          const res = await fetch('/data/verse.json');
+          if (!res.ok) throw new Error('Failed to fetch quran data');
+          dataToUse = await res.json();
+        }
+        quranDataRef.current = dataToUse;
       }
-      const data = quranDataRef.current!;
 
-      // Word boundary logic for translation precision (Solusi 2)
-      const translationRegex = new RegExp(`\\b${safeSearchQuery}\\b`, 'gi');
-      const arabicRegex = new RegExp(safeSearchQuery, 'g');
+      const searchResults: WordSearchResult[] = [];
+      const searchQuery = word.toLowerCase().trim();
 
-      // Process search locally
-      for (const surah of allSurahs) {
-        const surahData = data[surah.id];
-        if (!surahData || !surahData.ayat) continue;
+      for (const surahId in quranDataRef.current) {
+        const surah = allSurahs?.find(s => s.id === parseInt(surahId));
+        if (!surah) continue;
 
-        for (const verse of surahData.ayat) {
-          const translation = verse.terjemahan || '';
+        const surahData = quranDataRef.current[parseInt(surahId)];
+        const verses = surahData.ayat;
+        if (!Array.isArray(verses)) continue;
+
+        for (const verse of verses) {
           const arabicText = verse.teks_arab || '';
+          const translation = verse.terjemahan || '';
+          
+          let matchArabic = false;
+          let matchTranslation = false;
 
-          // Check matches using safe regex
-          const translationMatches = translation.match(translationRegex);
-          const arabicMatches = arabicText.match(arabicRegex);
+          if (searchScope === 'all' || searchScope === 'arabic') {
+            matchArabic = arabicText.includes(searchQuery);
+          }
+          if (searchScope === 'all' || searchScope === 'translation') {
+            matchTranslation = translation.toLowerCase().includes(searchQuery);
+          }
 
-          if (translationMatches || arabicMatches) {
-            // Count word occurrences accurately
-            const totalCount = (translationMatches?.length || 0) + (arabicMatches?.length || 0);
+          if (matchArabic || matchTranslation) {
+            const arabicCount = matchArabic ? (arabicText.match(new RegExp(searchQuery, 'g')) || []).length : 0;
+            const translationCount = matchTranslation ? (translation.toLowerCase().match(new RegExp(searchQuery, 'gi')) || []).length : 0;
+            const totalCount = arabicCount + translationCount;
 
-            results.push({
+            searchResults.push({
               surah,
               verse_number: verse.ayat,
               text_uthmani: arabicText,
@@ -327,11 +369,8 @@ export default function InteractiveQuran() {
         }
       }
 
-      // Sort results by surah number and verse number
-      return results.sort((a, b) => {
-        if (a.surah.id !== b.surah.id) {
-          return a.surah.id - b.surah.id;
-        }
+      return searchResults.sort((a, b) => {
+        if (a.surah.id !== b.surah.id) return a.surah.id - b.surah.id;
         return a.verse_number - b.verse_number;
       });
     } catch (error) {
@@ -340,7 +379,7 @@ export default function InteractiveQuran() {
     } finally {
       setIsLoading(false);
     }
-  }, [allSurahs]);
+  }, [allSurahs, searchScope]);
 
   // Fungsi untuk mendapatkan random ayat
   const getRandomAyat = useCallback(async () => {
@@ -957,7 +996,7 @@ export default function InteractiveQuran() {
   };
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').then(registration => {
           console.log('ServiceWorker registration successful');
@@ -998,6 +1037,7 @@ export default function InteractiveQuran() {
     setCachedSurahs(newCachedSurahs);
     localStorage.setItem('cachedSurahs', JSON.stringify([...newCachedSurahs]));
     setIsCaching(false);
+    setImagesCached(true);
   };
 
   // Tambahkan useEffect untuk mengecek dan menampilkan prompt saat pertama kali masuk
@@ -1120,6 +1160,7 @@ export default function InteractiveQuran() {
     const allSurahIds = Array.from({ length: 114 }, (_, i) => i + 1);
     setCachedSurahs(new Set(allSurahIds));
     localStorage.setItem('cachedSurahs', JSON.stringify(allSurahIds));
+    setImagesCached(true);
 
     setIsCachingAll(false);
   };
@@ -1543,7 +1584,7 @@ export default function InteractiveQuran() {
               setMessages([{
                 type: 'bot',
                 isGuide: true,
-                content: `Assalamu'alaikum! Selamat datang di Interactive Quran! âœ¨\n\nBerikut panduan penggunaan dan contoh perintah yang bisa digunakan:`
+                content: `Assalamu'alaikum! Selamat datang di Interactive Quran! ✨\n\nBerikut panduan penggunaan dan contoh perintah yang bisa digunakan:`
               }]);
               localStorage.removeItem('quranChatHistory');
             }}
@@ -1718,22 +1759,77 @@ export default function InteractiveQuran() {
           <div className="bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.12)] w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/60 overflow-hidden transform transition-all relative">
             {/* Header */}
             {/* Header: Exact style from photo 2 */}
-            <div className="p-4 sm:p-5 border-b border-white/40 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 flex flex-row items-center justify-between relative z-10 shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="flex items-center justify-center min-w-[3rem] h-9 px-3 rounded-xl bg-blue-100/60 text-blue-700 font-extrabold text-[15px] border border-blue-200/50 shadow-sm">
-                  {wordSearchData.count}x
-                </span>
-                <div className="flex flex-col">
-                  <h3 className="text-base sm:text-lg font-black text-slate-800 tracking-tight leading-tight">
-                    Hasil: &ldquo;{wordSearchData.word}&rdquo;
-                  </h3>
+            <div className="p-3.5 sm:p-5 border-b border-white/40 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 flex flex-col gap-3 sm:gap-0 sm:flex-row sm:items-center sm:justify-between relative z-10 shrink-0">
+              <div className="flex-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                {/* Top Row: Count + Word + Close (for Mobile) */}
+                <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <span className="flex items-center justify-center min-w-[2.8rem] h-8 sm:h-9 px-2 rounded-xl bg-blue-100/60 text-blue-700 font-extrabold text-[13px] sm:text-[15px] border border-blue-200/50 shadow-sm shrink-0">
+                      {wordSearchData.count}x
+                    </span>
+                    <h3 className="text-sm sm:text-lg font-black text-slate-800 tracking-tight leading-tight truncate">
+                      Hasil: &ldquo;{wordSearchData.word}&rdquo;
+                    </h3>
+                  </div>
+                  
+                  {/* Close button for mobile inside this row helps layout */}
+                  <button
+                    className="sm:hidden text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-1.5 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 shrink-0"
+                    onClick={() => {
+                      setShowWordSearchModal(false);
+                      setWordSearchData(null);
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
-                <span className="text-[11px] font-extrabold text-indigo-600 bg-white/80 px-3 py-1.5 rounded-xl ml-1 shadow-sm border border-indigo-100/50">
-                  {wordSearchData.results.length} Ayat
-                </span>
+
+                {/* Bottom Row: Ayat Count + Filter Scope */}
+                <div className="flex items-center gap-3 w-full sm:w-auto overflow-x-auto no-scrollbar shrink-0">
+                  <span className="text-[9px] sm:text-[11px] font-extrabold text-indigo-600 bg-white/80 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl shadow-sm border border-indigo-100/50 shrink-0 whitespace-nowrap">
+                    {wordSearchData.results.length} Ayat
+                  </span>
+
+                  <div className="flex bg-white/50 p-0.5 sm:p-1 rounded-xl border border-indigo-100 shadow-sm shrink-0">
+                    <button 
+                      onClick={async () => {
+                        setSearchScope('all');
+                        const results = await searchWordInQuran(wordSearchData.word);
+                        setWordSearchData({...wordSearchData, results});
+                      }}
+                      className={`px-2.5 sm:px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all whitespace-nowrap ${searchScope === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-white'}`}
+                    >
+                      Semua
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        setSearchScope('arabic');
+                        const results = await searchWordInQuran(wordSearchData.word);
+                        setWordSearchData({...wordSearchData, results});
+                      }}
+                      className={`px-2.5 sm:px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all whitespace-nowrap ${searchScope === 'arabic' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-white'}`}
+                    >
+                      Arab
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        setSearchScope('translation');
+                        const results = await searchWordInQuran(wordSearchData.word);
+                        setWordSearchData({...wordSearchData, results});
+                      }}
+                      className={`px-2.5 sm:px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all whitespace-nowrap ${searchScope === 'translation' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-white'}`}
+                    >
+                      Arti
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* Original Close button for desktop */}
               <button
-                className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 flex-shrink-0"
+                className="hidden sm:flex text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-1.5 sm:p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 shrink-0 ml-4"
                 onClick={() => {
                   setShowWordSearchModal(false);
                   setWordSearchData(null);
@@ -1928,7 +2024,7 @@ export default function InteractiveQuran() {
                     style={{ minWidth: 40, minHeight: 40 }}
                     onClick={() => setShowTafsir(null)}
                   >
-                    Ã—
+                    ×
                   </button>
                   <h3 className="text-lg font-bold mb-2 text-indigo-700 pr-8">
                     Tafsir Ayat {showTafsir.ayat}{showTafsir.surahName ? ` - Surah ${showTafsir.surahName}` : ''}
@@ -2074,76 +2170,153 @@ export default function InteractiveQuran() {
       )}
       {/* Initial Cache Prompt Modal */}
       {showInitialCachePrompt && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white/90 backdrop-blur-2xl rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] w-full max-w-sm p-8 relative border border-white/50 text-center flex flex-col items-center">
-            <div className="w-20 h-20 bg-gradient-to-tr from-blue-100 to-indigo-100 flex items-center justify-center rounded-[1.5rem] mb-6 shadow-sm border border-white">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-indigo-600">
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[70]">
+          <div className="bg-white/95 backdrop-blur-2xl rounded-[2rem] shadow-[0_12px_45px_rgb(0,0,0,0.15)] w-full max-w-sm max-h-[90vh] overflow-y-auto p-6 sm:p-8 relative border border-white/50 flex flex-col items-center thin-scrollbar">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-tr from-blue-100 to-indigo-100 flex items-center justify-center rounded-[1.3rem] sm:rounded-[1.5rem] mb-5 shadow-sm border border-white shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 sm:w-10 sm:h-10 text-indigo-600">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 21v-8.25M15.75 21h-7.5a2.25 2.25 0 01-2.25-2.25V5.25A2.25 2.25 0 018.25 3h7.5A2.25 2.25 0 0118 5.25v13.5A2.25 2.25 0 0115.75 21z" />
               </svg>
             </div>
-            <h3 className="text-xl font-extrabold mb-3 text-slate-800">
+            <h3 className="text-lg sm:text-xl font-extrabold mb-2 text-slate-800">
               Unduh Mushaf Lengkap?
             </h3>
-            <p className="text-[13px] text-slate-500 mb-8 leading-relaxed">
-              Untuk pengalaman membaca terbaik tanpa jeda loading, pro user kami sangat menyarankan mengunduh semua halaman Al-Quran ke perangkat sekarang.
+            <p className="text-[12px] sm:text-[13px] text-slate-500 mb-6 sm:mb-8 leading-relaxed">
+              Untuk pengalaman membaca terbaik tanpa jeda loading, pro user kami sangat menyarankan mengunduh semua halaman Al-Quran sekarang.
             </p>
-            <div className="flex flex-col gap-3 w-full">
-              <button
-                onClick={async () => {
-                  try {
-                    setIsDownloadingDB(true);
-                    const files = [
-                      '/data/verse.json',
-                      '/data/surah.json',
-                      '/data/indopak.json',
-                      '/data/kemenag.json',
-                      '/data/interactive-rules.json',
-                      '/data/rule-ayat.json',
-                      '/data/warna.json'
-                    ];
-                    
-                    const cache = await caches.open('quran-data-cache-v1');
-                    await Promise.all(
-                      files.map(async (file) => {
-                        const res = await fetch(file);
-                        if (res.ok) await cache.put(file, res);
-                      })
-                    );
-                    
-                    alert("âœ… Unduh Database JSON Selesai!");
-                  } catch {
-                    alert("âŒ Gagal mengunduh database.");
-                  } finally {
-                    setIsDownloadingDB(false);
-                  }
-                }}
-                disabled={isDownloadingDB}
-                className="w-full px-4 py-3.5 bg-emerald-600 text-white rounded-xl font-bold shadow-[0_4px_15px_rgb(16,185,129,0.25)] hover:bg-emerald-500 hover:shadow-[0_6px_20px_rgb(16,185,129,0.4)] hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isDownloadingDB ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Mengunduh...
-                  </>
-                ) : (
-                  "Unduh Database Quran"
-                )}
-              </button>
-              <button
-                onClick={cacheAllSurahImages}
-                className="w-full px-4 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-[0_4px_15px_rgb(79,70,229,0.25)] hover:shadow-[0_6px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5 transition-all duration-300"
-              >
-                Unduh Image Mushaf
-              </button>
+            <div className="flex flex-col gap-2.5 sm:gap-3 w-full overflow-y-auto max-h-[60vh] px-1 thin-scrollbar">
+              {/* Database Section */}
+              <div className="flex flex-col gap-1.5 p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shrink-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Database JSON</span>
+                  {dbCached ? (
+                    <span className="text-[9px] sm:text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      ✅ Terunduh
+                    </span>
+                  ) : (
+                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      ⭕ Kosong
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        setIsDownloadingDB(true);
+                        const files = [
+                          '/data/verse.json',
+                          '/data/surah.json',
+                          '/data/indopak.json',
+                          '/data/kemenag.json',
+                          '/data/interactive-rules.json',
+                          '/data/rule-ayat.json',
+                          '/data/warna.json'
+                        ];
+                        
+                        const cache = await caches.open('quran-data-cache-v1');
+                        await Promise.all(
+                          files.map(async (file) => {
+                            const res = await fetch(file);
+                            if (res.ok) await cache.put(file, res);
+                          })
+                        );
+                        setDbCached(true);
+                        alert("✅ Unduh Database JSON Selesai!");
+                      } catch (error) {
+                        console.error(error);
+                        alert("❌ Gagal mengunduh database.");
+                      } finally {
+                        setIsDownloadingDB(false);
+                      }
+                    }}
+                    disabled={isDownloadingDB}
+                    className="flex-1 px-4 py-2 sm:py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-[11px] sm:text-xs shadow-sm hover:bg-emerald-500 transition-all disabled:opacity-50"
+                  >
+                    {isDownloadingDB ? "Wait..." : dbCached ? "Update DB" : "Unduh Database"}
+                  </button>
+                  {dbCached && (
+                    <button 
+                      onClick={() => deleteCache('db')}
+                      className="p-2 sm:p-2.5 bg-white border border-rose-100 text-rose-500 rounded-xl hover:bg-rose-50 transition-all shadow-sm"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="flex flex-col gap-1.5 p-3 sm:p-3.5 rounded-2xl bg-slate-50 border border-slate-100 shrink-0">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">Gambar Mushaf</span>
+                  {imagesCached ? (
+                    <span className="text-[9px] sm:text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      ✅ Terunduh
+                    </span>
+                  ) : (
+                    <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      ⭕ Kosong
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={cacheAllSurahImages}
+                    className="flex-1 px-4 py-2 sm:py-2.5 bg-blue-600 text-white rounded-xl font-bold text-[11px] sm:text-xs shadow-sm hover:bg-blue-500 transition-all"
+                  >
+                    {imagesCached ? "Update Gambar" : "Unduh Mushaf"}
+                  </button>
+                  {imagesCached && (
+                    <button 
+                      onClick={() => deleteCache('images')}
+                      className="p-2 sm:p-2.5 bg-white border border-rose-100 text-rose-500 rounded-xl hover:bg-rose-50 transition-all shadow-sm"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Scope Selection / Filter UI for Search */}
+              <div className="flex flex-col gap-2 p-3 sm:p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-100/50 mt-0.5 shrink-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-indigo-600">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+                  </svg>
+                  <span className="text-[10px] sm:text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Kategori Pencarian</span>
+                </div>
+                <div className="flex bg-white/60 p-1 rounded-xl shadow-sm border border-indigo-100">
+                  <button 
+                    onClick={() => setSearchScope('all')}
+                    className={`flex-1 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all ${searchScope === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-indigo-50'}`}
+                  >
+                    Semua
+                  </button>
+                  <button 
+                    onClick={() => setSearchScope('arabic')}
+                    className={`flex-1 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all ${searchScope === 'arabic' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-indigo-50'}`}
+                  >
+                    Arab
+                  </button>
+                  <button 
+                    onClick={() => setSearchScope('translation')}
+                    className={`flex-1 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all ${searchScope === 'translation' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-indigo-50'}`}
+                  >
+                    Arti
+                  </button>
+                </div>
+              </div>
+
               <button
                 onClick={() => {
                   setShowInitialCachePrompt(false);
                   localStorage.setItem('hasShownInitialCachePrompt', 'true');
                 }}
-                className="w-full px-4 py-3.5 bg-slate-50 text-slate-600 rounded-xl font-bold shadow-sm border border-slate-200 hover:bg-slate-100 transition-all duration-300"
+                className="w-full px-4 py-2.5 sm:py-3 bg-slate-50 text-slate-500 rounded-xl font-bold text-[11px] sm:text-xs hover:bg-slate-100 transition-all border border-slate-200 mt-1 mb-2 shrink-0"
               >
                 Nanti Saja
               </button>
