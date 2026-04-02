@@ -4,16 +4,16 @@
   "description": "Aplikasi pencarian ayat Al-Quran yang mudah digunakan. Temukan ayat-ayat Al-Quran dengan cepat dan mudah dalam bahasa Indonesia.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#3b82f6",
+  "background_color": "#1e3a8a",
+  "theme_color": "#2563eb",
   "orientation": "portrait",
   "scope": "/",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "/logo-splash.svg",
       "sizes": "192x192 512x512 any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "screenshots": [
