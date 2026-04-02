@@ -1,7 +1,7 @@
 import { Metadata, Viewport } from 'next';
 
 export const viewport: Viewport = {
-  themeColor: '#2563eb',
+  themeColor: '#0f172a',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -10,8 +10,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'QuranChat - Chat dengan Al-Quran',
-  description: 'Chat dengan Al-Quran untuk mempelajari dan memahami kitab suci dengan lebih mudah.',
+  title: 'I-Qlab (Interactive Quran Lab)',
+  description: 'Interactive Quran Lab untuk mempelajari dan memahami kitab suci dengan lebih mudah.',
   manifest: '/manifest.json',
   icons: {
     icon: '/icon.png',
@@ -20,20 +20,20 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'QuranChat',
+    title: 'I-Qlab',
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: 'website',
-    siteName: 'QuranChat',
-    title: 'QuranChat - Chat dengan Al-Quran',
-    description: 'Chat dengan Al-Quran untuk mempelajari dan memahami kitab suci dengan lebih mudah.',
+    siteName: 'I-Qlab',
+    title: 'I-Qlab (Interactive Quran Lab)',
+    description: 'Interactive Quran Lab untuk mempelajari dan memahami kitab suci dengan lebih mudah.',
   },
   twitter: {
     card: 'summary',
-    title: 'QuranChat - Chat dengan Al-Quran',
-    description: 'Chat dengan Al-Quran untuk mempelajari dan memahami kitab suci dengan lebih mudah.',
+    title: 'I-Qlab (Interactive Quran Lab)',
+    description: 'Interactive Quran Lab untuk mempelajari dan memahami kitab suci dengan lebih mudah.',
   },
 }; 

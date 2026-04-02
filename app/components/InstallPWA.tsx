@@ -102,7 +102,7 @@ export default function InstallPWA() {
   return (
     <button
       onClick={handleClick}
-      className="fixed top-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
+      className="fixed top-4 right-4 bg-white/10 backdrop-blur-md border border-white/20 text-white px-5 py-2.5 text-sm font-medium rounded-full shadow-xl hover:bg-white/20 transition-all z-50 flex items-center gap-2"
     >
       {isPWAInstalled ? 'Unduh Offline' : 'Install App'}
     </button>
