@@ -578,12 +578,11 @@ export default function Home() {
             </div>
           </div>
 
-          <p className="text-[10px] font-medium text-slate-500 flex items-center gap-1.5">
-            <span className="text-slate-400">Copyright</span>
-            <span>&copy;</span>
-            <span>{new Date().getFullYear()}</span>
-            <span className="h-2.5 w-[1px] bg-slate-300 mx-0.5"></span>
-            <span className="font-bold text-slate-700 font-poppins">by Tahseena</span>
+          <p className="text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
+            <span className="text-sm font-normal leading-none">&copy;</span>
+            <span className="tracking-wide">{new Date().getFullYear()}</span>
+            <span className="opacity-50">-</span>
+            <span className="font-bold text-slate-800 font-poppins tracking-wider">by Tahseena</span>
           </p>
         </div>
 
