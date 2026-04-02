@@ -81,6 +81,7 @@ export default function InteractiveQuran() {
   const [selectedAyatRange, setSelectedAyatRange] = useState<{ start: number; end: number } | null>(null);
   const [allSurahs, setAllSurahs] = useState<SearchResult[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const quranDataRef = useRef<Record<number, { ayat: Array<{ ayat: number; teks_arab: string; terjemahan: string; }> }> | null>(null); // Cache untuk menyimpan json
   const [input, setInput] = useState('');
   const [singleAyat, setSingleAyat] = useState<{ surah: SearchResult, ayat: number } | null>(null);
   const [singleAyatData, setSingleAyatData] = useState<SingleAyatData | null>(null);
@@ -90,10 +91,12 @@ export default function InteractiveQuran() {
     results: WordSearchResult[];
     count: number;
   } | null>(null);
+  const [showTafsir, setShowTafsir] = useState<{ ayat: number, text: string, surahName?: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
+  const [isDownloadingDB, setIsDownloadingDB] = useState(false);
   const [cachedSurahs, setCachedSurahs] = useState<Set<number>>(() => {
     // Inisialisasi dari localStorage saat komponen mount
     if (typeof window !== 'undefined') {
@@ -151,8 +154,28 @@ export default function InteractiveQuran() {
         console.log('Loading saved messages:', savedMessages);
         if (savedMessages) {
           try {
-            const parsedMessages = JSON.parse(savedMessages);
-            if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+              let parsedMessages = JSON.parse(savedMessages);
+              
+              // Sanitasi: Bersihkan mojibake dari pesan yang sudah tersimpan di HP user
+              if (Array.isArray(parsedMessages)) {
+                parsedMessages = parsedMessages.map(msg => ({
+                  ...msg,
+                  content: msg.content
+                    .replace(/âœ¨/g, '✨')
+                    .replace(/â€¢/g, '•')
+                    .replace(/âœ…/g, '✅')
+                    .replace(/â Œ/g, '❌')
+                    .replace(/ðŸ” /g, '🔍')
+                    .replace(/ðŸ“š/g, '📚')
+                    .replace(/ðŸ“–/g, '📖')
+                    .replace(/ðŸ”Ž/g, '🔍')
+                    .replace(/ðŸŽ²/g, '🎲')
+                    .replace(/ðŸ‘‹/g, '👋')
+                    .replace(/âž¡ï¸/g, '➡️')
+                }));
+              }
+
+              if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
               // Ensure old welcome messages are upgraded
               if (parsedMessages[0].type === 'bot' && parsedMessages[0].content.includes('Selamat datang')) {
                 parsedMessages[0].isGuide = true;
@@ -259,9 +282,22 @@ export default function InteractiveQuran() {
       const results: WordSearchResult[] = [];
       const searchQuery = query.toLowerCase();
 
-      // Get the full database from static file directly
-      const response = await fetch('/data/verse.json');
-      const data = await response.json();
+      // Escape special characters to prevent regex crash (Solusi 3)
+      const escapeRegExp = (string: string) => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      };
+      const safeSearchQuery = escapeRegExp(searchQuery);
+
+      // In-memory caching logic (Solusi 1)
+      if (!quranDataRef.current) {
+        const response = await fetch('/data/verse.json');
+        quranDataRef.current = await response.json();
+      }
+      const data = quranDataRef.current!;
+
+      // Word boundary logic for translation precision (Solusi 2)
+      const translationRegex = new RegExp(`\\b${safeSearchQuery}\\b`, 'gi');
+      const arabicRegex = new RegExp(safeSearchQuery, 'g');
 
       // Process search locally
       for (const surah of allSurahs) {
@@ -272,11 +308,13 @@ export default function InteractiveQuran() {
           const translation = verse.terjemahan || '';
           const arabicText = verse.teks_arab || '';
 
-          if (translation.toLowerCase().includes(searchQuery) || arabicText.includes(query)) {
-            // Count word occurrences
-            const translationCount = (translation.toLowerCase().match(new RegExp(searchQuery, 'g')) || []).length;
-            const arabicCount = (arabicText.match(new RegExp(query, 'g')) || []).length;
-            const totalCount = translationCount + arabicCount;
+          // Check matches using safe regex
+          const translationMatches = translation.match(translationRegex);
+          const arabicMatches = arabicText.match(arabicRegex);
+
+          if (translationMatches || arabicMatches) {
+            // Count word occurrences accurately
+            const totalCount = (translationMatches?.length || 0) + (arabicMatches?.length || 0);
 
             results.push({
               surah,
@@ -1207,7 +1245,7 @@ export default function InteractiveQuran() {
                       {/* Section 3 */}
                       <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50/80 rounded-xl p-3 border border-purple-100/60 shadow-sm transition-all hover:shadow-md">
                         <div className="flex items-center gap-2 font-bold text-purple-700 mb-2.5 text-xs uppercase tracking-wide">
-                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-[13px] shadow-sm">🔎</span>
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-[13px] shadow-sm">🔍</span>
                           Pencarian & Menu
                         </div>
                         <ul className="space-y-2 text-[13px] text-slate-600 font-medium ml-1">
@@ -1505,7 +1543,7 @@ export default function InteractiveQuran() {
               setMessages([{
                 type: 'bot',
                 isGuide: true,
-                content: `Assalamu'alaikum! Selamat datang di Interactive Quran! ✨\n\nBerikut panduan penggunaan dan contoh perintah yang bisa digunakan:`
+                content: `Assalamu'alaikum! Selamat datang di Interactive Quran! âœ¨\n\nBerikut panduan penggunaan dan contoh perintah yang bisa digunakan:`
               }]);
               localStorage.removeItem('quranChatHistory');
             }}
@@ -1708,17 +1746,131 @@ export default function InteractiveQuran() {
               </button>
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-4 bg-slate-50/30 min-h-[40vh]">
-              <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center shadow-sm border border-orange-200/50">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-orange-600 animate-bounce">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.42 15.17L17.25 21A2.67 2.67 0 0113.5 21l-5.83-5.83m.91-2.11l-3.3-3.3a2.67 2.67 0 0113.5 13.5l-3.3-3.3m-1.21-1.21a2.1 2.1 0 01-2.97 0 2.1 2.1 0 010-2.97m1.21 1.21a2.1 2.1 0 010 2.97" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-black text-slate-800 tracking-tight mb-2 uppercase tracking-widest">Fitur Sedang Diperbaiki</h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed max-w-xs mx-auto">
-                  Kami sedang menyempurnakan tampilan rincian ayat agar sesuai dengan standar premium Interactive Quran. Mohon tunggu sebentar ya! 🛠️✨
-                </p>
+            <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-4 sm:space-y-6 scroll-smooth bg-slate-50/30">
+              <div className="flex flex-col space-y-4 sm:space-y-6">
+                {wordSearchData.results.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((result) => {
+                  const resultKey = `${result.surah.id}-${result.verse_number}`;
+                  
+                  const highlightTranslation = (text: string, query: string) => {
+                    if (!query) return <>{text}</>;
+                    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`(\\b${safeQuery}\\b)`, 'gi');
+                    const parts = text.split(regex);
+                    return (
+                      <>
+                        {parts.map((part, i) => 
+                          regex.test(part) ? <span key={i} className="bg-yellow-200 text-yellow-900 font-bold px-1 rounded-md border border-yellow-300 shadow-sm">{part}</span> : part
+                        )}
+                      </>
+                    );
+                  };
+
+                  const highlightArabic = (text: string, query: string) => {
+                    if (!query) return <>{text}</>;
+                    const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    const regex = new RegExp(`(${safeQuery})`, 'g');
+                    const parts = text.split(regex);
+                    return (
+                      <>
+                        {parts.map((part, i) => 
+                          regex.test(part) ? <span key={i} className="text-indigo-600 bg-indigo-50/80 px-1 rounded-md border border-indigo-100 shadow-sm">{part}</span> : part
+                        )}
+                      </>
+                    );
+                  };
+
+                  return (
+                    <div
+                      key={resultKey}
+                      className="bg-white/60 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/80 hover:shadow-[0_8px_25px_rgb(59,130,246,0.12)] hover:-translate-y-0.5 hover:border-blue-200/50 flex flex-col gap-3 transition-all duration-300 overflow-hidden relative group"
+                    >
+                      <div className="absolute -left-4 -top-4 text-[6rem] font-bold text-blue-50/40 opacity-30 group-hover:text-blue-100/50 group-hover:scale-110 transition-all duration-500 pointer-events-none z-0">
+                        {result.verse_number}
+                      </div>
+
+                      {/* Header Ayat */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 relative z-10 border-b border-slate-100/50 pb-3">
+                        {/* Sisi Kiri: Info Utama */}
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
+                            <span className="relative inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-white to-blue-50 text-indigo-700 font-extrabold text-[15px] sm:text-base shadow-sm border border-indigo-100/50">
+                              {result.surah.id}
+                            </span>
+                          </div>
+                          <div className="flex flex-col mb-0.5">
+                            <span className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em]">Surah {result.surah.name_simple}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Ayat Ke {result.verse_number}</span>
+                               {result.wordCount > 0 && (
+                                 <span className="text-[9px] bg-indigo-50 text-indigo-600 font-extrabold px-1.5 py-0.5 rounded border border-indigo-100/50 shadow-sm leading-none flex items-center">
+                                   {result.wordCount}x Ditemukan
+                                 </span>
+                               )}
+                            </div>
+                          </div>
+
+                          {/* Play Button */}
+                          <button
+                            className="ml-2 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-[0_4px_15px_rgb(79,70,229,0.3)] hover:shadow-[0_6px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
+                            onClick={() => handlePlay(result.surah.id, result.verse_number)}
+                            aria-label="Putar Audio"
+                          >
+                            {playingAyah === resultKey ? (
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.25l13.5 6.75-13.5 6.75V5.25z" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                        
+                        {/* Kanan */}
+                        <div className="flex items-center flex-wrap gap-2">
+                           <button
+                             className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-amber-100/50 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-400 hover:to-orange-500 hover:border-amber-400 hover:text-white hover:shadow-md transition-all duration-300 text-amber-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold"
+                             onClick={() => {
+                               fetch(`https://equran.id/api/v2/tafsir/${result.surah.id}`)
+                                 .then(res => res.json())
+                                 .then((data: { data: { tafsir: { ayat: number, teks: string }[] } }) => {
+                                    const t = data.data.tafsir.find((x: { ayat: number, teks: string }) => x.ayat === result.verse_number);
+                                    if(t) {
+                                      setShowTafsir({
+                                        ayat: result.verse_number,
+                                        text: t.teks,
+                                        surahName: result.surah.name_simple
+                                      });
+                                    } else {
+                                      alert("Tafsir tidak ditemukan");
+                                    }
+                                 }).catch(() => alert("Gagal memuat tafsir"));
+                             }}
+                           >
+                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
+                             </svg>
+                             Tafsir
+                           </button>
+                        </div>
+                      </div>
+
+                      {/* Isi Ayat */}
+                      <div className="text-right mt-2">
+                        <div className="text-3xl sm:text-3xl md:text-4xl leading-[2.5] text-gray-800 font-uthmanic" style={{ direction: 'rtl', position: 'relative' }}>
+                          <span>{highlightArabic(result.text_uthmani, wordSearchData.word)}</span>
+                        </div>
+                      </div>
+                      <div className="border-t border-gray-100 pt-3 mt-2">
+                        <p className="text-gray-600 leading-relaxed text-sm sm:text-base font-medium">
+                          {highlightTranslation(result.translation, wordSearchData.word)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -1763,6 +1915,28 @@ export default function InteractiveQuran() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                     </svg>
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Pop up tafsir dalam WordSearchModal */}
+            {showTafsir && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-2">
+                <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative">
+                  <button
+                    className="absolute top-2 right-2 text-gray-500 hover:text-white hover:bg-red-500 bg-gray-100 rounded-lg text-2xl p-2 shadow transition-all flex items-center justify-center"
+                    style={{ minWidth: 40, minHeight: 40 }}
+                    onClick={() => setShowTafsir(null)}
+                  >
+                    Ã—
+                  </button>
+                  <h3 className="text-lg font-bold mb-2 text-indigo-700 pr-8">
+                    Tafsir Ayat {showTafsir.ayat}{showTafsir.surahName ? ` - Surah ${showTafsir.surahName}` : ''}
+                  </h3>
+                  <div className="text-gray-700 leading-relaxed max-h-[60vh] overflow-y-auto whitespace-pre-line mb-4 pr-2">
+                    {showTafsir.text}
+                  </div>
+                  <div className="text-xs text-gray-400 italic text-right border-t pt-2 border-gray-100">Sumber: equran.id (Tafsir Kementerian Agama RI)</div>
                 </div>
               </div>
             )}
@@ -1915,10 +2089,54 @@ export default function InteractiveQuran() {
             </p>
             <div className="flex flex-col gap-3 w-full">
               <button
+                onClick={async () => {
+                  try {
+                    setIsDownloadingDB(true);
+                    const files = [
+                      '/data/verse.json',
+                      '/data/surah.json',
+                      '/data/indopak.json',
+                      '/data/kemenag.json',
+                      '/data/interactive-rules.json',
+                      '/data/rule-ayat.json',
+                      '/data/warna.json'
+                    ];
+                    
+                    const cache = await caches.open('quran-data-cache-v1');
+                    await Promise.all(
+                      files.map(async (file) => {
+                        const res = await fetch(file);
+                        if (res.ok) await cache.put(file, res);
+                      })
+                    );
+                    
+                    alert("âœ… Unduh Database JSON Selesai!");
+                  } catch {
+                    alert("âŒ Gagal mengunduh database.");
+                  } finally {
+                    setIsDownloadingDB(false);
+                  }
+                }}
+                disabled={isDownloadingDB}
+                className="w-full px-4 py-3.5 bg-emerald-600 text-white rounded-xl font-bold shadow-[0_4px_15px_rgb(16,185,129,0.25)] hover:bg-emerald-500 hover:shadow-[0_6px_20px_rgb(16,185,129,0.4)] hover:-translate-y-0.5 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDownloadingDB ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Mengunduh...
+                  </>
+                ) : (
+                  "Unduh Database Quran"
+                )}
+              </button>
+              <button
                 onClick={cacheAllSurahImages}
                 className="w-full px-4 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold shadow-[0_4px_15px_rgb(79,70,229,0.25)] hover:shadow-[0_6px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5 transition-all duration-300"
               >
-                Unduh Semua Sekaligus
+                Unduh Image Mushaf
               </button>
               <button
                 onClick={() => {
@@ -2029,3 +2247,4 @@ function TafsirButton({ surahNumber, ayahNumber, surahName }: { surahNumber: num
     </>
   );
 } 
+

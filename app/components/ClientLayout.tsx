@@ -47,9 +47,30 @@ export default function ClientLayout({
     mediaQuery.addEventListener('change', handleDisplayModeChange);
     window.addEventListener('resize', checkPWAInstallation);
 
+    // Intercept fetch global untuk melayani dari cache jika tersedia
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const url = args[0] instanceof Request ? args[0].url : typeof args[0] === 'string' ? args[0] : '';
+      if (url && (url.includes('/data/') || url.includes('/api/v2/tafsir/') || url.includes('/api/v4/chapters'))) {
+        try {
+          const cache = await caches.open('quran-data-cache-v1');
+          const cachedResponse = await cache.match(url);
+          if (cachedResponse) {
+            console.log(`⚡ [Cache Hit] Serving ${url} super-fast from Local Cache!`);
+            // Clone response supaya bisa dibaca berkali-kali jika diperlukan
+            return cachedResponse.clone();
+          }
+        } catch (e) {
+          console.warn("Fetch interceptor error:", e);
+        }
+      }
+      return originalFetch(...args);
+    };
+
     return () => {
       mediaQuery.removeEventListener('change', handleDisplayModeChange);
       window.removeEventListener('resize', checkPWAInstallation);
+      window.fetch = originalFetch; // Kembalikan ke fungsi asli
     };
   }, []);
 
