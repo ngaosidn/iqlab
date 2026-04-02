@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import InstallPWA from './InstallPWA';
 
 // Extended Navigator interface for iOS PWA detection
 interface ExtendedNavigator extends Navigator {
@@ -56,7 +55,6 @@ export default function ClientLayout({
 
   return (
     <>
-      <InstallPWA />
       {children}
     </>
   );

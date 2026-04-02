@@ -483,12 +483,12 @@ export default function Home() {
                 {typeof window !== 'undefined' && isMobileBrowser && !isStandalone && (
                   <button
                     onClick={handleInstallClick}
-                    className="text-white hover:text-blue-100 transition-all p-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 active:scale-90 shadow-lg"
-                    aria-label="Install App"
+                    className="bg-white/15 backdrop-blur-md border border-white/20 text-white px-4 py-2 text-sm font-semibold rounded-2xl shadow-lg hover:bg-white/25 active:scale-[0.98] transition-all flex items-center gap-2"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                     </svg>
+                    Install App
                   </button>
                 )}
               </div>
