@@ -100,6 +100,12 @@ export default function InteractiveQuran() {
   const [dbCached, setDbCached] = useState(false);
   const [imagesCached, setImagesCached] = useState(false);
   const [searchScope, setSearchScope] = useState<'all' | 'arabic' | 'translation'>('all');
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+
+  const showNotify = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  }, []);
 
   // Check cache status
   const checkCacheStatus = useCallback(async () => {
@@ -120,11 +126,14 @@ export default function InteractiveQuran() {
     if (type === 'db') {
       await caches.delete('quran-data-cache-v1');
       setDbCached(false);
+      showNotify("🗑️ Cache Database Berhasil Dihapus!", "info");
     } else {
       await caches.delete('quran-images');
+      setCachedSurahs(new Set());
+      localStorage.removeItem('cachedSurahs');
       setImagesCached(false);
+      showNotify("🗑️ Cache Gambar Berhasil Dihapus!", "info");
     }
-    alert(`🗑️ Cache ${type === 'db' ? 'Database' : 'Gambar'} berhasil dihapus!`);
   };
   const [cachedSurahs, setCachedSurahs] = useState<Set<number>>(() => {
     // Inisialisasi dari localStorage saat komponen mount
@@ -1163,6 +1172,7 @@ export default function InteractiveQuran() {
     setImagesCached(true);
 
     setIsCachingAll(false);
+    showNotify("🎉 Mushaf & Data Pro Berhasil Disiapkan!");
   };
 
   return (
@@ -2015,24 +2025,46 @@ export default function InteractiveQuran() {
               </div>
             )}
 
-            {/* Pop up tafsir dalam WordSearchModal */}
+            {/* Modern Pop up tafsir dalam WordSearchModal */}
             {showTafsir && (
-              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-2">
-                <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative">
-                  <button
-                    className="absolute top-2 right-2 text-gray-500 hover:text-white hover:bg-red-500 bg-gray-100 rounded-lg text-2xl p-2 shadow transition-all flex items-center justify-center"
-                    style={{ minWidth: 40, minHeight: 40 }}
-                    onClick={() => setShowTafsir(null)}
-                  >
-                    ×
-                  </button>
-                  <h3 className="text-lg font-bold mb-2 text-indigo-700 pr-8">
-                    Tafsir Ayat {showTafsir.ayat}{showTafsir.surahName ? ` - Surah ${showTafsir.surahName}` : ''}
-                  </h3>
-                  <div className="text-gray-700 leading-relaxed max-h-[60vh] overflow-y-auto whitespace-pre-line mb-4 pr-2">
-                    {showTafsir.text}
+              <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100]">
+                <div className="bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.12)] w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/60 overflow-hidden transform transition-all relative">
+                  {/* Header */}
+                  <div className="p-4 sm:p-5 border-b border-white/40 bg-gradient-to-r from-amber-50/80 to-orange-50/80 flex flex-row items-center justify-between relative z-10 shrink-0">
+                    <h3 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-2">
+                      <span className="flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-xl bg-amber-100/60 text-amber-700 font-bold text-sm border border-amber-200/50 shadow-sm">
+                        {showTafsir.ayat}
+                      </span>
+                      <span className="truncate max-w-[200px] sm:max-w-[300px]">Tafsir Surah {showTafsir.surahName}</span>
+                    </h3>
+                    <button
+                      className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 flex-shrink-0"
+                      onClick={() => setShowTafsir(null)}
+                      aria-label="Tutup"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
-                  <div className="text-xs text-gray-400 italic text-right border-t pt-2 border-gray-100">Sumber: equran.id (Tafsir Kementerian Agama RI)</div>
+
+                  {/* Content Area */}
+                  <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 scroll-smooth bg-slate-50/30 thin-scrollbar">
+                    <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/80 transition-all duration-300">
+                      <p className="text-sm sm:text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line text-justify">
+                        {showTafsir.text}
+                      </p>
+                    </div>
+                    
+                    {/* Attribution */}
+                    <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Sumber Data</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-400">Kementerian Agama RI</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -2221,10 +2253,10 @@ export default function InteractiveQuran() {
                           })
                         );
                         setDbCached(true);
-                        alert("✅ Unduh Database JSON Selesai!");
+                        showNotify("✅ Unduh Database JSON Selesai!");
                       } catch (error) {
                         console.error(error);
-                        alert("❌ Gagal mengunduh database.");
+                        showNotify("❌ Gagal mengunduh database.", "error");
                       } finally {
                         setIsDownloadingDB(false);
                       }
@@ -2357,6 +2389,36 @@ export default function InteractiveQuran() {
           </div>
         </div>
       )}
+
+      {/* Global Notification Toast */}
+      {notification && (
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top duration-500 ease-out">
+          <div className={`px-6 py-4 rounded-[2rem] shadow-2xl backdrop-blur-2xl border flex items-center gap-3 min-w-[280px] ${
+            notification.type === 'error' 
+              ? 'bg-rose-500/90 text-white border-rose-400/50' 
+              : notification.type === 'info'
+                ? 'bg-slate-800/90 text-white border-slate-700/50'
+                : 'bg-emerald-500/90 text-white border-emerald-400/50'
+          }`}>
+            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+              {notification.type === 'error' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : notification.type === 'info' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+              )}
+            </div>
+            <p className="text-sm font-black tracking-tight">{notification.message}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2406,12 +2468,21 @@ function TafsirButton({ surahNumber, ayahNumber, surahName }: { surahNumber: num
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 sm:p-7 space-y-4 scroll-smooth bg-slate-50/30">
-              <div className="text-slate-700 leading-relaxed whitespace-pre-line text-[14px] sm:text-base font-medium">
-                {tafsir}
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 scroll-smooth bg-slate-50/30 thin-scrollbar">
+              <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/80 transition-all duration-300">
+                <p className="text-sm sm:text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line text-justify">
+                  {tafsir}
+                </p>
               </div>
-              <div className="pt-4 border-t border-slate-100 flex justify-end">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Sumber: equran.id (Kemenag RI)</span>
+              
+              {/* Attribution */}
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Sumber Data</span>
+                </div>
+                <span className="text-[10px] font-bold text-slate-400">Kementerian Agama RI</span>
               </div>
             </div>
           </div>

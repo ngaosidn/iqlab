@@ -81,7 +81,7 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
   const [popupPlaying, setPopupPlaying] = useState(false);
   const [popupCurrentTime, setPopupCurrentTime] = useState(0);
   const [popupDuration, setPopupDuration] = useState(0);
-  const [popupVolume, setPopupVolume] = useState(1);
+
   const [showPopupExplanation, setShowPopupExplanation] = useState(false);
   const [showPopupVideo, setShowPopupVideo] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -882,101 +882,131 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
           )}
         </div>
 
-        {/* Fixed Footer for Pagination */}
+        {/* Fixed Footer for Pagination (Modernized) */}
         {!loading && verses.length > 0 && (
-          <div className="p-2.5 sm:p-4 border-t border-gray-100 bg-white/90 backdrop-blur-md rounded-b-3xl">
-            <div className="flex justify-between items-center gap-1 sm:gap-4 max-w-lg mx-auto">
-              <button
-                className="flex items-center justify-center gap-1 px-3 sm:px-5 py-2 rounded-xl bg-green-50 text-green-700 font-bold text-xs sm:text-sm hover:bg-green-600 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm active:scale-95 border border-green-100"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3.5 h-3.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                </svg>
-                <span className="hidden xs:inline">Sebelumnya</span>
-                <span className="xs:hidden">Dulu</span>
-              </button>
-              
-              <div className="flex flex-col items-center min-w-[70px]">
-                <span className="text-gray-400 text-[8px] uppercase tracking-widest font-bold">Halaman</span>
-                <span className="text-gray-800 font-extrabold text-xs sm:text-sm px-3 py-1 bg-white rounded-full border border-gray-100 shadow-inner">
-                  {currentPage} <span className="text-gray-300 font-normal mx-0.5">/</span> {totalPages}
-                </span>
+          <div className="p-3.5 sm:p-5 border-t border-white/40 bg-white/60 flex items-center justify-between gap-4 shrink-0 transition-all duration-300">
+            <button
+              className="flex items-center justify-center gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl bg-white text-slate-800 font-bold text-xs sm:text-[13px] shadow-sm border border-slate-200 hover:bg-slate-50 hover:shadow-md hover:border-slate-300 transition-all disabled:opacity-30 disabled:cursor-not-allowed group active:scale-95"
+              onClick={() => {
+                setCurrentPage((p) => Math.max(1, p - 1));
+                const scrollArea = document.querySelector('.overflow-y-auto');
+                if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentPage === 1}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+              <span>Kembali</span>
+            </button>
+            
+            <div className="flex flex-col items-center justify-center bg-indigo-50/50 px-4 sm:px-6 py-1.5 rounded-xl border border-indigo-100/50 shadow-sm">
+              <span className="text-[9px] font-bold text-indigo-400 uppercase tracking-widest mb-0.5">Halaman</span>
+              <span className="text-slate-800 font-extrabold text-sm sm:text-[15px] tabular-nums">
+                {currentPage} <span className="text-slate-300 font-medium mx-0.5">/</span> {totalPages}
+              </span>
+            </div>
+
+            <button
+              className="flex items-center justify-center gap-1.5 px-3.5 sm:px-5 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs sm:text-[13px] shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 hover:shadow-indigo-600/30 transition-all disabled:opacity-30 disabled:cursor-not-allowed group active:scale-95"
+              onClick={() => {
+                setCurrentPage((p) => Math.min(totalPages, p + 1));
+                const scrollArea = document.querySelector('.overflow-y-auto');
+                if (scrollArea) scrollArea.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              disabled={currentPage === totalPages}
+            >
+              <span>Lanjut</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+        )}
+        {/* Modern Pop up tafsir */}
+        {showTafsir && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100]">
+            <div className="bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.12)] w-full max-w-2xl max-h-[90vh] flex flex-col border border-white/60 overflow-hidden transform transition-all relative">
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-white/40 bg-gradient-to-r from-amber-50/80 to-orange-50/80 flex flex-row items-center justify-between relative z-10 shrink-0">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-2">
+                  <span className="flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-xl bg-amber-100/60 text-amber-700 font-bold text-sm border border-amber-200/50 shadow-sm">
+                    {showTafsir.ayat}
+                  </span>
+                  <span className="truncate max-w-[200px] sm:max-w-[300px]">Tafsir Surah {surahName}</span>
+                </h3>
+                <button
+                  className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 flex-shrink-0"
+                  onClick={() => setShowTafsir(null)}
+                  aria-label="Tutup"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
 
-              <button
-                className="flex items-center justify-center gap-1 px-3 sm:px-5 py-2 rounded-xl bg-green-50 text-green-700 font-bold text-xs sm:text-sm hover:bg-green-600 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm active:scale-95 border border-green-100"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                <span className="hidden xs:inline">Berikutnya</span>
-                <span className="xs:hidden">Lanjut</span>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3.5 h-3.5">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-        {/* Pop up tafsir */}
-        {showTafsir && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 relative">
-              <button
-                className="absolute top-2 right-2 text-white bg-red-500 hover:bg-red-600 rounded-lg text-2xl p-2 shadow transition-all"
-                style={{ minWidth: 40, minHeight: 40 }}
-                onClick={() => setShowTafsir(null)}
-              >
-                ×
-              </button>
-              <h3 className="text-lg font-bold mb-2 text-indigo-700">
-                Tafsir Ayat {showTafsir.ayat}{surahName ? ` - Surah ${surahName}` : ''}
-              </h3>
-              <div className="text-gray-700 leading-relaxed max-h-96 overflow-y-auto whitespace-pre-line mb-4">
-                {showTafsir.text}
+              {/* Content Area */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 scroll-smooth bg-slate-50/30 thin-scrollbar">
+                <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 sm:p-6 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/80 transition-all duration-300">
+                  <p className="text-sm sm:text-[15px] font-medium text-slate-700 leading-relaxed whitespace-pre-line text-justify">
+                    {showTafsir.text}
+                  </p>
+                </div>
+                
+                {/* Attribution */}
+                <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></div>
+                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Sumber Data</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400">Kementerian Agama RI</span>
+                </div>
               </div>
-              <div className="text-xs text-gray-400 italic text-right">Sumber: equran.id (Tafsir Kementerian Agama RI)</div>
             </div>
           </div>
         )}
-        {/* Pop up Ahkam Tajwid (data dari rule-ayat.json) */}
+        {/* Modern Pop up Ahkam Tajwid (data dari rule-ayat.json) */}
         {ahkamPopup && (
-          <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-2">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6 relative">
-              <button
-                className="absolute top-2 right-2 text-gray-600 hover:text-red-500 rounded-lg text-2xl p-1 transition-colors"
-                onClick={() => {
-                  setAhkamPopup(null);
-                  setShowPopupExplanation(false);
-                  setShowPopupVideo(false);
-                  if (popupAudioRef.current) popupAudioRef.current.pause();
-                  setPopupPlaying(false);
-                  setPopupCurrentTime(0);
-                }}
-              >
-                ×
-              </button>
-              <h3 className="text-lg font-bold mb-2 text-emerald-700">
-                {ahkamPopupContent?.title || 'Title belum diisi di rule-ayat.json'}
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Surah {surahNumber}, Ayat {ahkamPopup.ayat}
-              </p>
-              {ahkamPopupContent ? (
-                <>
-                  <div className="mb-4 flex justify-center">
-                    {ahkamPopupContent.audio_url ? (
-                      <>
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100]">
+            <div className="bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.12)] w-full max-w-md max-h-[90vh] flex flex-col border border-white/60 overflow-hidden transform transition-all relative animate-in zoom-in-95 duration-300">
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-white/40 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 flex flex-row items-center justify-between relative z-10 shrink-0">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-2">
+                  <span className="flex items-center justify-center min-w-[2rem] h-8 px-2 rounded-xl bg-emerald-100/60 text-emerald-700 font-bold text-sm border border-emerald-200/50 shadow-sm">
+                    {ahkamPopup.ayat}
+                  </span>
+                  <span>Bedah Hukum Tajwid</span>
+                </h3>
+                <button
+                  className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 flex-shrink-0"
+                  onClick={() => setAhkamPopup(null)}
+                  aria-label="Tutup"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Content Area */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 scroll-smooth bg-slate-50/30 thin-scrollbar">
+                {ahkamPopupContent ? (
+                  <>
+                    <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/80 transition-all duration-300">
+                      <h4 className="text-sm font-bold text-emerald-700 mb-3 flex items-center gap-2">
+                        <div className="w-1 h-3 bg-emerald-500 rounded-full"></div>
+                        Penjelasan Audio
+                      </h4>
+                      <div className="space-y-4">
                         <audio
                           ref={popupAudioRef}
                           src={ahkamPopupContent.audio_url}
-                          onTimeUpdate={() => setPopupCurrentTime(popupAudioRef.current?.currentTime ?? 0)}
-                          onLoadedMetadata={() => {
-                            const el = popupAudioRef.current;
-                            if (el) {
+                          onTimeUpdate={(e) => {
+                            const el = e.currentTarget;
+                            setPopupCurrentTime(el.currentTime);
+                            if (Number.isFinite(el.duration) && el.duration > 0) {
                               setPopupDuration(el.duration);
-                              el.volume = popupVolume;
                             }
                           }}
                           onEnded={() => setPopupPlaying(false)}
@@ -984,7 +1014,8 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                           onPause={() => setPopupPlaying(false)}
                           style={{ display: 'none' }}
                         />
-                        <div className="w-full max-w-xs flex flex-col gap-2 rounded-2xl bg-emerald-50 border border-emerald-200 p-3">
+                        
+                        <div className="w-full flex flex-col gap-3 rounded-2xl bg-emerald-50/50 border border-emerald-100 p-3.5">
                           <div className="flex items-center gap-3">
                             <button
                               type="button"
@@ -994,8 +1025,7 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                                 if (popupPlaying) el.pause();
                                 else el.play();
                               }}
-                              className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-md transition-colors"
-                              aria-label={popupPlaying ? 'Jeda' : 'Putar'}
+                              className="flex-shrink-0 w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
                             >
                               {popupPlaying ? (
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -1007,12 +1037,16 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                                 </svg>
                               )}
                             </button>
-                            <span className="text-sm font-medium text-emerald-800 tabular-nums">
-                              {formatTime(popupCurrentTime)} / {formatTime(popupDuration)}
-                            </span>
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Durasi</span>
+                              <span className="text-sm font-extrabold text-slate-700 tabular-nums">
+                                {formatTime(popupCurrentTime)} <span className="text-slate-300 mx-0.5">/</span> {formatTime(popupDuration)}
+                              </span>
+                            </div>
                           </div>
+                          
                           <div
-                            className="h-2 rounded-full bg-emerald-200 overflow-hidden cursor-pointer"
+                            className="h-2 rounded-full bg-emerald-100 overflow-hidden cursor-pointer relative"
                             onClick={(e) => {
                               const el = popupAudioRef.current;
                               if (!el || !popupDuration) return;
@@ -1021,223 +1055,168 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                               const pct = Math.max(0, Math.min(1, x / rect.width));
                               el.currentTime = pct * popupDuration;
                             }}
-                            role="progressbar"
-                            aria-valuenow={popupDuration ? (popupCurrentTime / popupDuration) * 100 : 0}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
                           >
                             <div
-                              className="h-full rounded-full bg-emerald-600 transition-all duration-150"
+                              className="h-full rounded-full bg-emerald-500 transition-all duration-150"
                               style={{ width: popupDuration ? `${(popupCurrentTime / popupDuration) * 100}%` : '0%' }}
                             />
                           </div>
-                          <div className="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-emerald-700 flex-shrink-0" aria-hidden>
-                              <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06z" />
-                            </svg>
-                            <input
-                              type="range"
-                              min={0}
-                              max={1}
-                              step={0.05}
-                              value={popupVolume}
-                              onChange={(e) => {
-                                const v = parseFloat(e.target.value);
-                                setPopupVolume(v);
-                                if (popupAudioRef.current) popupAudioRef.current.volume = v;
-                              }}
-                              className="w-full h-1.5 rounded-full appearance-none bg-emerald-200 accent-emerald-600 cursor-pointer"
-                            />
-                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <div className="w-full rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                        Audio belum diisi di <code className="bg-amber-100 px-1 rounded">rule-ayat.json</code>.
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setShowPopupExplanation(true)}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-[11px] font-black uppercase tracking-wider hover:bg-emerald-600 shadow-md shadow-emerald-500/10 active:scale-95 transition-all"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                            </svg>
+                            Gambar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setShowPopupVideo(true)}
+                            disabled={!ahkamPopupContent?.video_url}
+                            className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider shadow-md active:scale-95 transition-all ${
+                              ahkamPopupContent?.video_url
+                                ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/10'
+                                : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                            }`}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653z" />
+                            </svg>
+                            Video
+                          </button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div className="mb-4 flex justify-center">
-                    <div className="flex gap-2 flex-wrap justify-center">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowPopupVideo(false);
-                          setShowPopupExplanation(true);
-                        }}
-                        className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium shadow-md transition-colors"
-                      >
-                        Penjelasan Audio
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowPopupExplanation(false);
-                          setShowPopupVideo(true);
-                          if (popupAudioRef.current) popupAudioRef.current.pause();
-                          setPopupPlaying(false);
-                        }}
-                        disabled={!ahkamPopupContent?.video_url}
-                        className={`px-4 py-2 rounded-xl font-medium shadow-md transition-colors ${
-                          ahkamPopupContent?.video_url
-                            ? 'bg-indigo-500 hover:bg-indigo-600 text-white'
-                            : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                        }`}
-                        title={
-                          ahkamPopupContent?.video_url
-                            ? 'Buka video YouTube'
-                            : 'Belum ada video_url di rule-ayat.json untuk ayat ini'
-                        }
-                      >
-                        Penjelasan Video
-                      </button>
                     </div>
-                  </div>
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-800">
-                    <div className="font-semibold mb-1">Penjelasan</div>
-                    <div className="text-emerald-800 leading-relaxed">
-                      {ahkamPopupContent.explanation || (
-                        <span className="text-emerald-700 text-xs">
-                          Penjelasan belum diisi di rule-ayat.json untuk ayat ini.
-                        </span>
-                      )}
+
+                    <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4">
+                      <h4 className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-widest mb-2">Penjelasan Teks</h4>
+                      <p className="text-sm font-medium text-slate-700 leading-relaxed text-justify">
+                        {ahkamPopupContent.explanation || "Penjelasan belum diisi di rule-ayat.json untuk ayat ini."}
+                      </p>
                     </div>
+                  </>
+                ) : (
+                  <div className="bg-amber-50/50 border border-amber-100 rounded-2xl p-6 text-center animate-pulse">
+                    <p className="text-amber-800 font-bold">Popup data belum tersedia.</p>
+                    <p className="text-[11px] text-amber-600 mt-2 font-medium">
+                      Menunggu sinkronisasi data Surah {surahNumber}, Ayat {ahkamPopup.ayat}.
+                    </p>
                   </div>
-                </>
-              ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                  <p className="text-amber-800 font-medium">Popup data belum diinput.</p>
-                  <p className="text-sm text-amber-700 mt-1">
-                    Tambahkan Surah {surahNumber}, Ayat {ahkamPopup.ayat} di <code className="bg-amber-100 px-1 rounded">rule-ayat.json</code>.
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         )}
-        {/* Pop up interaktif sederhana */}
+        {/* Modern Pop up interaktif sederhana */}
         {activePopup && (
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-[100] p-2 animate-in fade-in duration-300">
-            <div className="bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl border border-white/20 w-full max-w-md max-h-[90vh] overflow-y-auto p-6 relative">
-              <button
-                className="absolute top-3 right-3 text-gray-400 hover:text-red-500 bg-white/50 hover:bg-red-50 rounded-xl text-xl p-1.5 transition-all shadow-sm border border-white/60 active:scale-95"
-                onClick={() => setActivePopup(null)}
-              >
-                ×
-              </button>
-              <h3 className="text-lg font-bold mb-2 text-emerald-700">
-                {activePopupRule?.title || activePopupTarget?.popup_key || 'Bedah Hukum'}
-              </h3>
-              <p className="text-sm text-gray-500 mb-1">
-                Surah {surahNumber}, Ayat {activePopup.ayat}
-              </p>
-              <p className="text-2xl mb-4 text-right font-uthmanic text-gray-800">
-                {activePopup.word}
-              </p>
-              <div className="mb-4 flex justify-center">
-                <audio
-                  ref={popupAudioRef}
-                  src={
-                    activePopupTarget?.audio_url ||
-                    `https://everyayah.com/data/Alafasy_64kbps/${String(surahNumber).padStart(3, '0')}${String(activePopup.ayat).padStart(3, '0')}.mp3`
-                  }
-                  onTimeUpdate={() => setPopupCurrentTime(popupAudioRef.current?.currentTime ?? 0)}
-                  onLoadedMetadata={() => {
-                    const el = popupAudioRef.current;
-                    if (el) {
-                      setPopupDuration(el.duration);
-                      el.volume = popupVolume;
-                    }
-                  }}
-                  onEnded={() => setPopupPlaying(false)}
-                  onPlay={() => setPopupPlaying(true)}
-                  onPause={() => setPopupPlaying(false)}
-                  style={{ display: 'none' }}
-                />
-                <div className="w-full max-w-xs flex flex-col gap-2 rounded-2xl bg-emerald-50 border border-emerald-200 p-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const el = popupAudioRef.current;
-                        if (!el) return;
-                        if (popupPlaying) el.pause();
-                        else el.play();
-                      }}
-                      className="flex-shrink-0 w-10 h-10 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shadow-md transition-colors"
-                      aria-label={popupPlaying ? 'Jeda' : 'Putar'}
-                    >
-                      {popupPlaying ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0V6a.75.75 0 01.75-.75zm10.5 0a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0V6a.75.75 0 01.75-.75z" clipRule="evenodd" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5">
-                          <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </button>
-                    <span className="text-sm font-medium text-emerald-800 tabular-nums">
-                      {formatTime(popupCurrentTime)} / {formatTime(popupDuration)}
-                    </span>
-                  </div>
-                  <div
-                    className="h-2 rounded-full bg-emerald-200 overflow-hidden cursor-pointer"
-                    onClick={(e) => {
-                      const el = popupAudioRef.current;
-                      if (!el || !popupDuration) return;
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = e.clientX - rect.left;
-                      const pct = Math.max(0, Math.min(1, x / rect.width));
-                      el.currentTime = pct * popupDuration;
-                    }}
-                    role="progressbar"
-                    aria-valuenow={popupDuration ? (popupCurrentTime / popupDuration) * 100 : 0}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  >
-                    <div
-                      className="h-full rounded-full bg-emerald-600 transition-all duration-150"
-                      style={{ width: popupDuration ? `${(popupCurrentTime / popupDuration) * 100}%` : '0%' }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-emerald-700 flex-shrink-0" aria-hidden>
-                      <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318.664-2.66 1.905A9.76 9.76 0 001.5 12c0 .898.121 1.768.35 2.595.341 1.24 1.518 1.905 2.659 1.905h1.93l4.5 4.5c.945.945 2.561.276 2.561-1.06V4.06z" />
-                    </svg>
-                    <input
-                      type="range"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={popupVolume}
-                      onChange={(e) => {
-                        const v = parseFloat(e.target.value);
-                        setPopupVolume(v);
-                        if (popupAudioRef.current) popupAudioRef.current.volume = v;
-                      }}
-                      className="w-full h-1.5 rounded-full appearance-none bg-emerald-200 accent-emerald-600 cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="mb-4 flex justify-center">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100] animate-in fade-in duration-300">
+            <div className="bg-white/90 backdrop-blur-2xl rounded-[1.5rem] shadow-[0_8px_40px_rgb(0,0,0,0.12)] w-full max-w-md max-h-[90vh] flex flex-col border border-white/60 overflow-hidden transform transition-all relative animate-in zoom-in-95 duration-300">
+              {/* Header */}
+              <div className="p-4 sm:p-5 border-b border-white/40 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 flex flex-row items-center justify-between relative z-10 shrink-0">
+                <h3 className="text-base sm:text-lg font-extrabold text-slate-800 tracking-tight leading-tight flex items-center gap-2">
+                  <span className="flex items-center justify-center w-8 h-8 rounded-xl bg-emerald-100/60 text-emerald-700 font-bold text-sm border border-emerald-200/50 shadow-sm shrink-0">
+                    {activePopup.ayat}
+                  </span>
+                  <span className="truncate">{activePopupRule?.title || activePopupTarget?.popup_key || 'Kamus Tajwid'}</span>
+                </h3>
                 <button
-                  type="button"
-                  onClick={() => setShowPopupExplanation(true)}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium shadow-md transition-colors"
+                  className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 flex-shrink-0"
+                  onClick={() => setActivePopup(null)}
+                  aria-label="Tutup"
                 >
-                  Penjelasan Audio
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-sm text-emerald-800">
-                <div className="font-semibold mb-1">{activePopupTarget?.popup_key || activePopup.popupKey}</div>
-                <div className="text-emerald-800 leading-relaxed">
-                  {activePopupTarget?.explanation || (
-                    <span className="text-emerald-700 text-xs">
-                      Isi field &quot;explanation&quot; di target kata ini di interactive-rules.json.
-                    </span>
-                  )}
+
+              {/* Content Area */}
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 scroll-smooth bg-slate-50/30 thin-scrollbar">
+                {activePopupTarget?.audio_url && (
+                  <div className="bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-white/80">
+                    <h4 className="text-xs font-black text-emerald-700 mb-3 uppercase tracking-widest flex items-center gap-2">
+                      <div className="w-1 h-3 bg-emerald-500 rounded-full"></div>
+                      Contoh Bacaan
+                    </h4>
+                    
+                    <audio
+                      ref={popupAudioRef}
+                      src={activePopupTarget.audio_url}
+                      onTimeUpdate={(e) => {
+                        const el = e.currentTarget;
+                        setPopupCurrentTime(el.currentTime);
+                        if (Number.isFinite(el.duration) && el.duration > 0) {
+                          setPopupDuration(el.duration);
+                        }
+                      }}
+                      onEnded={() => setPopupPlaying(false)}
+                      onPlay={() => setPopupPlaying(true)}
+                      onPause={() => setPopupPlaying(false)}
+                      style={{ display: 'none' }}
+                    />
+                    
+                    <div className="w-full flex flex-col gap-3 rounded-2xl bg-emerald-50/50 border border-emerald-100 p-3.5">
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const el = popupAudioRef.current;
+                            if (!el) return;
+                            if (popupPlaying) el.pause();
+                            else el.play();
+                          }}
+                          className="flex-shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+                        >
+                          {popupPlaying ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0V6a.75.75 0 01.75-.75zm10.5 0a.75.75 0 01.75.75v12a.75.75 0 01-1.5 0V6a.75.75 0 01.75-.75z" clipRule="evenodd" />
+                            </svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 ml-0.5">
+                              <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </button>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xs font-black text-slate-700 tabular-nums">{formatTime(popupCurrentTime)}</span>
+                          <span className="text-[10px] text-slate-300 font-bold">/</span>
+                          <span className="text-[10px] font-bold text-slate-400 tabular-nums">{formatTime(popupDuration)}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="h-1.5 rounded-full bg-emerald-100 overflow-hidden cursor-pointer relative">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-150"
+                          style={{ width: popupDuration ? `${(popupCurrentTime / popupDuration) * 100}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mb-4 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowPopupExplanation(true)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/10 active:scale-95 transition-all"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                    </svg>
+                    Buka Penjelasan
+                  </button>
+                </div>
+
+                <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-4">
+                   <h4 className="text-[10px] font-extrabold text-emerald-700 uppercase tracking-widest mb-2">Definisi Hukum</h4>
+                  <p className="text-sm font-medium text-slate-700 leading-relaxed text-justify">
+                    {activePopupTarget?.explanation || "Penjelasan detail belum tersedia untuk hukum tajwid ini."}
+                  </p>
                 </div>
               </div>
             </div>
