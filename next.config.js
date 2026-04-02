@@ -60,16 +60,27 @@ const customRuntimeCaching = [
       },
     },
   },
-  // 5. App Shell Navigation (Agar Beranda & iQuran tidak Blank Offline)
+  // 5. App Shell Navigation (Prioritas Utama Offline)
   {
     urlPattern: /\/((iquran|itajwidmudah)(\/.*)?)?$/i,
-    handler: 'NetworkFirst',
+    handler: 'CacheFirst', // PAKSA AMBIL DARI HP DULU!
     options: {
       cacheName: 'app-shell-html',
-      networkTimeoutSeconds: 3,
       expiration: {
         maxEntries: 20,
-        maxAgeSeconds: 7 * 24 * 60 * 60, 
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 hari
+      },
+    },
+  },
+  // 6. Next.js Static Assets (_next/static/...)
+  {
+    urlPattern: /^\/_next\/static\/.*/i,
+    handler: 'CacheFirst',
+    options: {
+      cacheName: 'next-static-assets',
+      expiration: {
+        maxEntries: 100,
+        maxAgeSeconds: 30 * 24 * 60 * 60,
       },
     },
   },

@@ -1009,19 +1009,35 @@ export default function InteractiveQuran() {
     const startUrlCache = await caches.open('start-url');
     let currentProgress = 0;
     
-    // 1. Cache App Shell HTML (Beranda & iQuran)
+    // 1. Cache App Shell HTML & Essential Assets
     for (const route of htmlRoutes) {
       try {
         const response = await fetch(route);
         if (response.ok) {
           await htmlCache.put(route, response.clone());
-          // Khusus root '/', simpan juga di cache 'start-url' bawaan next-pwa
           if (route === '/') {
             await startUrlCache.put(route, response.clone());
-            // Next-PWA start-url expects ?utm_source=homescreen sometimes, safe to put both
             await startUrlCache.put('/?utm_source=homescreen', response.clone());
           }
         }
+        
+        // PENTING: Cari semua file .js dan .css yang nempel di halaman ini buat di-cache
+        const htmlText = await response.text();
+        const scriptRegex = /\/_next\/static\/chunks\/[^"]+\.js/g;
+        const styleRegex = /\/_next\/static\/css\/[^"]+\.css/g;
+        const scripts = htmlText.match(scriptRegex) || [];
+        const styles = htmlText.match(styleRegex) || [];
+        
+        const staticCache = await caches.open('next-static-assets');
+        for (const asset of [...scripts, ...styles]) {
+          try {
+            const assetRes = await fetch(asset);
+            if (assetRes.ok) await staticCache.put(asset, assetRes);
+          } catch {
+            // Error ignored
+          }
+        }
+
         currentProgress++;
         setCachingAllProgress(currentProgress);
       } catch (error) {
@@ -1795,6 +1811,7 @@ export default function InteractiveQuran() {
                     <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 ) : imageSrc ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={imageSrc}
                     alt={`Surah ${selectedSurahImage.name_simple} Halaman ${currentPage}`}
