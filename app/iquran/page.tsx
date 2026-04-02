@@ -970,7 +970,7 @@ export default function QuranChat() {
     }
   }, []);
 
-  // Fungsi untuk mendownload semua gambar
+  // Fungsi untuk mendownload semua gambar & data bot
   const cacheAllSurahImages = async () => {
     setIsCachingAll(true);
     setShowInitialCachePrompt(false);
@@ -983,14 +983,39 @@ export default function QuranChat() {
     for (let surahId = 1; surahId <= totalSurahs; surahId++) {
       totalPages += getTotalPages(surahId);
     }
+    
+    // List file JSON essential yang butuh didownload untuk fitur bot
+    const jsonFiles = [
+      '/data/verse.json',
+      '/data/indopak.json',
+      '/data/kemenag.json',
+      '/data/rule-ayat.json',
+      '/data/warna.json',
+      '/data/interactive-rules.json'
+    ];
 
-    setCachingAllTotal(totalPages);
+    setCachingAllTotal(totalPages + jsonFiles.length);
     setCachingAllProgress(0);
 
-    const cache = await caches.open('quran-images');
+    const imageCache = await caches.open('quran-images');
+    const dataCache = await caches.open('quran-local-data');
     let currentProgress = 0;
+    
+    // 1. Cache Semua JSON Data Bot (Word Search & Rules)
+    for (const fileUrl of jsonFiles) {
+      try {
+        const response = await fetch(fileUrl);
+        if (response.ok) {
+          await dataCache.put(fileUrl, response);
+        }
+        currentProgress++;
+        setCachingAllProgress(currentProgress);
+      } catch (error) {
+        console.error(`Error caching JSON file ${fileUrl}:`, error);
+      }
+    }
 
-    // Cache semua surah
+    // 2. Cache semua halaman gambar surah
     for (let surahId = 1; surahId <= totalSurahs; surahId++) {
       const totalPages = getTotalPages(surahId);
 
@@ -998,7 +1023,9 @@ export default function QuranChat() {
         const imageUrl = `https://raw.githubusercontent.com/ngaosidn/dbQuranImages/main/${getImageNumber(surahId, page)}.webp`;
         try {
           const response = await fetch(imageUrl);
-          await cache.put(imageUrl, response);
+          if (response.ok) {
+            await imageCache.put(imageUrl, response);
+          }
           currentProgress++;
           setCachingAllProgress(currentProgress);
         } catch (error) {
@@ -1043,13 +1070,25 @@ export default function QuranChat() {
                 />
               </div>
 
-              <button
-                onClick={() => router.replace('/')}
-                className="text-white hover:text-blue-100 transition-all p-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-white/25 active:scale-90 shadow-lg"
-                aria-label="Kembali ke Beranda"
-              >
-                <IoArrowBack className="w-6 h-6" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowInitialCachePrompt(true)}
+                  className="text-white hover:text-emerald-100 transition-all p-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-emerald-500/30 active:scale-90 shadow-lg"
+                  aria-label="Unduh Akses Offline"
+                  title="Unduh Mushaf & Bot Offline"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => router.replace('/')}
+                  className="text-white hover:text-rose-100 transition-all p-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-rose-500/30 active:scale-90 shadow-lg"
+                  aria-label="Kembali ke Beranda"
+                >
+                  <IoArrowBack className="w-6 h-6" />
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1 translate-x-1">
@@ -1728,17 +1767,18 @@ export default function QuranChat() {
                     <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
                 ) : imageSrc ? (
-                  <Image
+                  <img
                     src={imageSrc}
                     alt={`Surah ${selectedSurahImage.name_simple} Halaman ${currentPage}`}
-                    width={1000}
-                    height={1500}
+                    width="1000"
+                    height="1500"
                     className="w-full h-auto object-contain max-h-max"
                     loading="lazy"
                     onError={(e) => {
+                      const target = e.currentTarget;
                       const originalUrl = `https://raw.githubusercontent.com/ngaosidn/dbQuranImages/main/${getImageNumber(selectedSurahImage.id, currentPage)}.webp`;
-                      if (e.currentTarget.src !== originalUrl) {
-                        setImageSrc(originalUrl);
+                      if (target.src !== originalUrl) {
+                        target.src = originalUrl;
                       }
                     }}
                   />

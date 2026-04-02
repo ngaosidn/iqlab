@@ -2,64 +2,130 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Offline - waQuran</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QuranChat - Mode Offline Mengudara</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             margin: 0;
             padding: 20px;
+            min-height: 100vh;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            background-color: #f3f4f6;
-            text-align: center;
+            background: linear-gradient(135deg, #f0f9ff, #e0e7ff);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 400px;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        .shimmer {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.8), transparent 40%),
+                        radial-gradient(circle at 80% 70%, rgba(219,234,254,0.8), transparent 40%);
+            z-index: -1;
+            pointer-events: none;
+        }
+        .main-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 36px;
+            padding: 40px 32px;
+            width: 100%;
+            max-width: 320px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.1);
+        }
+        .icon-box {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 24px;
+            background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+        .icon-box svg {
+            width: 32px;
+            height: 32px;
+            color: #4f46e5;
         }
         h1 {
-            color: #1e40af;
-            margin-bottom: 16px;
+            font-size: 20px;
+            font-weight: 800;
+            color: #1e293b;
+            margin: 0 0 12px;
+            letter-spacing: -0.5px;
         }
         p {
-            color: #4b5563;
-            margin-bottom: 24px;
-            line-height: 1.5;
+            font-size: 13.5px;
+            color: #64748b;
+            margin: 0 0 32px;
+            line-height: 1.6;
         }
-        .icon {
-            width: 64px;
-            height: 64px;
-            margin-bottom: 16px;
-        }
-        .button {
-            background-color: #2563eb;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
+        .btn {
+            background: linear-gradient(to right, #3b82f6, #4f46e5);
+            color: #ffffff;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 16px;
+            font-weight: bold;
+            font-size: 15px;
             text-decoration: none;
-            font-weight: 500;
-            transition: background-color 0.2s;
+            display: block;
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
         }
-        .button:hover {
-            background-color: #1d4ed8;
+        .btn:active {
+            transform: scale(0.96);
+            box-shadow: 0 5px 10px -3px rgba(79, 70, 229, 0.3);
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(241, 245, 249, 0.8);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #94a3b8;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .pulse {
+            width: 6px;
+            height: 6px;
+            background-color: #ef4444;
+            border-radius: 50%;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <h1>Anda Sedang Offline</h1>
-        <p>Sepertinya Anda tidak terhubung ke internet. Beberapa fitur mungkin tidak tersedia saat offline.</p>
-        <a href="/" class="button">Coba Lagi</a>
+    <div class="shimmer"></div>
+    <div class="main-card">
+        <div class="icon-box">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 12v3m0 0l-2-2m2 2l2-2" />
+            </svg>
+        </div>
+        
+        <div class="badge">
+            <div class="pulse"></div>
+            KONEKSI TERPUTUS
+        </div>
+
+        <h1>Kamu Sedang Offline</h1>
+        <p>Aplikasi butuh sinyal. Atau, jika kamu sudah pernah mengunduh <b>Mode Offline</b>, ayo kembali ke halaman utama untuk membukanya!</p>
+        
+        <a href="/" class="btn">Masuk Ke Beranda</a>
+        <a href="/iquran" onclick="setTimeout(() => window.location.reload(), 100)" style="margin-top: 12px; display: block; font-size: 13px; color: #64748b; font-weight: bold; text-decoration: none;">Atau segarkan iQuran</a>
     </div>
 </body>
 </html> 
