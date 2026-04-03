@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import React from 'react';
 import ShareCardModal from './ShareCardModal';
+import SetoranModal from './SetoranModal';
 import { createClient } from '@/lib/supabase';
 import { FcGoogle } from 'react-icons/fc';
 import { FaBookmark, FaRegBookmark } from 'react-icons/fa';
@@ -99,6 +100,11 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
     surahName: string;
     surahNumber: number;
   } | null>(null);
+
+  // Setoran Modal State
+  const [isSetoranModalOpen, setIsSetoranModalOpen] = useState(false);
+  const [setoranVerse, setSetoranVerse] = useState<{ teks_arab: string, terjemahan: string, ayat: number, surahName: string, surahNumber: number } | null>(null);
+  
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
@@ -995,7 +1001,10 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
 
                           <button
                             className={`h-10 px-4 rounded-2xl bg-rose-50 text-rose-700 border border-rose-100/50 transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap text-xs font-bold ${!isLoggedIn ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-rose-500 hover:text-white'}`}
-                            onClick={() => alert('Fitur Kirim Ayat sedang dalam pengembangan!')}
+                            onClick={() => {
+                              setSetoranVerse({ teks_arab: verse.teks_arab, terjemahan: verse.terjemahan, ayat: verse.ayat, surahName: surahName || `Surah ${surahNumber}`, surahNumber });
+                              setIsSetoranModalOpen(true);
+                            }}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
@@ -1517,6 +1526,15 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         verse={sharingVerse}
+      />
+
+      <SetoranModal 
+        isOpen={isSetoranModalOpen}
+        onClose={() => {
+          setIsSetoranModalOpen(false);
+          setSetoranVerse(null);
+        }}
+        verse={setoranVerse}
       />
     </div>
   );
