@@ -4,7 +4,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoClose, IoDownloadOutline, IoCopyOutline, IoShapesOutline, IoLayersOutline, IoChevronBack, IoChevronForward } from 'react-icons/io5';
+import { IoClose, IoDownloadOutline, IoCopyOutline, IoShapesOutline, IoLayersOutline, IoChevronBack, IoChevronForward, IoImageOutline, IoColorPaletteOutline, IoTextOutline } from 'react-icons/io5';
 
 interface ShareCardModalProps {
   isOpen: boolean;
@@ -71,6 +71,26 @@ const cardStyles = [
     name: 'Clean Minimal', 
     panelClass: 'bg-white/10 backdrop-blur-sm border-white/20', 
     patternClass: "hidden"
+  },
+  { 
+    name: 'Flat Dark', 
+    panelClass: 'bg-zinc-950 border-transparent shadow-none', 
+    patternClass: "hidden"
+  },
+  { 
+    name: 'Flat Primary', 
+    panelClass: 'bg-emerald-700 border-transparent shadow-none', 
+    patternClass: "hidden"
+  },
+  { 
+    name: 'Outline Minimal', 
+    panelClass: 'bg-black/40 backdrop-blur-sm border-2 border-white/30 shadow-none', 
+    patternClass: "hidden"
+  },
+  { 
+    name: 'Minimal Solid', 
+    panelClass: 'bg-[#18181b] border-white/10', 
+    patternClass: "hidden"
   }
 ];
 
@@ -79,11 +99,23 @@ type SlideData =
   | { type: 'arabic', text: string }
   | { type: 'translation', text: string };
 
+const hexToRgba = (hex: string, alpha: number) => {
+  // Add a simple check in case hex is empty or invalid
+  if (!hex || !hex.startsWith('#')) return 'transparent';
+  const r = parseInt(hex.slice(1, 3), 16) || 0;
+  const g = parseInt(hex.slice(3, 5), 16) || 0;
+  const b = parseInt(hex.slice(5, 7), 16) || 0;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModalProps) {
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
   
   const [selectedBg, setSelectedBg] = useState(0);
+  const [customBgUrl, setCustomBgUrl] = useState<string | null>(null);
   const [selectedStyle, setSelectedStyle] = useState(0);
+  const [customCardColorHex, setCustomCardColorHex] = useState<string>('');
+  const [customFontColorHex, setCustomFontColorHex] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeSlide, setActiveSlide] = useState(0);
 
@@ -223,15 +255,29 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
     const translationText = slide.type === 'combined' ? slide.translation : slide.text;
     const currentStyle = cardStyles[selectedStyle];
 
+    const bgClass = selectedBg === -1 && customBgUrl ? 'bg-black' : backgrounds[selectedBg]?.class || backgrounds[0].class;
+
     return (
       <div 
         key={index}
         ref={(el) => { cardRefs.current[index] = el; }}
-        className={`absolute top-0 left-0 w-[1080px] h-[1350px] ${backgrounds[selectedBg].class} flex flex-col items-center justify-center p-20 text-white`}
-        style={{ transform: 'scale(1)', transformOrigin: 'top left' }}
+        className={`absolute top-0 left-0 w-[1080px] h-[1350px] ${bgClass} flex flex-col items-center justify-center p-20 text-white`}
+        style={{ 
+          transform: 'scale(1)', 
+          transformOrigin: 'top left',
+          ...(selectedBg === -1 && customBgUrl ? {
+            backgroundImage: `url(${customBgUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          } : {})
+        }}
       >
-        <div className={`w-full h-full ${currentStyle.panelClass} rounded-[100px] border shadow-2xl flex flex-col p-16 relative overflow-hidden transition-all duration-500`}>
-          {/* Inner Ornament Line */}
+        <div className={`w-full h-full ${!currentStyle.name.includes('Flat') && !currentStyle.name.includes('Solid') ? 'drop-shadow-[0_35px_35px_rgba(0,0,0,0.4)]' : ''}`}>
+          <div 
+            className={`w-full h-full ${currentStyle.panelClass} rounded-[100px] border flex flex-col p-16 relative overflow-hidden`}
+            style={commonPanelStyle}
+          >
+            {/* Inner Ornament Line */}
           <div className="absolute inset-[16px] border border-white/20 rounded-[84px] pointer-events-none"></div>
           {/* Noise texture overlay */}
           <div className={`absolute inset-0 pointer-events-none ${currentStyle.patternClass}`}></div>
@@ -246,7 +292,8 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                 style={{ 
                   direction: 'rtl', 
                   fontSize: getArabicFontSize(arabicText!, false, isSingleMode),
-                  lineHeight: '1.7'
+                  lineHeight: '1.7',
+                  color: customFontColorHex || undefined
                 }}
               >
                 {arabicText}
@@ -258,7 +305,8 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                 className="font-medium text-white/90 max-w-[900px] shrink-0 flex items-center justify-center"
                 style={{ 
                   fontSize: getTranslationFontSize(translationText!, false, isSingleMode),
-                  lineHeight: '1.6'
+                  lineHeight: '1.6',
+                  color: customFontColorHex || undefined
                 }}
               >
                 &quot;{translationText}&quot;
@@ -279,17 +327,26 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
               <span className="text-[15px] text-white/50 font-bold tracking-[0.3em] leading-none ml-1 uppercase">Interactive Quran</span>
             </div>
             <div className="flex flex-col items-end gap-2 pr-2">
-              <span className="text-[24px] font-bold bg-white/20 px-6 py-2.5 rounded-full backdrop-blur-md shadow-inner border border-white/10 uppercase tracking-widest">
+              <span 
+                className="text-[24px] font-bold bg-white/20 px-6 py-2.5 rounded-full backdrop-blur-md shadow-inner border border-white/10 uppercase tracking-widest"
+                style={{ color: customFontColorHex || undefined }}
+              >
                 QS. {verse.surahName} : {verse.ayat} {totalSlides > 1 ? `(${index + 1}/${totalSlides})` : ''}
               </span>
             </div>
           </div>
+        </div>
         </div>
       </div>
     );
   };
 
   const currentStyle = cardStyles[selectedStyle];
+  const isFlatStyle = currentStyle.name.includes('Flat') || currentStyle.name.includes('Solid');
+  const commonPanelStyle: React.CSSProperties = {};
+  if (customCardColorHex) {
+    commonPanelStyle.backgroundColor = isFlatStyle ? customCardColorHex : hexToRgba(customCardColorHex, 0.4);
+  }
 
   return (
     <AnimatePresence>
@@ -336,8 +393,20 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                 </div>
 
                 {/* VISUAL PREVIEW (Fits the modal container correctly) */}
-                <div className={`w-full h-full ${backgrounds[selectedBg].class} flex flex-col items-center justify-center p-8 text-white relative z-10 transition-colors duration-500`}>
-                  <div className={`w-full h-full ${currentStyle.panelClass} rounded-3xl border shadow-lg flex flex-col p-6 relative overflow-hidden transition-all duration-500`}>
+                <div 
+                  className={`w-full h-full ${selectedBg === -1 && customBgUrl ? 'bg-black' : backgrounds[selectedBg]?.class || backgrounds[0].class} flex flex-col items-center justify-center p-8 text-white relative z-10 transition-colors duration-500`}
+                  style={{
+                    ...(selectedBg === -1 && customBgUrl ? {
+                      backgroundImage: `url(${customBgUrl})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    } : {})
+                  }}
+                >
+                  <div 
+                    className={`w-full h-full ${currentStyle.panelClass} rounded-3xl border shadow-lg flex flex-col p-6 relative overflow-hidden transition-all duration-500`}
+                    style={commonPanelStyle}
+                  >
                     <div className="absolute inset-[8px] border border-white/20 rounded-[16px] pointer-events-none"></div>
                     <div className={`absolute inset-0 pointer-events-none ${currentStyle.patternClass}`}></div>
                     
@@ -361,7 +430,8 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                                   direction: 'rtl',
                                   fontSize: getArabicFontSize(arabicText!, true, isSingleMode),
                                   lineHeight: '1.6',
-                                  maxHeight: isSingleMode ? '90%' : '60%'
+                                  maxHeight: isSingleMode ? '90%' : '60%',
+                                  color: customFontColorHex || undefined
                                 }}
                               >
                                 {arabicText}
@@ -373,7 +443,8 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                                 style={{
                                   fontSize: getTranslationFontSize(translationText!, true, isSingleMode),
                                   lineHeight: '1.4',
-                                  maxHeight: isSingleMode ? '90%' : '30%'
+                                  maxHeight: isSingleMode ? '90%' : '30%',
+                                  color: customFontColorHex || undefined
                                 }}
                               >
                                 &quot;{translationText}&quot;
@@ -385,7 +456,10 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                     </div>
                     <div className="flex items-center justify-between w-full pt-4 border-t border-white/10 mt-auto shrink-0 z-10">
                       <img src="/logo.svg" alt="Logo" className="h-6 w-auto brightness-0 invert" />
-                      <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest bg-white/10 px-2 py-1 rounded-full">
+                      <span 
+                        className="text-[9px] font-bold opacity-60 uppercase tracking-widest bg-white/10 px-2 py-1 rounded-full"
+                        style={{ color: customFontColorHex || undefined }}
+                      >
                         {slides.length > 1 ? `(${activeSlide + 1}/${slides.length}) ` : ''}QS. {verse.surahName}:{verse.ayat}
                       </span>
                     </div>
@@ -431,12 +505,36 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                 <label className="text-white/60 text-[10px] font-bold uppercase tracking-widest ml-1 flex items-center gap-2">
                   <IoShapesOutline /> Ganti Background
                 </label>
-                <div className="flex overflow-x-auto gap-3 mt-1 pb-2 w-full">
+                <div className="flex overflow-x-auto gap-3 mt-1 pb-2 w-full items-center">
+                  <label 
+                    title="Upload Foto"
+                    className={`shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center cursor-pointer border-2 transition-all ${selectedBg === -1 ? 'border-white bg-white/20 scale-110 shadow-lg shadow-white/20' : 'border-white/40 bg-black/20 hover:border-white hover:bg-white/10'}`}
+                  >
+                    <IoImageOutline size={20} className="text-white" />
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setCustomBgUrl(reader.result as string);
+                            setSelectedBg(-1);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }} 
+                    />
+                  </label>
                   {backgrounds.map((bg, idx) => (
                     <button
                       key={idx}
                       title={bg.name}
-                      onClick={() => setSelectedBg(idx)}
+                      onClick={() => {
+                        setSelectedBg(idx);
+                      }}
                       className={`shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-2xl ${bg.class} border-2 transition-all ${selectedBg === idx ? 'border-white scale-110 shadow-lg shadow-white/20' : 'border-transparent opacity-60 hover:opacity-100 hover:scale-105'}`}
                     />
                   ))}
@@ -457,6 +555,76 @@ export default function ShareCardModal({ isOpen, onClose, verse }: ShareCardModa
                       {style.name}
                     </button>
                   ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 w-full min-w-0">
+                <label className="text-white/60 text-[10px] font-bold uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <IoColorPaletteOutline /> Warna Efek (Custom)
+                </label>
+                <div className="flex gap-4 mt-1 pb-2 w-full items-center">
+                  <button
+                    title="Default Asli"
+                    onClick={() => setCustomCardColorHex('')}
+                    className={`shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 transition-all flex items-center justify-center ${!customCardColorHex ? 'border-white scale-110 shadow-lg shadow-white/30' : 'border-white/20 opacity-60 hover:opacity-100 hover:scale-105'}`}
+                    style={{ background: 'linear-gradient(135deg, transparent 50%, rgba(255,255,255,0.1) 50%)' }}
+                  >
+                    <span className="text-xs sm:text-sm select-none opacity-50">&times;</span>
+                  </button>
+
+                  <div
+                    title="Pilih Warna Efek"
+                    className={`relative shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-[3px] transition-all overflow-hidden ${customCardColorHex ? 'border-white scale-110 shadow-lg shadow-white/30' : 'border-white/20 opacity-60 hover:opacity-100 cursor-pointer'}`}
+                  >
+                    <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: customCardColorHex || '#10b981' }}></div>
+                    <input 
+                      type="color" 
+                      value={customCardColorHex || '#10b981'}
+                      onChange={(e) => setCustomCardColorHex(e.target.value)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+
+                  {customCardColorHex && (
+                    <span className="text-xs text-white/80 font-mono tracking-widest bg-black/20 px-3 py-1.5 rounded-xl border border-white/10 uppercase drop-shadow-md">
+                      {customCardColorHex}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 w-full min-w-0">
+                <label className="text-white/60 text-[10px] font-bold uppercase tracking-widest ml-1 flex items-center gap-2">
+                  <IoTextOutline /> Warna Teks
+                </label>
+                <div className="flex gap-4 mt-1 pb-2 w-full items-center">
+                  <button
+                    title="Default Putih"
+                    onClick={() => setCustomFontColorHex('')}
+                    className={`shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 transition-all flex items-center justify-center ${!customFontColorHex ? 'border-white scale-110 shadow-lg shadow-white/30' : 'border-white/20 opacity-60 hover:opacity-100 hover:scale-105'}`}
+                    style={{ background: '#ffffff' }}
+                  >
+                    <span className="text-xs sm:text-sm select-none opacity-50 text-black">&times;</span>
+                  </button>
+
+                  <div
+                    title="Pilih Warna Teks"
+                    className={`relative shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full border-[3px] transition-all overflow-hidden ${customFontColorHex ? 'border-white scale-110 shadow-lg shadow-white/30' : 'border-white/20 opacity-60 hover:opacity-100 cursor-pointer'}`}
+                  >
+                    <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: customFontColorHex || '#ffffff' }}></div>
+                    <input 
+                      type="color" 
+                      value={customFontColorHex || '#ffffff'}
+                      onChange={(e) => setCustomFontColorHex(e.target.value)}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    />
+                  </div>
+
+                  {customFontColorHex && (
+                    <span className="text-xs text-white/80 font-mono tracking-widest bg-black/20 px-3 py-1.5 rounded-xl border border-white/10 uppercase drop-shadow-md">
+                      {customFontColorHex}
+                    </span>
+                  )}
                 </div>
               </div>
 
