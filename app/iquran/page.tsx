@@ -100,7 +100,7 @@ export default function InteractiveQuran() {
   const [dbCached, setDbCached] = useState(false);
   const [imagesCached, setImagesCached] = useState(false);
   const [searchScope, setSearchScope] = useState<'all' | 'arabic' | 'translation'>('all');
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info'} | null>(null);
+  const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' | 'info' } | null>(null);
 
   const showNotify = useCallback((message: string, type: 'success' | 'error' | 'info' = 'success') => {
     setNotification({ message, type });
@@ -176,13 +176,7 @@ export default function InteractiveQuran() {
     }
   };
 
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const handleEnded = () => setPlayingAyah(null);
-    audio.addEventListener('ended', handleEnded);
-    return () => audio.removeEventListener('ended', handleEnded);
-  }, []);
+
 
   // Load messages from localStorage on client-side only
   useEffect(() => {
@@ -192,28 +186,28 @@ export default function InteractiveQuran() {
         console.log('Loading saved messages:', savedMessages);
         if (savedMessages) {
           try {
-              let parsedMessages = JSON.parse(savedMessages);
-              
-              // Sanitasi: Bersihkan mojibake dari pesan yang sudah tersimpan di HP user
-              if (Array.isArray(parsedMessages)) {
-                parsedMessages = parsedMessages.map(msg => ({
-                  ...msg,
-                  content: msg.content
-                    .replace(/âœ¨/g, '✨')
-                    .replace(/â€¢/g, '•')
-                    .replace(/âœ…/g, '✅')
-                    .replace(/â Œ/g, '❌')
-                    .replace(/ðŸ” /g, '🔍')
-                    .replace(/ðŸ“š/g, '📚')
-                    .replace(/ðŸ“–/g, '📖')
-                    .replace(/ðŸ”Ž/g, '🔍')
-                    .replace(/ðŸŽ²/g, '🎲')
-                    .replace(/ðŸ‘‹/g, '👋')
-                    .replace(/âž¡ï¸/g, '➡️')
-                }));
-              }
+            let parsedMessages = JSON.parse(savedMessages);
 
-              if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
+            // Sanitasi: Bersihkan mojibake dari pesan yang sudah tersimpan di HP user
+            if (Array.isArray(parsedMessages)) {
+              parsedMessages = parsedMessages.map(msg => ({
+                ...msg,
+                content: msg.content
+                  .replace(/âœ¨/g, '✨')
+                  .replace(/â€¢/g, '•')
+                  .replace(/âœ…/g, '✅')
+                  .replace(/â Œ/g, '❌')
+                  .replace(/ðŸ” /g, '🔍')
+                  .replace(/ðŸ“š/g, '📚')
+                  .replace(/ðŸ“–/g, '📖')
+                  .replace(/ðŸ”Ž/g, '🔍')
+                  .replace(/ðŸŽ²/g, '🎲')
+                  .replace(/ðŸ‘‹/g, '👋')
+                  .replace(/âž¡ï¸/g, '➡️')
+              }));
+            }
+
+            if (Array.isArray(parsedMessages) && parsedMessages.length > 0) {
               // Ensure old welcome messages are upgraded
               if (parsedMessages[0].type === 'bot' && parsedMessages[0].content.includes('Selamat datang')) {
                 parsedMessages[0].isGuide = true;
@@ -323,7 +317,7 @@ export default function InteractiveQuran() {
         // Coba ambil dari Cache dulu!
         const cache = await caches.open('quran-data-cache-v1');
         const cachedRes = await cache.match('/data/verse.json');
-        
+
         let dataToUse;
         if (cachedRes) {
           console.log("⚡ [Search] Loading data from Cache Storage!");
@@ -351,7 +345,7 @@ export default function InteractiveQuran() {
         for (const verse of verses) {
           const arabicText = verse.teks_arab || '';
           const translation = verse.terjemahan || '';
-          
+
           let matchArabic = false;
           let matchTranslation = false;
 
@@ -1070,7 +1064,7 @@ export default function InteractiveQuran() {
     for (let surahId = 1; surahId <= totalSurahs; surahId++) {
       totalPages += getTotalPages(surahId);
     }
-    
+
     // 1. List App Shell (Mangkok HTML)
     const htmlRoutes = [
       '/',
@@ -1095,7 +1089,7 @@ export default function InteractiveQuran() {
     const htmlCache = await caches.open('app-shell-html');
     const startUrlCache = await caches.open('start-url');
     let currentProgress = 0;
-    
+
     // 1. Cache App Shell HTML & Essential Assets
     for (const route of htmlRoutes) {
       try {
@@ -1107,14 +1101,14 @@ export default function InteractiveQuran() {
             await startUrlCache.put('/?utm_source=homescreen', response.clone());
           }
         }
-        
+
         // PENTING: Cari semua file .js dan .css yang nempel di halaman ini buat di-cache
         const htmlText = await response.text();
         const scriptRegex = /\/_next\/static\/chunks\/[^"]+\.js/g;
         const styleRegex = /\/_next\/static\/css\/[^"]+\.css/g;
         const scripts = htmlText.match(scriptRegex) || [];
         const styles = htmlText.match(styleRegex) || [];
-        
+
         const staticCache = await caches.open('next-static-assets');
         for (const asset of [...scripts, ...styles]) {
           try {
@@ -1131,7 +1125,7 @@ export default function InteractiveQuran() {
         console.error(`Error caching HTML route ${route}:`, error);
       }
     }
-    
+
     // 2. Cache Semua JSON Data Bot (Word Search & Rules)
     for (const fileUrl of jsonFiles) {
       try {
@@ -1535,7 +1529,7 @@ export default function InteractiveQuran() {
                                 </div>
                               </div>
                             </div>
-                            
+
                             {/* Individual Ayat Pills - Mobile Flow - Hard-fixed Keys */}
                             <div className="flex flex-wrap gap-2 mt-1">
                               {group.verses.sort((a, b) => a - b).map((vNum, vIdx) => (
@@ -1703,10 +1697,10 @@ export default function InteractiveQuran() {
                   <div className="flex items-center flex-wrap gap-1.5 sm:gap-2">
                     {/* Tafsir Badge */}
                     <div className="flex-1 sm:flex-none">
-                      <TafsirButton 
-                        surahNumber={singleAyat.surah.id} 
-                        ayahNumber={singleAyat.ayat} 
-                        surahName={singleAyat.surah.name_simple} 
+                      <TafsirButton
+                        surahNumber={singleAyat.surah.id}
+                        ayahNumber={singleAyat.ayat}
+                        surahName={singleAyat.surah.name_simple}
                       />
                     </div>
 
@@ -1762,7 +1756,7 @@ export default function InteractiveQuran() {
       )}
 
       {/* Global Audio Element */}
-      <audio ref={audioRef} />
+      <audio ref={audioRef} onEnded={() => setPlayingAyah(null)} />
       {/* Add Word Search Modal */}
       {showWordSearchModal && wordSearchData && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[90]">
@@ -1781,7 +1775,7 @@ export default function InteractiveQuran() {
                       Hasil: &ldquo;{wordSearchData.word}&rdquo;
                     </h3>
                   </div>
-                  
+
                   {/* Close button for mobile inside this row helps layout */}
                   <button
                     className="sm:hidden text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-1.5 rounded-xl transition-all duration-200 shadow-sm border border-white hover:border-red-100 shrink-0"
@@ -1803,31 +1797,31 @@ export default function InteractiveQuran() {
                   </span>
 
                   <div className="flex bg-white/50 p-0.5 sm:p-1 rounded-xl border border-indigo-100 shadow-sm shrink-0">
-                    <button 
+                    <button
                       onClick={async () => {
                         setSearchScope('all');
                         const results = await searchWordInQuran(wordSearchData.word);
-                        setWordSearchData({...wordSearchData, results});
+                        setWordSearchData({ ...wordSearchData, results });
                       }}
                       className={`px-2.5 sm:px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all whitespace-nowrap ${searchScope === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-white'}`}
                     >
                       Semua
                     </button>
-                    <button 
+                    <button
                       onClick={async () => {
                         setSearchScope('arabic');
                         const results = await searchWordInQuran(wordSearchData.word);
-                        setWordSearchData({...wordSearchData, results});
+                        setWordSearchData({ ...wordSearchData, results });
                       }}
                       className={`px-2.5 sm:px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all whitespace-nowrap ${searchScope === 'arabic' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-white'}`}
                     >
                       Arab
                     </button>
-                    <button 
+                    <button
                       onClick={async () => {
                         setSearchScope('translation');
                         const results = await searchWordInQuran(wordSearchData.word);
-                        setWordSearchData({...wordSearchData, results});
+                        setWordSearchData({ ...wordSearchData, results });
                       }}
                       className={`px-2.5 sm:px-3 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all whitespace-nowrap ${searchScope === 'translation' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-white'}`}
                     >
@@ -1856,7 +1850,7 @@ export default function InteractiveQuran() {
               <div className="flex flex-col space-y-4 sm:space-y-6">
                 {wordSearchData.results.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((result) => {
                   const resultKey = `${result.surah.id}-${result.verse_number}`;
-                  
+
                   const highlightTranslation = (text: string, query: string) => {
                     if (!query) return <>{text}</>;
                     const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1864,7 +1858,7 @@ export default function InteractiveQuran() {
                     const parts = text.split(regex);
                     return (
                       <>
-                        {parts.map((part, i) => 
+                        {parts.map((part, i) =>
                           regex.test(part) ? <span key={i} className="bg-yellow-200 text-yellow-900 font-bold px-1 rounded-md border border-yellow-300 shadow-sm">{part}</span> : part
                         )}
                       </>
@@ -1878,7 +1872,7 @@ export default function InteractiveQuran() {
                     const parts = text.split(regex);
                     return (
                       <>
-                        {parts.map((part, i) => 
+                        {parts.map((part, i) =>
                           regex.test(part) ? <span key={i} className="text-indigo-600 bg-indigo-50/80 px-1 rounded-md border border-indigo-100 shadow-sm">{part}</span> : part
                         )}
                       </>
@@ -1907,12 +1901,12 @@ export default function InteractiveQuran() {
                           <div className="flex flex-col mb-0.5">
                             <span className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em]">Surah {result.surah.name_simple}</span>
                             <div className="flex items-center gap-2 mt-0.5">
-                               <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Ayat Ke {result.verse_number}</span>
-                               {result.wordCount > 0 && (
-                                 <span className="text-[9px] bg-indigo-50 text-indigo-600 font-extrabold px-1.5 py-0.5 rounded border border-indigo-100/50 shadow-sm leading-none flex items-center">
-                                   {result.wordCount}x Ditemukan
-                                 </span>
-                               )}
+                              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">Ayat Ke {result.verse_number}</span>
+                              {result.wordCount > 0 && (
+                                <span className="text-[9px] bg-indigo-50 text-indigo-600 font-extrabold px-1.5 py-0.5 rounded border border-indigo-100/50 shadow-sm leading-none flex items-center">
+                                  {result.wordCount}x Ditemukan
+                                </span>
+                              )}
                             </div>
                           </div>
 
@@ -1933,33 +1927,33 @@ export default function InteractiveQuran() {
                             )}
                           </button>
                         </div>
-                        
+
                         {/* Kanan */}
                         <div className="flex items-center flex-wrap gap-2">
-                           <button
-                             className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-amber-100/50 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-400 hover:to-orange-500 hover:border-amber-400 hover:text-white hover:shadow-md transition-all duration-300 text-amber-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold"
-                             onClick={() => {
-                               fetch(`https://equran.id/api/v2/tafsir/${result.surah.id}`)
-                                 .then(res => res.json())
-                                 .then((data: { data: { tafsir: { ayat: number, teks: string }[] } }) => {
-                                    const t = data.data.tafsir.find((x: { ayat: number, teks: string }) => x.ayat === result.verse_number);
-                                    if(t) {
-                                      setShowTafsir({
-                                        ayat: result.verse_number,
-                                        text: t.teks,
-                                        surahName: result.surah.name_simple
-                                      });
-                                    } else {
-                                      alert("Tafsir tidak ditemukan");
-                                    }
-                                 }).catch(() => alert("Gagal memuat tafsir"));
-                             }}
-                           >
-                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
-                             </svg>
-                             Tafsir
-                           </button>
+                          <button
+                            className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-amber-100/50 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-400 hover:to-orange-500 hover:border-amber-400 hover:text-white hover:shadow-md transition-all duration-300 text-amber-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold"
+                            onClick={() => {
+                              fetch(`https://equran.id/api/v2/tafsir/${result.surah.id}`)
+                                .then(res => res.json())
+                                .then((data: { data: { tafsir: { ayat: number, teks: string }[] } }) => {
+                                  const t = data.data.tafsir.find((x: { ayat: number, teks: string }) => x.ayat === result.verse_number);
+                                  if (t) {
+                                    setShowTafsir({
+                                      ayat: result.verse_number,
+                                      text: t.teks,
+                                      surahName: result.surah.name_simple
+                                    });
+                                  } else {
+                                    alert("Tafsir tidak ditemukan");
+                                  }
+                                }).catch(() => alert("Gagal memuat tafsir"));
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
+                            </svg>
+                            Tafsir
+                          </button>
                         </div>
                       </div>
 
@@ -1998,7 +1992,7 @@ export default function InteractiveQuran() {
                     <span className="hidden xs:inline">Sebelumnya</span>
                     <span className="xs:hidden">Dulu</span>
                   </button>
-                  
+
                   <div className="flex flex-col items-center min-w-[70px]">
                     <span className="text-gray-400 text-[8px] uppercase tracking-widest font-bold">Halaman</span>
                     <span className="text-gray-800 font-extrabold text-xs sm:text-sm px-3 py-1 bg-white rounded-full border border-gray-100 shadow-inner">
@@ -2055,7 +2049,7 @@ export default function InteractiveQuran() {
                         {showTafsir.text}
                       </p>
                     </div>
-                    
+
                     {/* Attribution */}
                     <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
                       <div className="flex items-center gap-2">
@@ -2244,7 +2238,7 @@ export default function InteractiveQuran() {
                           '/data/rule-ayat.json',
                           '/data/warna.json'
                         ];
-                        
+
                         const cache = await caches.open('quran-data-cache-v1');
                         await Promise.all(
                           files.map(async (file) => {
@@ -2267,7 +2261,7 @@ export default function InteractiveQuran() {
                     {isDownloadingDB ? "Wait..." : dbCached ? "Update DB" : "Unduh Database"}
                   </button>
                   {dbCached && (
-                    <button 
+                    <button
                       onClick={() => deleteCache('db')}
                       className="p-2 sm:p-2.5 bg-white border border-rose-100 text-rose-500 rounded-xl hover:bg-rose-50 transition-all shadow-sm"
                     >
@@ -2301,7 +2295,7 @@ export default function InteractiveQuran() {
                     {imagesCached ? "Update Gambar" : "Unduh Mushaf"}
                   </button>
                   {imagesCached && (
-                    <button 
+                    <button
                       onClick={() => deleteCache('images')}
                       className="p-2 sm:p-2.5 bg-white border border-rose-100 text-rose-500 rounded-xl hover:bg-rose-50 transition-all shadow-sm"
                     >
@@ -2322,19 +2316,19 @@ export default function InteractiveQuran() {
                   <span className="text-[10px] sm:text-[11px] font-bold text-indigo-700 uppercase tracking-wider">Kategori Pencarian</span>
                 </div>
                 <div className="flex bg-white/60 p-1 rounded-xl shadow-sm border border-indigo-100">
-                  <button 
+                  <button
                     onClick={() => setSearchScope('all')}
                     className={`flex-1 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all ${searchScope === 'all' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-indigo-50'}`}
                   >
                     Semua
                   </button>
-                  <button 
+                  <button
                     onClick={() => setSearchScope('arabic')}
                     className={`flex-1 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all ${searchScope === 'arabic' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-indigo-50'}`}
                   >
                     Arab
                   </button>
-                  <button 
+                  <button
                     onClick={() => setSearchScope('translation')}
                     className={`flex-1 py-1 sm:py-1.5 rounded-lg text-[9px] sm:text-[10px] font-bold transition-all ${searchScope === 'translation' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:bg-indigo-50'}`}
                   >
@@ -2393,13 +2387,12 @@ export default function InteractiveQuran() {
       {/* Global Notification Toast */}
       {notification && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top duration-500 ease-out">
-          <div className={`px-6 py-4 rounded-[2rem] shadow-2xl backdrop-blur-2xl border flex items-center gap-3 min-w-[280px] ${
-            notification.type === 'error' 
-              ? 'bg-rose-500/90 text-white border-rose-400/50' 
+          <div className={`px-6 py-4 rounded-[2rem] shadow-2xl backdrop-blur-2xl border flex items-center gap-3 min-w-[280px] ${notification.type === 'error'
+              ? 'bg-rose-500/90 text-white border-rose-400/50'
               : notification.type === 'info'
                 ? 'bg-slate-800/90 text-white border-slate-700/50'
                 : 'bg-emerald-500/90 text-white border-emerald-400/50'
-          }`}>
+            }`}>
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
               {notification.type === 'error' ? (
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
@@ -2475,7 +2468,7 @@ function TafsirButton({ surahNumber, ayahNumber, surahName }: { surahNumber: num
                   {tafsir}
                 </p>
               </div>
-              
+
               {/* Attribution */}
               <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50/50 border border-amber-100/50">
                 <div className="flex items-center gap-2">
@@ -2490,5 +2483,5 @@ function TafsirButton({ surahNumber, ayahNumber, surahName }: { surahNumber: num
       )}
     </>
   );
-} 
+}
 
