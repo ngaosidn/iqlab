@@ -2524,22 +2524,17 @@ export default function InteractiveQuran() {
             {/* Scrollable Category List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 thin-scrollbar">
               {[
-                { label: 'Hafalan Saya', icon: '🧠', color: 'indigo', count: 0 },
-                { label: 'Doa Pilihan', icon: '🤲', color: 'emerald', count: 0 },
-                { label: 'Tadabbur & Renungan', icon: '✨', color: 'amber', count: 0 },
-                { label: 'Inspirasi Hidup', icon: '🌟', color: 'rose', count: 0 },
-                { label: 'Semua Simpanan', icon: '📚', color: 'blue', count: (() => {
-                  try {
-                    const b = localStorage.getItem('iquran_bookmarks');
-                    return b ? JSON.parse(b).length : 0;
-                  } catch { return 0; }
-                })() },
+                { label: 'Hafalan Saya', icon: '🧠', color: 'indigo' },
+                { label: 'Doa Pilihan', icon: '🤲', color: 'emerald' },
+                { label: 'Tadabbur & Renungan', icon: '✨', color: 'amber' },
+                { label: 'Inspirasi Hidup', icon: '🌟', color: 'rose' },
+                { label: 'Semua Simpanan', icon: '📚', color: 'blue' },
               ].map((category, idx) => (
                 <button
                   key={idx}
                   onClick={() => {
                     setShowCategoryModal(false);
-                    handleSearch('bookmark');
+                    showNotify("✨ Fitur Kategori (Folder) sedang disiapkan!", "info");
                   }}
                   className="w-full group relative bg-white border border-slate-100 p-4 rounded-2xl flex items-center justify-between hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden"
                 >
@@ -2547,7 +2542,7 @@ export default function InteractiveQuran() {
                     <span className="text-2xl">{category.icon}</span>
                     <div className="flex flex-col items-start">
                       <span className="font-bold text-slate-800 text-sm">{category.label}</span>
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{category.count > 0 ? `${category.count} Ayat` : 'Belum Ada'}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left">Belum Ada Ayat</span>
                     </div>
                   </div>
                   <div className="relative z-10 text-slate-300 group-hover:text-indigo-500 transition-colors">
