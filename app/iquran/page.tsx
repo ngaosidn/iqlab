@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import { FaTrash } from "react-icons/fa";
 import { IoArrowBack } from "react-icons/io5";
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase';
+
+interface Bookmark {
+  surah_id: number;
+  ayah_number: number;
+  surah_name?: string;
+}
 
 const VerseListComponent = dynamic(() => import('../components/VerseList'), {
   ssr: false
@@ -37,6 +44,8 @@ interface Message {
   surahs?: SearchResult[];
   ayat?: number;
   ayatRange?: { start: number; end: number };
+  bookmarks?: Array<{ surah_id: number; ayah_number: number; surah_name?: string }>;
+  lastReadSuggestion?: { surah_id: number; surah_name: string; ayat: number };
   wordSearchResults?: WordSearchResult[];
   wordSearchSummary?: {
     word: string;
@@ -75,6 +84,7 @@ interface SingleAyatData {
 
 export default function InteractiveQuran() {
   const router = useRouter();
+  const supabase = createClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSurah, setSelectedSurah] = useState<number | null>(null);
@@ -150,6 +160,8 @@ export default function InteractiveQuran() {
   const [isCachingAll, setIsCachingAll] = useState(false);
   const [cachingAllProgress, setCachingAllProgress] = useState(0);
   const [cachingAllTotal, setCachingAllTotal] = useState(0);
+  const [, setLastRead] = useState<{ surah_id: number; surah_name: string; ayat: number } | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const SHOW_ANNOUNCEMENT = process.env.NEXT_PUBLIC_SHOW_ANNOUNCEMENT === 'true';
   useEffect(() => {
@@ -235,6 +247,99 @@ export default function InteractiveQuran() {
     loadMessages();
   }, []);
 
+  // Proactive "Resume Reading" Bot Message (Simplified & Robust)
+  useEffect(() => {
+    if (isLoading || allSurahs.length === 0) return;
+
+    const checkAndPrompt = async () => {
+      const savedLastRead = localStorage.getItem('quranLastRead');
+      let finalParsed: { surah_id: number; surah_name: string; ayat: number } | null = null;
+
+      // 1. Try directly from Last Read localStorage
+      if (savedLastRead) {
+        try { finalParsed = JSON.parse(savedLastRead); } catch { }
+      }
+
+      // 2. Fallback: If lastRead is empty, check local Bookmarks
+      if (!finalParsed) {
+        const savedBookmarks = localStorage.getItem('iquran_bookmarks');
+        if (savedBookmarks) {
+          try {
+            const bookmarks = JSON.parse(savedBookmarks);
+            if (bookmarks.length > 0) {
+              // Ensure we pick the latest one if they are sorted
+              const latest = bookmarks[0];
+              finalParsed = {
+                surah_id: latest.surah_id,
+                surah_name: latest.surah_name || `Surah ${latest.surah_id}`,
+                ayat: latest.ayah_number
+              };
+            }
+          } catch { }
+        }
+      }
+
+      // 3. Last Resort: If Local is still empty, check Supabase
+      if (!finalParsed) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data, error } = await supabase
+            .from('bookmarks')
+            .select('surah_id, ayah_number, surah_name')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false });
+
+          if (!error && data && data.length > 0) {
+            // Found in Cloud! Save to Local for next time
+            localStorage.setItem('iquran_bookmarks', JSON.stringify(data));
+            const latest = data[0];
+            finalParsed = {
+              surah_id: latest.surah_id,
+              surah_name: latest.surah_name || `Surah ${latest.surah_id}`,
+              ayat: latest.ayah_number
+            };
+          }
+        }
+      }
+
+      // 4. Trigger the Bot if we found anything!
+      if (finalParsed) {
+        setLastRead(finalParsed);
+        setTimeout(() => {
+          setMessages(prev => {
+            // Biarkan history chat tetap ada, tapi jangan duplikat ayat yang SAMA jika muncul paling terakhir
+            const lastMessage = prev.length > 0 ? prev[prev.length - 1] : null;
+            if (lastMessage?.lastReadSuggestion && 
+                lastMessage.lastReadSuggestion.surah_id === finalParsed.surah_id && 
+                lastMessage.lastReadSuggestion.ayat === finalParsed.ayat) {
+              return prev; // Sudah ada di urutan paling terakhir, jangan diulang
+            }
+            
+            return [...prev, {
+              type: 'bot',
+              content: `Alhamdulillah Anda kembali! Terakhir kali Anda membaca Surah ${finalParsed.surah_name}, ayat ${finalParsed.ayat}.`,
+              lastReadSuggestion: finalParsed
+            }];
+          });
+        }, 800);
+      }
+    };
+
+    checkAndPrompt();
+  }, [isLoading, allSurahs, supabase]);
+
+  // Realtime Sync Listener - Auto-remove bot prompt if Last Read is cleared
+  useEffect(() => {
+    const handleLastReadSync = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail === null) {
+        setMessages(prev => prev.filter(m => !m.lastReadSuggestion));
+      }
+    };
+    window.addEventListener('quran-lastread-updated', handleLastReadSync);
+    return () => window.removeEventListener('quran-lastread-updated', handleLastReadSync);
+  }, []);
+
   // Save messages to localStorage whenever they change
   useEffect(() => {
     if (typeof window !== 'undefined' && messages.length > 0 && !isLoading) {
@@ -263,49 +368,7 @@ export default function InteractiveQuran() {
     fetchAllSurahs();
   }, []);
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    (query: string) => {
-      if (!Array.isArray(allSurahs) || !query || typeof query !== 'string') {
-        return [];
-      }
 
-      const searchQuery = query.toLowerCase().trim();
-      if (!searchQuery) return [];
-
-      return allSurahs.filter((surah) => {
-        if (!surah || typeof surah !== 'object') return false;
-
-        const { name_simple, name_arabic, name_english } = surah;
-
-        if (!name_simple || !name_arabic || !name_english) return false;
-
-        if (typeof name_simple !== 'string' ||
-          typeof name_arabic !== 'string' ||
-          typeof name_english !== 'string') return false;
-
-        return (
-          name_simple.toLowerCase().includes(searchQuery) ||
-          name_arabic.includes(query) ||
-          name_english.toLowerCase().includes(searchQuery)
-        );
-      });
-    },
-    [allSurahs]
-  );
-
-  // Memoize search results
-  const searchResults = useMemo(() => {
-    if (!input || typeof input !== 'string' || !input.trim()) {
-      return [];
-    }
-
-    if (!Array.isArray(allSurahs)) {
-      return [];
-    }
-
-    return debouncedSearch(input);
-  }, [input, debouncedSearch, allSurahs]);
 
   // Word Search Logic (Mencari kata di seluruh Al-Quran)
   const searchWordInQuran = useCallback(async (word: string): Promise<WordSearchResult[]> => {
@@ -455,9 +518,7 @@ export default function InteractiveQuran() {
           content: `🔍 Mencari kata "${searchQuery}" dalam Al-Quran...`
         }]);
 
-        // Add artificial delay for better UX
         await new Promise(resolve => setTimeout(resolve, 1500));
-
         const results = await searchWordInQuran(searchQuery);
 
         if (results.length === 0) {
@@ -466,7 +527,6 @@ export default function InteractiveQuran() {
             content: `❌ Maaf, tidak ditemukan ayat yang mengandung kata "${searchQuery}".`
           }]);
         } else {
-          // Group results by surah
           const surahGroups = results.reduce((acc, result) => {
             const surahId = result.surah.id;
             if (!acc[surahId]) {
@@ -479,7 +539,6 @@ export default function InteractiveQuran() {
             }
             acc[surahId].count++;
             acc[surahId].wordCount += result.wordCount;
-            // Record verse numbers for direct access
             if (!acc[surahId].verses.includes(result.verse_number)) {
               acc[surahId].verses.push(result.verse_number);
             }
@@ -487,10 +546,7 @@ export default function InteractiveQuran() {
           }, {} as Record<number, { surah: SearchResult; count: number; wordCount: number; verses: number[] }>);
 
           const totalWordCount = results.reduce((sum, result) => sum + result.wordCount, 0);
-
-          // Prepare groups for UI
-          const finalGroups = Object.values(surahGroups)
-            .sort((a, b) => a.surah.id - b.surah.id);
+          const finalGroups = Object.values(surahGroups).sort((a, b) => a.surah.id - b.surah.id);
 
           setMessages(prev => [...prev, {
             type: 'bot',
@@ -506,6 +562,51 @@ export default function InteractiveQuran() {
         return;
       }
 
+      // Check for bookmark command
+      const bookmarkCommands = ['bookmark', 'bookmarks', 'simpanan', 'ayat saya', 'saved'];
+      if (bookmarkCommands.includes(userMessage.toLowerCase())) {
+        setIsLoading(true);
+
+        let currentBookmarks: Bookmark[] = [];
+        const local = localStorage.getItem('iquran_bookmarks');
+        if (local) {
+          try { currentBookmarks = JSON.parse(local); } catch { }
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (session) {
+          const { data, error } = await supabase
+            .from('bookmarks')
+            .select('surah_id, ayah_number, surah_name')
+            .eq('user_id', session.user.id)
+            .order('created_at', { ascending: false });
+
+          if (!error && data) {
+            currentBookmarks = data;
+            localStorage.setItem('iquran_bookmarks', JSON.stringify(data));
+          }
+        }
+
+        if (currentBookmarks.length === 0) {
+          showNotify("📭 Belum ada daftar bookmark yang tersimpan.", "info");
+          setMessages(prev => [...prev, {
+            type: 'bot',
+            content: session
+              ? '📭 Kamu belum memiliki ayat yang disimpan. Yuk, simpan ayat favoritmu saat membaca!'
+              : '🔒 Kamu belum login. Login dulu ya untuk menyimpan dan melihat bookmark kamu di awan!'
+          }]);
+        } else {
+          setMessages(prev => [...prev, {
+            type: 'bot',
+            content: `📚 Ada ${currentBookmarks.length} ayat yang kamu simpan:`,
+            bookmarks: currentBookmarks
+          }]);
+        }
+        setIsLoading(false);
+        return;
+      }
+
       // Check for random command
       const randomCommands = ['random', 'acak', 'pilih acak', 'ayat hari ini', 'nasihat'];
       if (randomCommands.includes(userMessage.toLowerCase())) {
@@ -516,11 +617,10 @@ export default function InteractiveQuran() {
           surah: randomResult.surah,
           ayat: randomResult.ayat
         }]);
-        setIsLoading(false);
         return;
       }
 
-      // Perintah cari ayat spesifik (single ayat atau range ayat)
+      // Perintah cari ayat spesifik
       const ayatPattern = /^(?:surah\s*)?(\d+|[\w\- ]+)[\s-]*ayat[\s-]*(\d+)(?:[\s-]*[-–]\s*(\d+))?$/i;
       const ayatPattern2 = /^(?:surah\s*)?(\d+)[\s-]+(\d+)(?:[\s-]*[-–]\s*(\d+))?$/i;
       const matchAyat = userMessage.match(ayatPattern) || userMessage.match(ayatPattern2);
@@ -530,31 +630,16 @@ export default function InteractiveQuran() {
         const startAyat = parseInt(matchAyat[2]);
         const endAyat = matchAyat[3] ? parseInt(matchAyat[3]) : startAyat;
 
-        let surahInfo = null;
-        if (/^\d+$/.test(surahQuery)) {
-          surahInfo = allSurahs.find(s => s.id === parseInt(surahQuery));
-        } else {
-          surahInfo = allSurahs.find(s =>
-            s.name_simple.toLowerCase().replace(/-/g, ' ') === surahQuery.toLowerCase() ||
-            s.name_arabic.replace(/-/g, ' ') === surahQuery ||
-            s.translated_name?.name.toLowerCase().replace(/-/g, ' ') === surahQuery.toLowerCase()
-          );
-        }
+        const surahInfo = allSurahs.find(s =>
+          s.id === parseInt(surahQuery) ||
+          s.name_simple.toLowerCase().replace(/-/g, ' ') === surahQuery.toLowerCase()
+        );
 
         if (surahInfo) {
-          // Validasi range ayat
-          if (startAyat > endAyat) {
+          if (startAyat > endAyat || endAyat > surahInfo.verses_count) {
             setMessages(prev => [...prev, {
               type: 'bot',
-              content: '❌ Maaf, range ayat tidak valid. Ayat awal harus lebih kecil dari ayat akhir.'
-            }]);
-            return;
-          }
-
-          if (endAyat > surahInfo.verses_count) {
-            setMessages(prev => [...prev, {
-              type: 'bot',
-              content: `❌ Maaf, ayat ${endAyat} tidak ditemukan dalam Surah ${surahInfo.name_simple}. Surah ini hanya memiliki ${surahInfo.verses_count} ayat.`
+              content: '❌ Maaf, rentang ayat tidak valid.'
             }]);
             return;
           }
@@ -562,7 +647,7 @@ export default function InteractiveQuran() {
           const ayatText = startAyat === endAyat ? `ayat ${startAyat}` : `ayat ${startAyat}-${endAyat}`;
           setMessages(prev => [...prev, {
             type: 'bot',
-            content: `📖 Klik tombol berikut untuk melihat ${ayatText} Surah ${surahInfo.name_simple} (${surahInfo.name_arabic}):`,
+            content: `📖 Menampilkan ${ayatText} Surah ${surahInfo.name_simple}:`,
             surah: surahInfo,
             ayat: startAyat,
             ayatRange: { start: startAyat, end: endAyat }
@@ -570,69 +655,46 @@ export default function InteractiveQuran() {
           return;
         }
       }
+
       // Perintah surah
       const surahPattern = /^(?:surah |surat )?([\w\- ]+)$/i;
       const match = userMessage.match(surahPattern);
       if (match) {
-        const query = match[1].trim().replace(/-/g, ' ');
-        let surahInfo = null;
-        // Cek jika query angka
-        if (/^\d+$/.test(query)) {
-          surahInfo = allSurahs.find(s => s.id === parseInt(query));
-        } else {
-          surahInfo = allSurahs.find(s =>
-            s.name_simple.toLowerCase().replace(/-/g, ' ') === query.toLowerCase() ||
-            s.name_arabic.replace(/-/g, ' ') === query ||
-            s.translated_name?.name.toLowerCase().replace(/-/g, ' ') === query.toLowerCase()
-          );
-        }
+        const query = match[1].trim();
+        const surahInfo = allSurahs.find(s =>
+          s.id === parseInt(query) ||
+          s.name_simple.toLowerCase().replace(/-/g, ' ') === query.toLowerCase()
+        );
         if (surahInfo) {
           setMessages(prev => [...prev, {
             type: 'bot',
-            content: `✨ Informasi Surah\n\n` +
-              `• Nama : ${surahInfo.name_simple} (${surahInfo.name_arabic})\n` +
-              `• Arti : ${surahInfo.translated_name?.name || '-'}\n` +
-              `• Turun : ${surahInfo.revelation_place === 'makkah' ? 'Makkiyah' : 'Madaniyah'}\n` +
-              `• Total : ${surahInfo.verses_count} Ayat`,
+            content: `✨ Informasi Surah ${surahInfo.name_simple} (${surahInfo.name_arabic})\n• Total : ${surahInfo.verses_count} Ayat`,
             surah: surahInfo
           }]);
           return;
         }
       }
-      // Perintah list (daftar)
-      const listCommands = ['list', 'daftar', 'semua surah', 'semua surat', 'daftar surah'];
-      if (listCommands.includes(userMessage.toLowerCase())) {
+
+      // Daftar
+      if (userMessage.toLowerCase() === 'daftar' || userMessage.toLowerCase() === 'list') {
         setMessages(prev => [...prev, {
           type: 'bot',
-          content: 'Berikut adalah daftar seluruh surah dalam Al-Quran:',
+          content: 'Berikut adalah daftar seluruh surah:',
           surahs: allSurahs
         }]);
       } else {
-        const filteredResults = searchResults || [];
-
-        if (filteredResults.length === 0) {
-          setMessages(prev => [...prev, {
-            type: 'bot',
-            content: '❌ Maaf, saya tidak menemukan surah yang Anda cari. Silakan coba dengan nama surah yang lain atau ketik "list" untuk melihat daftar surah.'
-          }]);
-        } else {
-          setMessages(prev => [...prev, {
-            type: 'bot',
-            content: `✅ Saya menemukan ${filteredResults.length} surah yang cocok dengan pencarian Anda:`,
-            surah: filteredResults[0]
-          }]);
-        }
+        setMessages(prev => [...prev, {
+          type: 'bot',
+          content: '❌ Maaf, saya tidak mengerti perintah Anda. Silakan ketik "daftar" untuk melihat surah.'
+        }]);
       }
     } catch (error) {
       console.error('Search error:', error);
-      setMessages(prev => [...prev, {
-        type: 'bot',
-        content: 'Maaf, terjadi kesalahan saat mencari surah. Silakan coba lagi.'
-      }]);
+      setMessages(prev => [...prev, { type: 'bot', content: 'Maaf, terjadi kesalahan.' }]);
     } finally {
       setIsLoading(false);
     }
-  }, [allSurahs, searchWordInQuran, searchResults, getRandomAyat]);
+  }, [allSurahs, searchWordInQuran, getRandomAyat, showNotify, supabase]);
 
   const handleSend = async (e?: React.FormEvent, directMessage?: string) => {
     if (e) e.preventDefault();
@@ -644,21 +706,6 @@ export default function InteractiveQuran() {
     setIsLoading(true);
 
     try {
-      // Check for random command
-      const randomCommands = ['random', 'acak', 'pilih acak', 'ayat hari ini', 'nasihat'];
-      if (randomCommands.includes(userMessage.toLowerCase())) {
-        const randomResult = await getRandomAyat();
-        setMessages(prev => [...prev, {
-          type: 'bot',
-          content: `🎲 Berikut adalah ayat pilihan untuk Anda hari ini:\n\nSurah ${randomResult.surah.id} - ${randomResult.surah.name_simple} (Ayat ${randomResult.ayat})`,
-          surah: randomResult.surah,
-          ayat: randomResult.ayat
-        }]);
-        setIsLoading(false);
-        return;
-      }
-
-      // Perintah kembali ke menu utama
       const backCommands = ['kembali', 'menu', 'menu utama', 'pulang', 'keluar'];
       if (backCommands.includes(userMessage.trim().toLowerCase())) {
         router.replace('/');
@@ -668,10 +715,7 @@ export default function InteractiveQuran() {
       await handleSearch(userMessage);
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, {
-        type: 'bot',
-        content: 'Maaf, terjadi kesalahan. Silakan coba lagi.'
-      }]);
+      setMessages(prev => [...prev, { type: 'bot', content: 'Maaf, terjadi kesalahan.' }]);
     } finally {
       setIsLoading(false);
     }
@@ -685,6 +729,11 @@ export default function InteractiveQuran() {
     } else {
       setSelectedAyatRange({ start: ayat, end: ayat }); // Set range ke ayat yang sama
     }
+
+    // Save as last read
+    const lastReadData = { surah_id: surah.id, surah_name: surah.name_simple, ayat: ayat };
+    setLastRead(lastReadData);
+    localStorage.setItem('quranLastRead', JSON.stringify(lastReadData));
   };
 
   // Add new state for surah image
@@ -1199,6 +1248,16 @@ export default function InteractiveQuran() {
 
               <div className="flex gap-2">
                 <button
+                  onClick={() => setShowCategoryModal(true)}
+                  className="text-white hover:text-blue-100 transition-all p-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-blue-500/30 active:scale-90 shadow-lg"
+                  aria-label="Kategori Simpanan"
+                  title="Kategori Ayat"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                  </svg>
+                </button>
+                <button
                   onClick={() => setShowInitialCachePrompt(true)}
                   className="text-white hover:text-emerald-100 transition-all p-2.5 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 hover:bg-emerald-500/30 active:scale-90 shadow-lg"
                   aria-label="Unduh Akses Offline"
@@ -1301,6 +1360,10 @@ export default function InteractiveQuran() {
                           <li className="flex items-start gap-2">
                             <span className="text-purple-500 font-bold mt-[1px]">•</span>
                             <div className="leading-tight"><strong className="text-slate-700 font-bold">Ayat Acak:</strong> Ketik <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Acak</span> atau <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Nasihat</span></div>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <span className="text-purple-500 font-bold mt-[1px]">•</span>
+                            <div className="leading-tight"><strong className="text-slate-700 font-bold">Simpanan:</strong> Ketik <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Bookmark</span> atau <span className="text-purple-700 bg-white border border-purple-100 px-1.5 py-0.5 rounded shadow-sm">Simpanan</span></div>
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-purple-500 font-bold mt-[1px]">•</span>
@@ -1459,6 +1522,56 @@ export default function InteractiveQuran() {
                     </svg>
                     <span>Lihat Ayat</span>
                   </button>
+                )}
+                {msg.bookmarks && (
+                  <div className="mt-3 flex flex-col gap-2 max-h-[60vh] overflow-y-auto pr-1">
+                    {msg.bookmarks.map((b, idx) => {
+                      const sInfo = allSurahs.find(s => s.id === b.surah_id);
+                      return (
+                        <div
+                          key={`bm-${idx}`}
+                          onClick={() => sInfo && handleAyatClick(sInfo, b.ayah_number)}
+                          className="flex items-center gap-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50/30 rounded-xl border border-amber-100/50 shadow-sm hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-amber-400 text-white flex items-center justify-center font-bold text-xs shadow-sm group-hover:scale-110 transition-transform">
+                            {b.surah_id}
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <span className="font-bold text-slate-800 text-[13px] truncate">
+                              {b.surah_name || (sInfo ? sInfo.name_simple : `Surah ${b.surah_id}`)}
+                            </span>
+                            <span className="text-[11px] font-medium text-amber-600">Ayat {b.ayah_number}</span>
+                          </div>
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-0.5 transition-transform">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                          </svg>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {msg.lastReadSuggestion && (
+                  <div className="flex flex-col gap-3 mt-1">
+                    <div className="text-[13px] font-bold text-slate-500 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 flex items-center justify-between">
+                      <span>Lanjut Bacaan?</span>
+                      <span className="text-blue-600">Ayat {msg.lastReadSuggestion.ayat}</span>
+                    </div>
+                    <button
+                      className="group relative flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 text-white py-3 px-5 rounded-2xl font-bold text-[14px] shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden w-full"
+                      onClick={() => {
+                        const s = allSurahs.find(sur => sur.id === msg.lastReadSuggestion?.surah_id);
+                        if (s && msg.lastReadSuggestion) {
+                          handleAyatClick(s, msg.lastReadSuggestion.ayat, { start: msg.lastReadSuggestion.ayat, end: s.verses_count });
+                        }
+                      }}
+                    >
+                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
+                      </svg>
+                      <span>Lanjutkan Membaca</span>
+                    </button>
+                  </div>
                 )}
                 {msg.wordSearchSummary && (
                   <div className="mt-4 flex flex-col gap-4">
@@ -2384,14 +2497,86 @@ export default function InteractiveQuran() {
         </div>
       )}
 
+      {/* Bookmark Category Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[90]">
+          <div className="bg-white/90 backdrop-blur-2xl rounded-[2rem] shadow-[0_12px_45px_rgb(0,0,0,0.15)] w-full max-w-sm max-h-[90vh] overflow-hidden flex flex-col border border-white/60 relative animate-in zoom-in duration-300">
+            {/* Header */}
+            <div className="p-5 border-b border-white/40 bg-gradient-to-r from-blue-50/80 to-indigo-50/80 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/20">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5 text-white">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z" />
+                  </svg>
+                </div>
+                <h3 className="font-extrabold text-slate-800 text-lg">Kategori Ayat</h3>
+              </div>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="text-slate-400 hover:text-red-500 bg-white/50 hover:bg-red-50 p-2 rounded-xl transition-all border border-white hover:border-red-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Scrollable Category List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 thin-scrollbar">
+              {[
+                { label: 'Hafalan Saya', icon: '🧠', color: 'indigo', count: 0 },
+                { label: 'Doa Pilihan', icon: '🤲', color: 'emerald', count: 0 },
+                { label: 'Tadabbur & Renungan', icon: '✨', color: 'amber', count: 0 },
+                { label: 'Inspirasi Hidup', icon: '🌟', color: 'rose', count: 0 },
+                { label: 'Semua Simpanan', icon: '📚', color: 'blue', count: (() => {
+                  try {
+                    const b = localStorage.getItem('iquran_bookmarks');
+                    return b ? JSON.parse(b).length : 0;
+                  } catch { return 0; }
+                })() },
+              ].map((category, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setShowCategoryModal(false);
+                    handleSearch('bookmark');
+                  }}
+                  className="w-full group relative bg-white border border-slate-100 p-4 rounded-2xl flex items-center justify-between hover:shadow-lg hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all active:scale-95 overflow-hidden"
+                >
+                  <div className="flex items-center gap-4 relative z-10">
+                    <span className="text-2xl">{category.icon}</span>
+                    <div className="flex flex-col items-start">
+                      <span className="font-bold text-slate-800 text-sm">{category.label}</span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{category.count > 0 ? `${category.count} Ayat` : 'Belum Ada'}</span>
+                    </div>
+                  </div>
+                  <div className="relative z-10 text-slate-300 group-hover:text-indigo-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-white/40 bg-slate-50/50">
+              <button className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl text-sm shadow-md shadow-blue-500/20 active:scale-95 transition-all">
+                + Buat Label Baru
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Global Notification Toast */}
       {notification && (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[200] animate-in slide-in-from-top duration-500 ease-out">
           <div className={`px-6 py-4 rounded-[2rem] shadow-2xl backdrop-blur-2xl border flex items-center gap-3 min-w-[280px] ${notification.type === 'error'
-              ? 'bg-rose-500/90 text-white border-rose-400/50'
-              : notification.type === 'info'
-                ? 'bg-slate-800/90 text-white border-slate-700/50'
-                : 'bg-emerald-500/90 text-white border-emerald-400/50'
+            ? 'bg-rose-500/90 text-white border-rose-400/50'
+            : notification.type === 'info'
+              ? 'bg-slate-800/90 text-white border-slate-700/50'
+              : 'bg-emerald-500/90 text-white border-emerald-400/50'
             }`}>
             <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
               {notification.type === 'error' ? (

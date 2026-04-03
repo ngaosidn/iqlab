@@ -1,12 +1,18 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import React from 'react';
 import ShareCardModal from './ShareCardModal';
 import { createClient } from '@/lib/supabase';
 import { FcGoogle } from 'react-icons/fc';
+import { FaBookmark, FaRegBookmark } from 'react-icons/fa';
+
+interface Bookmark {
+  surah_id: number;
+  ayah_number: number;
+}
 
 interface Verse {
   ayat: number;
@@ -95,6 +101,7 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
   } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
 
   const handleLogin = async () => {
     const supabase = createClient();
@@ -116,9 +123,120 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
     checkAuth();
   }, []);
 
+  const loadBookmarks = useCallback(async () => {
+    // 1. Load dari Local Storage dulu (Cepat)
+    const local = localStorage.getItem('iquran_bookmarks');
+    if (local) {
+      try {
+        setBookmarks(JSON.parse(local));
+      } catch (err) {
+        console.error("Local bookmarks error:", err);
+      }
+    }
+
+    // 2. Jika login, ambil dari Supabase sebagai Source of Truth
+    if (isLoggedIn) {
+      const supabaseClient = createClient();
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabaseClient
+        .from('bookmarks')
+        .select('surah_id, ayah_number')
+        .eq('user_id', user.id);
+
+      if (!error && data) {
+        setBookmarks(data);
+        // Simpan hasil dari Supabase ke Local Storage (Sinkronisasi)
+        localStorage.setItem('iquran_bookmarks', JSON.stringify(data));
+      }
+    }
+  }, [isLoggedIn]);
+
   useEffect(() => {
     setCurrentPage(1);
-  }, [surahNumber, startAyat, endAyat]);
+    loadBookmarks();
+  }, [surahNumber, startAyat, endAyat, isLoggedIn, loadBookmarks]);
+
+  const toggleBookmark = async (verse: Verse) => {
+    if (!isLoggedIn) {
+      setShowAuthModal(true);
+      return;
+    }
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const isBookmarked = bookmarks.some(
+      b => b.surah_id === surahNumber && b.ayah_number === verse.ayat
+    );
+
+    // Optimistic Update (Local UI dulu biar kerasa cepet)
+    let newBookmarks = [...bookmarks];
+    if (isBookmarked) {
+      newBookmarks = newBookmarks.filter(
+        b => !(b.surah_id === surahNumber && b.ayah_number === verse.ayat)
+      );
+    } else {
+      newBookmarks.push({ surah_id: surahNumber, ayah_number: verse.ayat });
+    }
+    setBookmarks(newBookmarks);
+
+    if (isBookmarked) {
+      // Hapus dari Supabase
+      await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('surah_id', surahNumber)
+        .eq('ayah_number', verse.ayat);
+    } else {
+      // Simpan ke Supabase
+      await supabase
+        .from('bookmarks')
+        .insert({
+          user_id: user.id,
+          surah_id: surahNumber,
+          ayah_number: verse.ayat,
+          surah_name: surahName || `Surah ${surahNumber}`
+        });
+    }
+
+    // Refresh data terbaru dari Supabase untuk memastikan sinkronisasi sempurna
+    const { data: latestData } = await supabase
+      .from('bookmarks')
+      .select('surah_id, ayah_number, surah_name')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (latestData) {
+      setBookmarks(latestData);
+      localStorage.setItem('iquran_bookmarks', JSON.stringify(latestData));
+      
+      // Realtime sync with Chat
+      window.dispatchEvent(new CustomEvent('quran-bookmarks-updated', { detail: latestData }));
+    }
+
+    // Update Last Read when bookmarking (only if newly added)
+    if (!isBookmarked) {
+      const lastReadData = { surah_id: surahNumber, surah_name: surahName || `Surah ${surahNumber}`, ayat: verse.ayat };
+      localStorage.setItem('quranLastRead', JSON.stringify(lastReadData));
+      window.dispatchEvent(new CustomEvent('quran-lastread-updated', { detail: lastReadData }));
+    } else {
+      // Clear Last Read if the unbookmarked verse was the last read
+      const savedLastRead = localStorage.getItem('quranLastRead');
+      if (savedLastRead) {
+        try {
+          const parsed = JSON.parse(savedLastRead);
+          if (parsed.surah_id === surahNumber && parsed.ayat === verse.ayat) {
+            localStorage.removeItem('quranLastRead');
+            window.dispatchEvent(new CustomEvent('quran-lastread-updated', { detail: null }));
+          }
+        } catch { }
+      }
+    }
+  };
 
   // Ganti sumber data & font jika Mushaf Font berubah
   useEffect(() => {
@@ -348,6 +466,10 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
         audioRef.current.src = audioUrl;
         audioRef.current.play();
         setPlayingAyah(verseNumber);
+
+        // Update Last Read when playing audio
+        const lastReadData = { surah_id: surahNumber, surah_name: surahName || `Surah ${surahNumber}`, ayat: verseNumber };
+        localStorage.setItem('quranLastRead', JSON.stringify(lastReadData));
       }
     }
   };
@@ -664,8 +786,8 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
             <button
               onClick={() => setIsAutoNext(!isAutoNext)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all duration-300 shadow-sm ${isAutoNext
-                  ? 'bg-blue-600 border-blue-500 text-white shadow-blue-200'
-                  : 'bg-white/50 border-white text-slate-400 hover:bg-white hover:border-slate-200 opacity-80 hover:opacity-100'
+                ? 'bg-blue-600 border-blue-500 text-white shadow-blue-200'
+                : 'bg-white/50 border-white text-slate-400 hover:bg-white hover:border-slate-200 opacity-80 hover:opacity-100'
                 }`}
               title={isAutoNext ? "Matikan Auto Play" : "Aktifkan Auto Play"}
             >
@@ -780,113 +902,107 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                     </div>
 
                     {/* Header Ayat: Pro App Layout */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2 relative z-10 border-b border-slate-100/50 pb-3">
-                      {/* Sisi Kiri: Info Utama */}
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-full blur opacity-20 group-hover:opacity-40 transition duration-300"></div>
-                          <span className="relative inline-flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-white to-blue-50 text-indigo-700 font-extrabold text-[15px] sm:text-base shadow-sm border border-indigo-100/50">
-                            {verse.ayat}
-                          </span>
+                    {/* Header Ayat: Premium Tiered Layout */}
+                    <div className="flex flex-col gap-4 mb-3 relative z-10 border-b border-slate-100/60 pb-4">
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+
+                        {/* Primary Controls: Number & Core Actions */}
+                        <div className="flex items-center gap-3">
+                          <div className="relative group/num">
+                            <div className="absolute -inset-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-10 group-hover/num:opacity-30 transition duration-500"></div>
+                            <div className="relative flex items-center justify-center w-11 h-11 rounded-[1.25rem] bg-white shadow-sm border border-slate-100 group-hover/num:border-blue-200 transition-all duration-300">
+                              <span className="bg-gradient-to-br from-indigo-700 to-blue-600 bg-clip-text text-transparent font-black text-lg">
+                                {verse.ayat}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="h-8 w-px bg-slate-200/60 mx-1 hidden sm:block"></div>
+
+                          {/* Action Pill: Play & Bookmark */}
+                          <div className="flex items-center gap-1.5 bg-white/80 backdrop-blur-md p-1 rounded-2xl border border-slate-100 shadow-sm">
+                            <button
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-90 ${playingAyah === verse.ayat
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 rotate-0'
+                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-indigo-600'}`}
+                              onClick={() => handlePlay(verse.ayat)}
+                              title={playingAyah === verse.ayat ? "Pause Audio" : "Putar Audio"}
+                            >
+                              {playingAyah === verse.ayat ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                                  <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H7.5a.75.75 0 0 1-.75-.75V5.25Zm7.5 0A.75.75 0 0 1 15 4.5h1.5a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75H15a.75.75 0 0 1-.75-.75V5.25Z" clipRule="evenodd" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 ml-0.5">
+                                  <path fillRule="evenodd" d="M4.5 5.653c0-1.427 1.556-2.333 2.78-1.62l12.42 7.193a1.532 1.532 0 0 1 0 2.743l-12.42 7.193c-1.224.708-2.78-.209-2.78-1.62V5.653Z" clipRule="evenodd" />
+                                </svg>
+                              )}
+                            </button>
+
+                            <button
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-90 ${bookmarks.some(b => b.surah_id === surahNumber && b.ayah_number === verse.ayat)
+                                ? 'bg-amber-400 text-white shadow-lg shadow-amber-200'
+                                : 'bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-amber-500'}`}
+                              onClick={() => toggleBookmark(verse)}
+                              title="Simpan Ayat"
+                            >
+                              {bookmarks.some(b => b.surah_id === surahNumber && b.ayah_number === verse.ayat) ? (
+                                <FaBookmark className="w-4 h-4" />
+                              ) : (
+                                <FaRegBookmark className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex flex-col mb-0.5">
-                          <span className="text-[11px] text-slate-400 font-bold uppercase tracking-[0.2em]">Ayat Ke</span>
+
+                        {/* Secondary Actions Group */}
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scroll-smooth pb-1 -mb-1 max-w-full">
+                          <button
+                            className="h-10 px-4 rounded-2xl bg-amber-50 text-amber-700 border border-amber-100/50 hover:bg-amber-400 hover:text-white transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap text-xs font-bold"
+                            onClick={() => {
+                              const tafsirAyat = tafsirList.find((t) => t.ayat === verse.ayat);
+                              setShowTafsir({ ayat: verse.ayat, text: tafsirAyat ? tafsirAyat.teks : 'Tafsir tidak tersedia.' });
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
+                            </svg>
+                            Tafsir
+                          </button>
+
+                          <button
+                            className={`h-10 px-4 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100/50 transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap text-xs font-bold ${!isLoggedIn ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-emerald-500 hover:text-white'}`}
+                            onClick={() => setAhkamPopup({ ayat: verse.ayat })}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.01 1.912a15.998 15.998 0 01-3.388-1.62m11.125-9.378c.854-.53 1.874-.32 2.476.495.601.816.483 1.969-.328 2.684l-5.63 4.96c-.347.306-.78.473-1.23.473h-.033c-.45 0-.883-.167-1.23-.473l-5.63-4.96c-.811-.715-.929-1.868-.328-2.684.602-.815 1.622-1.025 2.476-.495l4.712 2.923a1.5 1.5 0 001.768 0l4.712-2.923z" />
+                            </svg>
+                            Tajwid
+                          </button>
+
+                          <button
+                            className={`h-10 px-4 rounded-2xl bg-blue-50 text-blue-700 border border-blue-100/50 transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap text-xs font-bold ${!isLoggedIn ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-blue-600 hover:text-white'}`}
+                            onClick={() => {
+                              setSharingVerse({ teks_arab: verse.teks_arab, terjemahan: verse.terjemahan, ayat: verse.ayat, surahName, surahNumber });
+                              setIsShareModalOpen(true);
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
+                            </svg>
+                            Share
+                          </button>
+
+                          <button
+                            className={`h-10 px-4 rounded-2xl bg-rose-50 text-rose-700 border border-rose-100/50 transition-all duration-300 shadow-sm flex items-center gap-2 whitespace-nowrap text-xs font-bold ${!isLoggedIn ? 'opacity-40 grayscale pointer-events-none' : 'hover:bg-rose-500 hover:text-white'}`}
+                            onClick={() => alert('Fitur Kirim Ayat sedang dalam pengembangan!')}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                            </svg>
+                            Kirim
+                          </button>
                         </div>
-
-                        {/* Play Button: Primary Action */}
-                        <button
-                          className="ml-2 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center shadow-[0_4px_15px_rgb(79,70,229,0.3)] hover:shadow-[0_6px_20px_rgb(79,70,229,0.4)] hover:-translate-y-0.5 active:scale-95 transition-all duration-300"
-                          onClick={() => handlePlay(verse.ayat)}
-                          aria-label="Putar Audio"
-                        >
-                          {playingAyah === verse.ayat ? (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-                            </svg>
-                          ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 sm:w-5 sm:h-5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.25l13.5 6.75-13.5 6.75V5.25z" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-
-                      {/* Sisi Kanan: Fitur Pendukung */}
-                      <div className="flex items-center flex-wrap gap-2">
-                        <button
-                          className="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-amber-100/50 bg-gradient-to-r from-amber-50 to-orange-50 hover:from-amber-400 hover:to-orange-500 hover:border-amber-400 hover:text-white hover:shadow-md transition-all duration-300 text-amber-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold"
-                          onClick={() => {
-                            const tafsirAyat = tafsirList.find((t) => t.ayat === verse.ayat);
-                            setShowTafsir({
-                              ayat: verse.ayat,
-                              text: tafsirAyat ? tafsirAyat.teks : 'Tafsir tidak tersedia.'
-                            });
-                          }}
-                          title="Lihat Tafsir"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.305 0-4.408.867-6 2.292m0-14.25v14.25" />
-                          </svg>
-                          Tafsir
-                        </button>
-
-                        <button
-                          className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-emerald-100/50 bg-gradient-to-r from-emerald-50 to-teal-50 transition-all duration-300 text-emerald-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold whitespace-nowrap ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:from-emerald-400 hover:to-teal-500 hover:border-emerald-400 hover:text-white hover:shadow-md'}`}
-                          onClick={() => {
-                            if (!isLoggedIn) {
-                              setShowAuthModal(true);
-                              return;
-                            }
-                            setAhkamPopup({ ayat: verse.ayat });
-                          }}
-                          title="Ahkam Tajwid"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.53 16.122a3 3 0 00-5.78 1.128 2.25 2.25 0 01-2.4 2.245 4.5 4.5 0 008.4-2.245c0-.399-.078-.78-.22-1.128zm0 0a15.998 15.998 0 003.388-1.62m-5.01 1.912a15.998 15.998 0 01-3.388-1.62m11.125-9.378c.854-.53 1.874-.32 2.476.495.601.816.483 1.969-.328 2.684l-5.63 4.96c-.347.306-.78.473-1.23.473h-.033c-.45 0-.883-.167-1.23-.473l-5.63-4.96c-.811-.715-.929-1.868-.328-2.684.602-.815 1.622-1.025 2.476-.495l4.712 2.923a1.5 1.5 0 001.768 0l4.712-2.923z" />
-                          </svg>
-                          Tajwid
-                        </button>
-
-                        <button
-                          className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-blue-100/50 bg-gradient-to-r from-blue-50 to-indigo-50 transition-all duration-300 text-blue-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:from-blue-500 hover:to-indigo-600 hover:border-blue-500 hover:text-white hover:shadow-md'}`}
-                          onClick={() => {
-                            if (!isLoggedIn) {
-                              setShowAuthModal(true);
-                              return;
-                            }
-                            setSharingVerse({
-                              teks_arab: verse.teks_arab,
-                              terjemahan: verse.terjemahan,
-                              ayat: verse.ayat,
-                              surahName: surahName,
-                              surahNumber: surahNumber
-                            });
-                            setIsShareModalOpen(true);
-                          }}
-                          title="Bagikan Ayat"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
-                          </svg>
-                          Share
-                        </button>
-
-                        <button
-                          className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-rose-100/50 bg-gradient-to-r from-rose-50 to-pink-50 transition-all duration-300 text-rose-700 flex items-center justify-center gap-2 shadow-sm text-[11px] sm:text-xs font-bold ${!isLoggedIn ? 'opacity-60 cursor-not-allowed grayscale' : 'hover:from-rose-400 hover:to-pink-500 hover:border-rose-400 hover:text-white hover:shadow-md'}`}
-                          onClick={() => {
-                            if (!isLoggedIn) {
-                              setShowAuthModal(true);
-                              return;
-                            }
-                            alert('Fitur Kirim Ayat saat ini sedang dalam pengembangan!');
-                          }}
-                          title="Kirim Ayat via Chat"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                          </svg>
-                          Kirim
-                        </button>
                       </div>
                     </div>
                     <div className="text-right">
@@ -1127,8 +1243,8 @@ export default function VerseList({ surahNumber, onClose, startAyat, endAyat }: 
                             onClick={() => setShowPopupVideo(true)}
                             disabled={!ahkamPopupContent?.video_url}
                             className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-black uppercase tracking-wider shadow-md active:scale-95 transition-all ${ahkamPopupContent?.video_url
-                                ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/10'
-                                : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                              ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/10'
+                              : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                               }`}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
