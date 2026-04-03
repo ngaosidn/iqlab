@@ -85,14 +85,23 @@ export default function SetoranModal({ isOpen, onClose, verse }: SetoranModalPro
     try {
       let stream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // High quality audio constraints
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          } 
+        });
       } catch (e) {
         console.error("Mic Access Denied:", e);
         alert("Akses Mikrofon Ditolak. Harap aktifkan izin mikrofon di pengaturan browser/HP Anda.");
         return;
       }
 
-      const mediaRecorder = new MediaRecorder(stream);
+      const mediaRecorder = new MediaRecorder(stream, {
+        audioBitsPerSecond: 128000 // 128kbps for clear voice
+      });
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
