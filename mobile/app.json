@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "quranchat-mobile",
+    "slug": "quranchat-mobile",
+    "scheme": "iqlab",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f172a"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "plugins": [
+       "react-native-video",
+       "./withAndroidNativeBuildFixes",
+       [
+         "expo-build-properties",
+         {
+           "android": {
+             "minSdkVersion": 26,
+             "includeCompileSdkVersionInResources": true
+           }
+         }
+       ]
+     ],
+     "android": {
+       "adaptiveIcon": {
+         "foregroundImage": "./assets/adaptive-icon.png",
+         "backgroundColor": "#ffffff"
+       },
+       "edgeToEdgeEnabled": false,
+       "package": "com.didimdim.quranchatmobile",
+       "permissions": [
+         "CAMERA",
+         "RECORD_AUDIO",
+         "FOREGROUND_SERVICE",
+         "FOREGROUND_SERVICE_MEDIA_PROJECTION",
+         "MODIFY_AUDIO_SETTINGS",
+         "ACCESS_WIFI_STATE",
+         "ACCESS_NETWORK_STATE"
+       ]
+     },
+     "androidStatusBar": {
+       "barStyle": "light-content",
+       "backgroundColor": "#0f172a",
+       "translucent": false
+     },
+     "web": {
+       "favicon": "./assets/favicon.png"
+     },
+     "extra": {
+      "eas": {
+        "projectId": "e5b1eb2c-d62e-4312-9316-14fcd65ae136"
+      }
+    }
+  }
+}
