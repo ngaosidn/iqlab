@@ -15,6 +15,7 @@ const AnimatedFlashList = Animated.createAnimatedComponent(FlashList);
 // Hooks & Components
 import { useInteractiveQuran } from '../hooks/useInteractiveQuran';
 import VerseItem from '../components/VerseItem';
+import JitsiWebView from '../components/JitsiWebView';
 
 export default function InteractiveQuranScreen({ onBack, session }) {
   const insets = useSafeAreaInsets();
@@ -22,7 +23,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
   const isLoggedIn = !!session?.user;
 
   // Destructure with default values to prevent ReferenceError if hook return is partial
-  const quranHook = useInteractiveQuran(onBack);
+  const quranHook = useInteractiveQuran(onBack, session);
   const {
     fontsLoaded = false,
     translateX = new Animated.Value(0),
@@ -56,7 +57,16 @@ export default function InteractiveQuranScreen({ onBack, session }) {
     toggleTafsir,
     sound,
     setSound,
-    setPlayingAyah
+    setPlayingAyah,
+    userProgress,
+    lobbyVisible,
+    setLobbyVisible,
+    activeTeachers,
+    fetchActiveTeachers,
+    joinTeacherClass,
+    inClassUrl,
+    setInClassUrl,
+    handleOpenLobby
   } = quranHook;
 
   const checkAuth = (onSuccess) => {
@@ -89,29 +99,47 @@ export default function InteractiveQuranScreen({ onBack, session }) {
     }
   }, [playingAyah, isAutoPlay, versesData.length]);
 
-  const renderVerseItem = useCallback(({ item: verse }) => (
-    <VerseItem 
-      verse={verse}
-      surahId={selectedSurah?.id}
-      isPlaying={playingAyah === verse.ayat}
-      isExpanded={expandedTafsir === verse.ayat}
-      onPlay={handlePlayAyah}
-      onToggleTafsir={toggleTafsir}
-      tafsirText={tafsirDataMap[verse.ayat]}
-      fontFamily={
-        mushafType === 'uthmani' ? 'Uthmanic-Neo-Color' :
-        mushafType === 'kemenag' ? 'LPMQ-Isep-Misbah' : 'Indopak-Font'
-      }
-      onAuthRestricted={checkAuth}
-      isLoggedIn={isLoggedIn}
-    />
-  ), [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn]);
+  const renderVerseItem = useCallback(({ item: verse }) => {
+    const isActiveAyah = selectedSurah?.id === userProgress.unlockedSurah && verse.ayat === userProgress.unlockedAyah;
+    const isPassedAyah = selectedSurah?.id < userProgress.unlockedSurah || (selectedSurah?.id === userProgress.unlockedSurah && verse.ayat < userProgress.unlockedAyah);
+    const isLocked = !isActiveAyah && !isPassedAyah;
+
+    return (
+      <VerseItem 
+        verse={verse}
+        surahId={selectedSurah?.id}
+        isPlaying={playingAyah === verse.ayat}
+        isExpanded={expandedTafsir === verse.ayat}
+        onPlay={handlePlayAyah}
+        onToggleTafsir={toggleTafsir}
+        tafsirText={tafsirDataMap[verse.ayat]}
+        fontFamily={
+          mushafType === 'uthmani' ? 'Uthmanic-Neo-Color' :
+          mushafType === 'kemenag' ? 'LPMQ-Isep-Misbah' : 'Indopak-Font'
+        }
+        onAuthRestricted={checkAuth}
+        isLoggedIn={isLoggedIn}
+        isInteractiveActive={isActiveAyah}
+        isPassed={isPassedAyah}
+        isLocked={isLocked}
+        onSend={() => checkAuth(() => handleOpenLobby(selectedSurah?.id, verse.ayat))}
+      />
+    );
+  }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby]);
 
   if (!fontsLoaded) return (
      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color="#3b82f6" />
      </View>
   );
+
+  if (inClassUrl) {
+    return (
+       <SafeAreaView style={{flex: 1, backgroundColor: '#0f172a'}}>
+          <JitsiWebView url={inClassUrl} onLeave={() => setInClassUrl(null)} isTeacher={false} />
+       </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }}>
@@ -307,8 +335,52 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
+
+                {/* LOBBY OVERYLAY: Pilih Guru Aktif (Inside Main Modal) */}
+                {lobbyVisible && (
+                   <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end', zIndex: 1000 }]}>
+                      <View style={[styles.lobbyContainer, { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
+                         <View style={styles.lobbyHeader}>
+                            <Text style={styles.lobbyTitle}>Pilih Ustadz/Ustadzah</Text>
+                            <TouchableOpacity onPress={() => setLobbyVisible(false)} style={styles.closeLobbyBtn}>
+                               <Feather name="x" size={20} color="#64748b" />
+                            </TouchableOpacity>
+                         </View>
+                         <Text style={styles.lobbySubtitle}>Daftar pengajar yang sedang siaran langsung saat ini (Batas 4 Murid/Kelas):</Text>
+                         
+                         <ScrollView contentContainerStyle={{ padding: 16 }}>
+                            {activeTeachers.length === 0 ? (
+                               <Text style={{ textAlign: 'center', color: '#94a3b8', marginVertical: 30 }}>Belum ada pengajar (sesuai gender Anda) yang sedang Online saat ini. Silakan kembali nanti.</Text>
+                            ) : (
+                               activeTeachers.map(teacher => {
+                                  const isFull = teacher.current_students_count >= 4;
+                                  return (
+                               <View key={teacher.id} style={styles.teacherLobbyCard}>
+                                  <View style={{ flex: 1 }}>
+                                     <Text style={styles.teacherLobbyName}>{teacher.teacher_name || (session?.user?.user_metadata?.gender === 'Perempuan' ? 'Ustadzah I-Qlab' : 'Ustadz I-Qlab')}</Text>
+                                     <Text style={{ fontSize: 13, color: isFull ? '#ef4444' : '#0d9488', fontWeight: 'bold' }}>
+                                              {isFull ? `Penuh (${teacher.current_students_count}/4)` : `Tersedia (${teacher.current_students_count}/4 Murid)`}
+                                           </Text>
+                                        </View>
+                                        <TouchableOpacity 
+                                           disabled={isFull}
+                                           onPress={() => joinTeacherClass(teacher)} 
+                                           style={[styles.btnJoinLobby, isFull && { backgroundColor: '#e2e8f0' }]}
+                                        >
+                                           <Text style={[styles.btnJoinLobbyText, isFull && { color: '#94a3b8' }]}>Masuk</Text>
+                                        </TouchableOpacity>
+                                     </View>
+                                  );
+                               })
+                            )}
+                         </ScrollView>
+                      </View>
+                   </View>
+                )}
+
             </View>
         </Modal>
+
       </View>
     </SafeAreaView>
   );
@@ -390,5 +462,16 @@ const styles = StyleSheet.create({
   paginationBtnActive: { backgroundColor: '#a78bfa', borderColor: '#a78bfa' },
   paginationBtnTextActive: { fontSize: 13, fontWeight: 'bold', color: '#ffffff' },
   paginationCenter: { alignItems: 'center', backgroundColor: '#eff6ff', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8 },
-  paginationCenterValue: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' }
+  paginationCenterValue: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+
+  // Lobby Styles
+  lobbyContainer: { backgroundColor: '#ffffff', maxHeight: '80%', overflow: 'hidden', borderTopLeftRadius: 24, borderTopRightRadius: 24, width: '100%', elevation: 15 },
+  lobbyHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  lobbyTitle: { fontSize: 18, fontWeight: 'bold', color: '#0f172a' },
+  closeLobbyBtn: { width: 32, height: 32, backgroundColor: '#f1f5f9', borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
+  lobbySubtitle: { paddingHorizontal: 20, paddingTop: 16, fontSize: 13, color: '#64748b', lineHeight: 20 },
+  teacherLobbyCard: { flexDirection: 'row', backgroundColor: '#f8fafc', padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: '#e2e8f0', alignItems: 'center' },
+  teacherLobbyName: { fontSize: 16, fontWeight: 'bold', color: '#1e293b', marginBottom: 2 },
+  btnJoinLobby: { backgroundColor: '#0d9488', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
+  btnJoinLobbyText: { color: 'white', fontWeight: 'bold', fontSize: 14 }
 });

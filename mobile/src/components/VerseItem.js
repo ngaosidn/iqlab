@@ -12,7 +12,11 @@ const VerseItem = React.memo(({
   tafsirText,
   fontFamily,
   onAuthRestricted,
-  isLoggedIn
+  isLoggedIn,
+  isInteractiveActive,
+  isPassed,
+  isLocked,
+  onSend
 }) => {
   return (
     <View style={styles.verseCardModal}>
@@ -52,15 +56,18 @@ const VerseItem = React.memo(({
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.tagBase, isLoggedIn ? styles.kirimTagActive : styles.grayTag]} 
-          onPress={() => onAuthRestricted(() => console.log('Kirim'))}
+          style={[styles.tagBase, isInteractiveActive ? styles.kirimTagActive : isPassed ? styles.passedTag : styles.grayTag]} 
+          onPress={() => onAuthRestricted(onSend)}
+          disabled={!isInteractiveActive}
         >
-          <Feather name="send" size={13} color={isLoggedIn ? '#059669' : '#94a3b8'} style={{marginRight: 6}} />
-          <Text style={[styles.tagTextBase, isLoggedIn ? styles.kirimTagTextActive : styles.grayTagText]}>Kirim</Text>
+          <Feather name={isPassed ? "check-circle" : isLocked ? "lock" : "send"} size={13} color={isInteractiveActive ? '#059669' : isPassed ? '#10b981' : '#94a3b8'} style={{marginRight: 6}} />
+          <Text style={[styles.tagTextBase, isInteractiveActive ? styles.kirimTagTextActive : isPassed ? styles.passedTagText : styles.grayTagText]}>
+             {isPassed ? 'Lulus' : isLocked ? 'Terkunci' : 'Kirim'}
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.verseTextContainer}>
+      <View style={[styles.verseTextContainer, { opacity: isLocked ? 0.3 : 1 }]}>
         <Text style={[styles.verseArabicText, { fontFamily: fontFamily || 'Uthmanic-Neo-Color' }]}>{verse.teks_arab}</Text>
         <Text style={styles.verseTranslationText}>{verse.terjemahan.replace(/<sup[^>]*>.*?<\/sup>/g, '')}</Text>
       </View>
@@ -204,6 +211,13 @@ const styles = StyleSheet.create({
   },
   kirimTagTextActive: {
     color: '#059669',
+  },
+  passedTag: {
+    backgroundColor: '#f0fdf4',
+    borderColor: '#bbf7d0',
+  },
+  passedTagText: {
+    color: '#16a34a',
   },
   verseTextContainer: {
     paddingBottom: 10,

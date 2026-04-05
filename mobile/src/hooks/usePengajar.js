@@ -319,7 +319,9 @@ export const usePengajar = (session) => {
       const { error } = await supabase.from('teacher_schedules').insert({
         teacher_id: session.user.id,
         day_of_week: jadwalDay,
-        time_slot: timeSlotFinal
+        time_slot: timeSlotFinal,
+        teacher_name: session.user.user_metadata?.full_name || 'Pengajar I-Qlab',
+        teacher_gender: session.user.user_metadata?.gender || 'Laki-laki'
       });
       if (error) throw error;
       Toast.show({ type: 'success', text1: 'Jadwal Aktif!', text2: 'Sesi ketersediaan Anda berhasil ditambahkan.' });

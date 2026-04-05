@@ -13,6 +13,7 @@ import JitsiWebView from '../components/JitsiWebView';
 export default function PengajarScreen({ onBack, session }) {
   const [isInMeeting, setIsInMeeting] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState('');
+  const [activeScheduleId, setActiveScheduleId] = useState(null);
 
   const {
     isTeacherLoggedIn,
@@ -47,9 +48,10 @@ export default function PengajarScreen({ onBack, session }) {
     handleAddSchedule, handleDeleteSchedule, handleGenerateLink
   } = usePengajar(session);
 
-  const handleEnterClass = async (url) => {
+  const handleEnterClass = async (url, scheduleId) => {
     try {
       setMeetingUrl(url);
+      setActiveScheduleId(scheduleId);
       setIsInMeeting(true);
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Gagal Membuka', text2: 'Link tidak valid.' });
@@ -315,7 +317,7 @@ export default function PengajarScreen({ onBack, session }) {
                    Jadwal <Text style={{ fontWeight: 'bold' }}>{activeReminder.day_of_week}</Text> jam <Text style={{ fontWeight: 'bold' }}>{activeReminder.time_slot}</Text> Anda telah aktif. Silakan buat tautan kelas untuk murid Anda.
                 </Text>
                 <TouchableOpacity 
-                   onPress={() => activeReminder.meeting_link ? handleEnterClass(activeReminder.meeting_link) : handleGenerateLink(activeReminder.id)}
+                   onPress={() => activeReminder.meeting_link ? handleEnterClass(activeReminder.meeting_link, activeReminder.id) : handleGenerateLink(activeReminder.id)}
                    style={{ backgroundColor: activeReminder.meeting_link ? '#2563eb' : '#ef4444', paddingVertical: 12, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                    {isLoading ? (
                      <ActivityIndicator color="white" />
@@ -389,6 +391,8 @@ export default function PengajarScreen({ onBack, session }) {
       {isInMeeting ? (
         <JitsiWebView 
           url={meetingUrl} 
+          scheduleId={activeScheduleId}
+          isTeacher={true}
           onLeave={() => setIsInMeeting(false)} 
         />
       ) : (
