@@ -374,6 +374,54 @@ export const usePengajar = (session) => {
     }
   };
 
+  const handleFinishMeeting = async (scheduleId) => {
+    setIsLoading(true);
+    try {
+      // 0. Kirim Sinyal BROADCAST (Cepat & Real-time) ke semua murid di ruangan
+      const channel = supabase.channel(`room_${scheduleId}`);
+      await channel.subscribe(async (status) => {
+         if (status === 'SUBSCRIBED') {
+            await channel.send({
+               type: 'broadcast',
+               event: 'FORCE_END_MEETING',
+               payload: { msg: 'Teacher ended session' }
+            });
+            supabase.removeChannel(channel);
+         }
+      });
+
+      // 1. Bersihkan link di tabel teacher_schedules
+      const { error: scheduleError } = await supabase
+        .from('teacher_schedules')
+        .update({ meeting_link: null, current_students_count: 0 })
+        .eq('id', scheduleId);
+      
+      if (scheduleError) throw scheduleError;
+
+      // 2. Bersihkan seluruh antrian murid di kelas tersebut
+      const { error: participantError } = await supabase
+        .from('active_class_participants')
+        .delete()
+        .eq('schedule_id', scheduleId);
+
+      if (participantError) throw participantError;
+      
+      Toast.show({ 
+        type: 'success', 
+        text1: 'Sesi Selesai 🏁', 
+        text2: 'Kelas telah resmi ditutup dan semua murid dikeluarkan.' 
+      });
+      
+      fetchSchedules(); 
+      return true;
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Gagal Menutup Sesi', text2: err.message });
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsTeacherLoggedIn(false);
@@ -394,6 +442,7 @@ export const usePengajar = (session) => {
     jadwalEnd, setJadwalEnd,
     activeReminder,
     handleAddSchedule, handleDeleteSchedule, handleGenerateLink,
+    handleFinishMeeting,
     isTeacherLoggedIn,
     isSignupMode,
     setIsSignupMode,

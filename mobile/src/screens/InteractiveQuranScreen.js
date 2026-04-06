@@ -134,9 +134,19 @@ export default function InteractiveQuranScreen({ onBack, session }) {
   );
 
   if (inClassUrl) {
+    const currentSchedule = activeTeachers.find(t => t.meeting_link === inClassUrl);
     return (
-       <SafeAreaView style={{flex: 1, backgroundColor: '#0f172a'}}>
-          <JitsiWebView url={inClassUrl} onLeave={() => setInClassUrl(null)} isTeacher={false} />
+       <SafeAreaView style={{flex: 1, backgroundColor: '#0f172a', paddingBottom: 0}}>
+          <JitsiWebView 
+            url={inClassUrl} 
+            onLeave={() => {
+              setInClassUrl(null);
+              setLobbyVisible(true);
+            }} 
+            isTeacher={false} 
+            scheduleId={currentSchedule?.id || null} 
+            session={session} 
+          />
        </SafeAreaView>
     );
   }
@@ -182,7 +192,6 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                 <View style={styles.headerTopRow}>
                     <Image source={require('../../assets/logo.svg')} style={styles.logo} contentFit="contain" />
                     <View style={styles.headerActions}>
-                    <TouchableOpacity style={styles.iconBtn}><Feather name="folder" size={18} color="white" /></TouchableOpacity>
                     <TouchableOpacity style={styles.iconBtn}><Feather name="download" size={18} color="white" /></TouchableOpacity>
                     <TouchableOpacity style={styles.iconBtn} onPress={onBack}><Feather name="arrow-left" size={20} color="white" /></TouchableOpacity>
                     </View>
@@ -306,7 +315,11 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                             </TouchableOpacity>
                             <View style={styles.mushafSwitcher}>
                                 {['uthmani', 'kemenag', 'indopak'].map(type => (
-                                    <TouchableOpacity key={type} onPress={() => type === 'uthmani' ? setMushafType(type) : checkAuth(() => setMushafType(type))} style={[styles.mushafOption, mushafType === type && styles.mushafOptionActive]}>
+                                    <TouchableOpacity 
+                                        key={type} 
+                                        onPress={() => checkAuth(() => setMushafType(type))} 
+                                        style={[styles.mushafOption, mushafType === type && styles.mushafOptionActive]}
+                                    >
                                         <Text style={[styles.mushafOptionText, mushafType === type && styles.mushafOptionTextActive]}>{type.charAt(0).toUpperCase() + type.slice(1)}</Text>
                                     </TouchableOpacity>
                                 ))}
@@ -318,6 +331,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                             ref={modalScrollRef} 
                             data={versesData} 
                             renderItem={renderVerseItem} 
+                            extraData={{ expandedTafsir, playingAyah, mushafType, isLoggedIn, tafsirDataMap }}
                             estimatedItemSize={250}
                             keyExtractor={(item) => `verse-${item.ayat}`} 
                             contentContainerStyle={{ padding: 16, paddingBottom: 20 }} 

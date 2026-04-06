@@ -27,15 +27,22 @@ const VerseItem = React.memo(({
             <TouchableOpacity onPress={() => onPlay(surahId, verse.ayat)} style={[styles.actionCircleBtn, isPlaying && styles.actionCircleBtnActive]}>
               <FontAwesome5 name={isPlaying ? 'pause' : 'play'} size={12} color={isPlaying ? '#ffffff' : '#3b82f6'} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => onAuthRestricted(() => console.log('Bookmark'))} style={styles.actionCircleBtn}>
-              <FontAwesome5 name="bookmark" size={12} color="#64748b" />
+            <TouchableOpacity 
+              onPress={() => onAuthRestricted(() => console.log('Bookmark'))} 
+              style={[styles.actionCircleBtn, isLoggedIn && { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}
+            >
+              <FontAwesome5 name="bookmark" size={12} color={isLoggedIn ? '#16a34a' : '#64748b'} />
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
       <View style={styles.verseTagsRow}>
-        <TouchableOpacity style={styles.tafsirTag} onPress={() => onToggleTafsir(verse.ayat)}>
+        <TouchableOpacity 
+          style={[styles.tafsirTag, isExpanded && { backgroundColor: '#fef3c7', borderColor: '#d97706' }]} 
+          onPress={() => onToggleTafsir(verse.ayat)}
+          activeOpacity={0.7}
+        >
           <Feather name="book-open" size={13} color="#d97706" style={{marginRight: 6}} />
           <Text style={styles.tafsirTagText}>Tafsir</Text>
         </TouchableOpacity>
@@ -56,18 +63,33 @@ const VerseItem = React.memo(({
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.tagBase, isInteractiveActive ? styles.kirimTagActive : isPassed ? styles.passedTag : styles.grayTag]} 
+          style={[
+            styles.tagBase, 
+            (isLoggedIn && isInteractiveActive) ? styles.kirimTagActive : 
+            (isLoggedIn && isPassed) ? styles.passedTag : 
+            styles.grayTag
+          ]} 
           onPress={() => onAuthRestricted(onSend)}
           disabled={!isInteractiveActive}
         >
-          <Feather name={isPassed ? "check-circle" : isLocked ? "lock" : "send"} size={13} color={isInteractiveActive ? '#059669' : isPassed ? '#10b981' : '#94a3b8'} style={{marginRight: 6}} />
-          <Text style={[styles.tagTextBase, isInteractiveActive ? styles.kirimTagTextActive : isPassed ? styles.passedTagText : styles.grayTagText]}>
+          <Feather 
+            name={isPassed ? "check-circle" : isLocked ? "lock" : "send"} 
+            size={13} 
+            color={(isLoggedIn && isInteractiveActive) ? '#059669' : (isLoggedIn && isPassed) ? '#16a34a' : '#94a3b8'} 
+            style={{marginRight: 6}} 
+          />
+          <Text style={[
+            styles.tagTextBase, 
+            (isLoggedIn && isInteractiveActive) ? styles.kirimTagTextActive : 
+            (isLoggedIn && isPassed) ? styles.passedTagText : 
+            styles.grayTagText
+          ]}>
              {isPassed ? 'Lulus' : isLocked ? 'Terkunci' : 'Kirim'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.verseTextContainer, { opacity: isLocked ? 0.3 : 1 }]}>
+      <View style={styles.verseTextContainer}>
         <Text style={[styles.verseArabicText, { fontFamily: fontFamily || 'Uthmanic-Neo-Color' }]}>{verse.teks_arab}</Text>
         <Text style={styles.verseTranslationText}>{verse.terjemahan.replace(/<sup[^>]*>.*?<\/sup>/g, '')}</Text>
       </View>

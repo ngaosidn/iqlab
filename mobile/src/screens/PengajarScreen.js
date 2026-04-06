@@ -45,7 +45,8 @@ export default function PengajarScreen({ onBack, session }) {
     jadwalStart, setJadwalStart,
     jadwalEnd, setJadwalEnd,
     activeReminder,
-    handleAddSchedule, handleDeleteSchedule, handleGenerateLink
+    handleAddSchedule, handleDeleteSchedule, handleGenerateLink,
+    handleFinishMeeting
   } = usePengajar(session);
 
   const handleEnterClass = async (url, scheduleId) => {
@@ -393,7 +394,11 @@ export default function PengajarScreen({ onBack, session }) {
           url={meetingUrl} 
           scheduleId={activeScheduleId}
           isTeacher={true}
-          onLeave={() => setIsInMeeting(false)} 
+          session={session}
+          onLeave={async () => {
+             const success = await handleFinishMeeting(activeScheduleId);
+             if (success) setIsInMeeting(false);
+          }} 
         />
       ) : (
         <Animated.View style={[styles.mainWrapper, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>

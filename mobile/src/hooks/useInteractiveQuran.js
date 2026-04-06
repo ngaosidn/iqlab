@@ -95,6 +95,15 @@ export const useInteractiveQuran = (onBack, session) => {
   ).current;
 
   useEffect(() => {
+    // 1. Inisialisasi Audio Mode agar Streaming lebih optimal
+    Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      staysActiveInBackground: true,
+      playsInSilentModeIOS: true,
+      shouldDuckAndroid: true,
+      playThroughEarpieceAndroid: false,
+    });
+
     Animated.sequence([
       Animated.timing(shimmerValue, {
         toValue: 2,
@@ -264,29 +273,104 @@ export const useInteractiveQuran = (onBack, session) => {
     }, 600);
   };
 
-  const handleOpenSurah = (surah) => {
+  const handleOpenSurah = async (surah) => {
+    console.log('--- Opening Surah:', surah.nama_latin);
+    
+    // Reset Modal States
     panY.setValue(0);
     setCurrentPage(1);
     setSelectedSurah(surah);
     setExpandedTafsir(null);
-    setTafsirDataMap({});
+    setTafsirDataMap({}); // Reset map for new surah
     
-    const activeJson = mushafType === 'uthmani' ? verseUthmani : 
-                       mushafType === 'kemenag' ? verseKemenag : verseIndopak;
-                       
-    const data = activeJson[surah.id]?.ayat || [];
-    setVersesData(data);
-    setModalVisible(true);
+    try {
+      // 1. Get correct numbered surah
+      const surahNomor = surah.id || surah.nomor;
+      const activeJson = mushafType === 'uthmani' ? verseUthmani : 
+                         mushafType === 'kemenag' ? verseKemenag : verseIndopak;
+                         
+      const data = activeJson[surahNomor]?.ayat || [];
+      setVersesData(data);
+      setModalVisible(true);
 
-    fetch(`https://equran.id/api/v2/tafsir/${surah.id}`)
-      .then(r => r.json())
-      .then(res => {
-         const tafsirs = res.data?.tafsir || [];
-         const map = {};
-         tafsirs.forEach(t => { map[t.ayat] = t.teks; });
-         setTafsirDataMap(map);
-      })
-      .catch(err => console.error('Tafsir fetch error', err));
+      // 2. Background fetch full surah tafsir from equran.id for caching
+      // Don't 'await' this so UI opens immediately
+      console.log(`[Background] Fetching full Tafsir for Surah ${surahNomor}...`);
+      fetch(`https://equran.id/api/v2/tafsir/${surahNomor}`)
+        .then(r => r.json())
+        .then(result => {
+          if (result.code === 200 && result.data && result.data.tafsir) {
+            const map = {};
+            result.data.tafsir.forEach(t => {
+              map[t.ayat] = t.teks;
+            });
+            setTafsirDataMap(prev => ({ ...prev, ...map }));
+            console.log(`[Background] Tafsir for Surah ${surahNomor} cached.`);
+          }
+        })
+        .catch(err => {
+          console.log('Background Tafsir fetch error:', err.message);
+        });
+
+    } catch (error) {
+      console.error('Error opening surah:', error);
+      Alert.alert('Gagal', 'Gagal memuat ayat surah');
+    }
+  };
+
+  const fetchFullSurahTafsir = async (surahId) => {
+    try {
+      console.log(`[Background] Fetching full Tafsir for Surah ${surahId}...`);
+      const response = await fetch(`https://equran.id/api/v2/tafsir/${surahId}`);
+      const result = await response.json();
+      
+      if (result.code === 200 && result.data && result.data.tafsir) {
+        const map = {};
+        result.data.tafsir.forEach(t => {
+          map[t.ayat] = t.teks;
+        });
+        
+        setTafsirDataMap(prev => ({ ...prev, ...map }));
+        console.log(`[Background] Tafsir for Surah ${surahId} cached.`);
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const toggleTafsir = async (ayahNumber) => {
+    if (expandedTafsir === ayahNumber) {
+      setExpandedTafsir(null);
+    } else {
+      setExpandedTafsir(ayahNumber);
+      
+      // If tafsir for this specific ayah is not yet in map, fetch it instantly
+      if (!selectedSurah) return;
+      
+      if (!tafsirDataMap[ayahNumber]) {
+        console.log(`[Instant] Fetching single Tafsir for Ayah ${ayahNumber}...`);
+        try {
+          const surahId = selectedSurah.nomor || selectedSurah.id;
+          if (!surahId) return;
+          // Use Quran.com API for single ayah (Resource 164 is Kemenag)
+          const resp = await fetch(`https://api.quran.com/api/v4/tafsirs/164/by_ayah/${surahId}:${ayahNumber}`);
+          const data = await resp.json();
+          
+          if (data.tafsir && data.tafsir.text) {
+            // Clean up basic HTML tags if any
+            const cleanText = data.tafsir.text.replace(/<\/?[^>]+(>|$)/g, "");
+            
+            setTafsirDataMap(prev => ({
+              ...prev,
+              [ayahNumber]: cleanText
+            }));
+            console.log(`[Instant] Ayah ${ayahNumber} loaded.`);
+          }
+        } catch (e) {
+          console.log('Single ayah fetch failed:', e.message);
+        }
+      }
+    }
   };
 
   // Sync verses when mushafType changes
@@ -301,23 +385,39 @@ export const useInteractiveQuran = (onBack, session) => {
 
   const handlePlayAyah = async (surahId, ayahNumber) => {
     try {
+      // 1. Jika klik ayat yang SAMA dengan yang sedang memutar -> Berhenti total
       if (sound && playingAyah === ayahNumber) {
-        await sound.pauseAsync();
         setPlayingAyah(null);
+        await sound.unloadAsync();
+        setSound(null);
         return;
       }
-      if (sound) await sound.unloadAsync();
-      
+
+      // 2. Clear suara yang sedang berjalan (tanpa await agar UI tidak nge-hang)
+      if (sound) {
+         sound.stopAsync().then(() => sound.unloadAsync()).catch(e => {});
+         setSound(null);
+      }
+
+      // 3. Update UI SANGAT CEPAT (Langsung ganti ikon ke Pause/Active)
+      setPlayingAyah(ayahNumber);
+
       const pad = (num, size) => String(num).padStart(size, '0');
       const url = `https://everyayah.com/data/Alafasy_64kbps/${pad(surahId, 3)}${pad(ayahNumber, 3)}.mp3`;
       
+      // 4. Buat objek suara baru secara async
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: url }, 
-        { shouldPlay: true }
+        { 
+          shouldPlay: true,
+          progressUpdateIntervalMillis: 100,
+          androidImplementation: 'MediaPlayer'
+        },
+        null,
+        false // Do not download whole audio at once
       );
       
       setSound(newSound);
-      setPlayingAyah(ayahNumber);
 
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.didJustFinish) {
@@ -356,10 +456,7 @@ export const useInteractiveQuran = (onBack, session) => {
     }
   }, [modalScrollRef]);
 
-  const toggleTafsir = useCallback((ayah) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedTafsir(prev => prev === ayah ? null : ayah);
-  }, []);
+
 
   return {
     fontsLoaded,
