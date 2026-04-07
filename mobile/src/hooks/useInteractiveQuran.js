@@ -51,7 +51,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const [activeTeachers, setActiveTeachers] = useState([]);
   const [targetSubmit, setTargetSubmit] = useState(null); // {surahId, ayahNumber}
   const [inClassUrl, setInClassUrl] = useState(null);
-  
+
   useEffect(() => {
     isAutoPlayRef.current = isAutoPlay;
   }, [isAutoPlay]);
@@ -83,7 +83,7 @@ export const useInteractiveQuran = (onBack, session) => {
             useNativeDriver: true,
           }).start(() => {
             setModalVisible(false);
-            if(sound) { sound.unloadAsync(); setSound(null); }
+            if (sound) { sound.unloadAsync(); setSound(null); }
             setPlayingAyah(null);
             setTimeout(() => panY.setValue(0), 100);
           });
@@ -133,97 +133,97 @@ export const useInteractiveQuran = (onBack, session) => {
   }, [session]);
 
   const fetchUserProgress = async () => {
-     if (!session?.user?.id) return;
-     try {
-       // Cari log progress terakhir
-       const { data, error } = await supabase
-         .from('quran_progress')
-         .select('*')
-         .eq('user_id', session.user.id)
-         .order('surah_id', { ascending: false })
-         .order('ayah_number', { ascending: false })
-         .limit(1);
-         
-       if (!error && data && data.length > 0) {
-         const lastRow = data[0];
-         let nextSurah = lastRow.surah_id;
-         let nextAyah = lastRow.ayah_number;
-         
-         if (lastRow.status === 'passed') {
-           nextAyah += 1; // Simplifikasi (harusnya ngecek max ayat per surah, tp gpp)
-         }
+    if (!session?.user?.id) return;
+    try {
+      // Cari log progress terakhir
+      const { data, error } = await supabase
+        .from('quran_progress')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('surah_id', { ascending: false })
+        .order('ayah_number', { ascending: false })
+        .limit(1);
 
-         // Cek apakah hari ini sudah submit (last_assessed_at hitung berdasarkan kalender)
-         let lockedToday = false;
-         if (lastRow.last_assessed_at) {
-             const lastDate = new Date(lastRow.last_assessed_at).toDateString();
-             const todayDate = new Date().toDateString();
-             if (lastDate === todayDate) lockedToday = true;
-         }
+      if (!error && data && data.length > 0) {
+        const lastRow = data[0];
+        let nextSurah = lastRow.surah_id;
+        let nextAyah = lastRow.ayah_number;
 
-         setUserProgress({ unlockedSurah: nextSurah, unlockedAyah: nextAyah, isLockedToday: lockedToday });
-       }
-     } catch (err) {}
+        if (lastRow.status === 'passed') {
+          nextAyah += 1; // Simplifikasi (harusnya ngecek max ayat per surah, tp gpp)
+        }
+
+        // Cek apakah hari ini sudah submit (last_assessed_at hitung berdasarkan kalender)
+        let lockedToday = false;
+        if (lastRow.last_assessed_at) {
+          const lastDate = new Date(lastRow.last_assessed_at).toDateString();
+          const todayDate = new Date().toDateString();
+          if (lastDate === todayDate) lockedToday = true;
+        }
+
+        setUserProgress({ unlockedSurah: nextSurah, unlockedAyah: nextAyah, isLockedToday: lockedToday });
+      }
+    } catch (err) { }
   };
 
   const handleOpenLobby = async (surahId, ayahNumber) => {
-     if (userProgress.isLockedToday) {
-       Toast.show({ type: 'error', text1: 'Limit Habis 🛑', text2: 'Anda sudah menghabiskan kuota 1 ayat hari ini. Ulangi besok.' });
-       return;
-     }
+    if (userProgress.isLockedToday) {
+      Toast.show({ type: 'error', text1: 'Limit Habis 🛑', text2: 'Anda sudah menghabiskan kuota 1 ayat hari ini. Ulangi besok.' });
+      return;
+    }
 
-     setTargetSubmit({ surahId, ayahNumber });
-     setLobbyVisible(true);
-     fetchActiveTeachers();
+    setTargetSubmit({ surahId, ayahNumber });
+    setLobbyVisible(true);
+    fetchActiveTeachers();
   };
 
   const fetchActiveTeachers = async () => {
-     if (!session?.user) return;
-     try {
-        // Ambil guru yang meeting_link nya tidak null (sedang broadcast)
-        const myGender = session.user.user_metadata?.gender || 'Laki-laki'; // default jika blm set
-        
-        const { data, error } = await supabase
-           .from('teacher_schedules')
-           .select('*')
-           .not('meeting_link', 'is', null)
-           .eq('teacher_gender', myGender); // Saringan Anti-Ikhtilat
-           
-        if (!error && data) {
-           setActiveTeachers(data);
-        }
-     } catch (err) {}
+    if (!session?.user) return;
+    try {
+      // Ambil guru yang meeting_link nya tidak null (sedang broadcast)
+      const myGender = session.user.user_metadata?.gender || 'Laki-laki'; // default jika blm set
+
+      const { data, error } = await supabase
+        .from('teacher_schedules')
+        .select('*')
+        .not('meeting_link', 'is', null)
+        .eq('teacher_gender', myGender); // Saringan Anti-Ikhtilat
+
+      if (!error && data) {
+        setActiveTeachers(data);
+      }
+    } catch (err) { }
   };
 
   const joinTeacherClass = async (schedule) => {
-     if (schedule.current_students_count >= 4) {
-        Toast.show({ type: 'error', text1: 'Penuh 🔒', text2: 'Kursi ustadz ini sedang penuh (4/4). Tunggu sebentar.' });
-        return;
-     }
+    if (schedule.current_students_count >= 4) {
+      Toast.show({ type: 'error', text1: 'Penuh 🔒', text2: 'Kursi ustadz ini sedang penuh (4/4). Tunggu sebentar.' });
+      return;
+    }
 
-     // Insert ke tabel antrean
-     try {
-       const userGender = session.user.user_metadata?.gender || 'Laki-laki';
-       const userName = session.user.user_metadata?.full_name || 'Murid Hamba Allah';
+    // Insert ke tabel antrean
+    try {
+      const userGender = session.user.user_metadata?.gender || 'Laki-laki';
+      const userName = session.user.user_metadata?.full_name || 'Murid Hamba Allah';
 
-       const { error } = await supabase.from('active_class_participants').insert({
-          schedule_id: schedule.id,
-          student_id: session.user.id,
-          student_name: userName,
-          student_gender: userGender,
-          target_surah_id: targetSubmit.surahId,
-          target_ayah: targetSubmit.ayahNumber
-       });
+      const { error } = await supabase.from('active_class_participants').insert({
+        schedule_id: schedule.id,
+        student_id: session.user.id,
+        student_name: userName,
+        student_gender: userGender,
+        target_surah_id: targetSubmit.surahId,
+        target_ayah: targetSubmit.ayahNumber
+      });
 
-       if (error) throw error;
-       
-       // Berhasil daftar kursi, langsung teleport masuk Jitsi!
-       setLobbyVisible(false);
-       setInClassUrl(schedule.meeting_link);
-       
-     } catch (err) {
-       Toast.show({ type: 'error', text1: 'Gagal Masuk', text2: err.message });
-     }
+      if (error) throw error;
+
+      // Berhasil daftar kursi, langsung teleport masuk Jitsi!
+      setLobbyVisible(false);
+      setInClassUrl(schedule.meeting_link);
+
+    } catch (err) {
+      Toast.show({ type: 'error', text1: 'Gagal Masuk', text2: err.message });
+    }
   };
 
   useEffect(() => {
@@ -241,7 +241,7 @@ export const useInteractiveQuran = (onBack, session) => {
 
     Keyboard.dismiss();
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    
+
     setInput('');
     setMessages(prev => [...prev, { type: 'user', content: userText }]);
     setIsLoading(true);
@@ -249,7 +249,7 @@ export const useInteractiveQuran = (onBack, session) => {
     setTimeout(() => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       const lowerText = userText.toLowerCase();
-      
+
       if (lowerText === 'daftar' || lowerText === 'list') {
         if (allSurahs.length > 0) {
           setMessages(prev => [...prev, {
@@ -264,7 +264,7 @@ export const useInteractiveQuran = (onBack, session) => {
           }]);
         }
       } else {
-         setMessages(prev => [...prev, {
+        setMessages(prev => [...prev, {
           type: 'bot',
           content: '❌ Maaf, saya belum mengerti perintah Anda. Silakan ketik "daftar" untuk melihat surah.'
         }]);
@@ -275,20 +275,20 @@ export const useInteractiveQuran = (onBack, session) => {
 
   const handleOpenSurah = async (surah) => {
     console.log('--- Opening Surah:', surah.nama_latin);
-    
+
     // Reset Modal States
     panY.setValue(0);
     setCurrentPage(1);
     setSelectedSurah(surah);
     setExpandedTafsir(null);
     setTafsirDataMap({}); // Reset map for new surah
-    
+
     try {
       // 1. Get correct numbered surah
       const surahNomor = surah.id || surah.nomor;
-      const activeJson = mushafType === 'uthmani' ? verseUthmani : 
-                         mushafType === 'kemenag' ? verseKemenag : verseIndopak;
-                         
+      const activeJson = mushafType === 'uthmani' ? verseUthmani :
+        mushafType === 'kemenag' ? verseKemenag : verseIndopak;
+
       const data = activeJson[surahNomor]?.ayat || [];
       setVersesData(data);
       setModalVisible(true);
@@ -323,13 +323,13 @@ export const useInteractiveQuran = (onBack, session) => {
       console.log(`[Background] Fetching full Tafsir for Surah ${surahId}...`);
       const response = await fetch(`https://equran.id/api/v2/tafsir/${surahId}`);
       const result = await response.json();
-      
+
       if (result.code === 200 && result.data && result.data.tafsir) {
         const map = {};
         result.data.tafsir.forEach(t => {
           map[t.ayat] = t.teks;
         });
-        
+
         setTafsirDataMap(prev => ({ ...prev, ...map }));
         console.log(`[Background] Tafsir for Surah ${surahId} cached.`);
       }
@@ -343,10 +343,10 @@ export const useInteractiveQuran = (onBack, session) => {
       setExpandedTafsir(null);
     } else {
       setExpandedTafsir(ayahNumber);
-      
+
       // If tafsir for this specific ayah is not yet in map, fetch it instantly
       if (!selectedSurah) return;
-      
+
       if (!tafsirDataMap[ayahNumber]) {
         console.log(`[Instant] Fetching single Tafsir for Ayah ${ayahNumber}...`);
         try {
@@ -355,11 +355,11 @@ export const useInteractiveQuran = (onBack, session) => {
           // Use Quran.com API for single ayah (Resource 164 is Kemenag)
           const resp = await fetch(`https://api.quran.com/api/v4/tafsirs/164/by_ayah/${surahId}:${ayahNumber}`);
           const data = await resp.json();
-          
+
           if (data.tafsir && data.tafsir.text) {
             // Clean up basic HTML tags if any
             const cleanText = data.tafsir.text.replace(/<\/?[^>]+(>|$)/g, "");
-            
+
             setTafsirDataMap(prev => ({
               ...prev,
               [ayahNumber]: cleanText
@@ -376,8 +376,8 @@ export const useInteractiveQuran = (onBack, session) => {
   // Sync verses when mushafType changes
   useEffect(() => {
     if (modalVisible && selectedSurah) {
-      const activeJson = mushafType === 'uthmani' ? verseUthmani : 
-                         mushafType === 'kemenag' ? verseKemenag : verseIndopak;
+      const activeJson = mushafType === 'uthmani' ? verseUthmani :
+        mushafType === 'kemenag' ? verseKemenag : verseIndopak;
       const data = activeJson[selectedSurah.id]?.ayat || [];
       setVersesData(data);
     }
@@ -395,8 +395,8 @@ export const useInteractiveQuran = (onBack, session) => {
 
       // 2. Clear suara yang sedang berjalan (tanpa await agar UI tidak nge-hang)
       if (sound) {
-         sound.stopAsync().then(() => sound.unloadAsync()).catch(e => {});
-         setSound(null);
+        sound.stopAsync().then(() => sound.unloadAsync()).catch(e => { });
+        setSound(null);
       }
 
       // 3. Update UI SANGAT CEPAT (Langsung ganti ikon ke Pause/Active)
@@ -404,11 +404,11 @@ export const useInteractiveQuran = (onBack, session) => {
 
       const pad = (num, size) => String(num).padStart(size, '0');
       const url = `https://everyayah.com/data/Alafasy_64kbps/${pad(surahId, 3)}${pad(ayahNumber, 3)}.mp3`;
-      
+
       // 4. Buat objek suara baru secara async
       const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: url }, 
-        { 
+        { uri: url },
+        {
           shouldPlay: true,
           progressUpdateIntervalMillis: 100,
           androidImplementation: 'MediaPlayer'
@@ -416,25 +416,25 @@ export const useInteractiveQuran = (onBack, session) => {
         null,
         false // Do not download whole audio at once
       );
-      
+
       setSound(newSound);
 
       newSound.setOnPlaybackStatusUpdate((status) => {
         if (status.didJustFinish) {
           setPlayingAyah(null);
-          
+
           if (isAutoPlayRef.current) {
             // Find next ayah in current surah data
             const currentIndex = versesData.findIndex(v => v.ayat === ayahNumber);
             if (currentIndex !== -1 && currentIndex < versesData.length - 1) {
               const nextAyah = versesData[currentIndex + 1];
-              
+
               // Handle Pagination switch if needed
               const nextAyahPage = Math.ceil((currentIndex + 2) / versesPerPage);
               if (nextAyahPage > currentPage) {
                 setCurrentPage(nextAyahPage);
               }
-              
+
               // Delay a bit for natural transition
               setTimeout(() => {
                 handlePlayAyah(surahId, nextAyah.ayat);

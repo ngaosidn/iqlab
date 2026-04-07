@@ -27,6 +27,7 @@ export const usePengajar = (session) => {
   const [jadwalEnd, setJadwalEnd] = useState('');
   const isTahseenaTeacher = session?.user?.user_metadata?.lembaga === 'Tahseena';
   const [activeReminder, setActiveReminder] = useState(null);
+  const [manuallyFinishedIds, setManuallyFinishedIds] = useState([]);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -150,7 +151,7 @@ export const usePengajar = (session) => {
 
       if (settingsNewPassword) {
         if (!settingsOldPassword) throw new Error("Password lama wajib diisi untuk keamanan.");
-        
+
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: emailObj,
           password: settingsOldPassword
@@ -159,24 +160,24 @@ export const usePengajar = (session) => {
         if (signInError) throw new Error("Password lama Anda salah!");
 
         const { error: passUpdateError } = await supabase.auth.updateUser({
-           password: settingsNewPassword
+          password: settingsNewPassword
         });
-        
+
         if (passUpdateError) throw passUpdateError;
       }
 
       if (settingsPhone !== undefined) {
-         const { error: metaError } = await supabase.auth.updateUser({
-            data: { phone: settingsPhone }
-         });
-         if (metaError) throw metaError;
+        const { error: metaError } = await supabase.auth.updateUser({
+          data: { phone: settingsPhone }
+        });
+        if (metaError) throw metaError;
       }
 
       Toast.show({ type: 'success', text1: 'Berhasil 🥳', text2: 'Profil Pengajar telah diperbarui.' });
       setSettingsOldPassword('');
       setSettingsNewPassword('');
       setCurrentTeacherView('dashboard');
-      
+
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Gagal Update', text2: err.message });
     } finally {
@@ -187,91 +188,91 @@ export const usePengajar = (session) => {
 
   useEffect(() => {
     if (isTeacherLoggedIn && session?.user?.id) {
-       fetchSchedules();
+      fetchSchedules();
     }
   }, [isTeacherLoggedIn, session]);
 
   useEffect(() => {
-     if (!schedules || schedules.length === 0) {
-        setActiveReminder(null);
-        return;
-     }
+    if (!schedules || schedules.length === 0) {
+      setActiveReminder(null);
+      return;
+    }
 
-     const evaluateReminder = () => {
-        const now = new Date();
-        const dayMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-        const currentDay = dayMap[now.getDay()];
-        const currentHour = now.getHours();
-        const currentMin = now.getMinutes();
-        const totalCurrentMins = currentHour * 60 + currentMin;
+    const evaluateReminder = () => {
+      const now = new Date();
+      const dayMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const currentDay = dayMap[now.getDay()];
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+      const totalCurrentMins = currentHour * 60 + currentMin;
 
-        let foundOngoing = null;
+      let foundOngoing = null;
 
-        for (let s of schedules) {
-           if (s.day_of_week === currentDay) {
-              const timeMatch = s.time_slot.match(/^(\d{2})\.(\d{2})\s-\s(\d{2})\.(\d{2})/);
-              if (timeMatch) {
-                 const startH = parseInt(timeMatch[1], 10);
-                 const startM = parseInt(timeMatch[2], 10);
-                 const endH = parseInt(timeMatch[3], 10);
-                 const endM = parseInt(timeMatch[4], 10);
+      for (let s of schedules) {
+        if (s.day_of_week === currentDay) {
+          const timeMatch = s.time_slot.match(/^(\d{2})\.(\d{2})\s-\s(\d{2})\.(\d{2})/);
+          if (timeMatch) {
+            const startH = parseInt(timeMatch[1], 10);
+            const startM = parseInt(timeMatch[2], 10);
+            const endH = parseInt(timeMatch[3], 10);
+            const endM = parseInt(timeMatch[4], 10);
 
-                 const totalStartSlotMins = startH * 60 + startM;
-                 const totalEndSlotMins = endH * 60 + endM;
+            const totalStartSlotMins = startH * 60 + startM;
+            const totalEndSlotMins = endH * 60 + endM;
 
-                 const startReminderMins = totalStartSlotMins - 3;
-                 const endReminderMins = totalEndSlotMins - 5;
+            const startReminderMins = totalStartSlotMins - 3; // 3 menit sebelum mulai
+            const endReminderMins = totalEndSlotMins; // TEPAT di jam berakhir (Tidak -5 lagi)
 
-                 if (totalCurrentMins >= startReminderMins && totalCurrentMins < endReminderMins) {
-                    foundOngoing = s;
-                    break;
-                 }
+            if (totalCurrentMins >= startReminderMins && totalCurrentMins < endReminderMins) {
+              if (!manuallyFinishedIds.includes(s.id)) {
+                foundOngoing = s;
+                break;
               }
-           }
+            }
+          }
         }
-        setActiveReminder(foundOngoing);
-     };
+      }
+      setActiveReminder(foundOngoing);
+    };
 
-     evaluateReminder();
-     const intervalId = setInterval(evaluateReminder, 10000);
-     return () => clearInterval(intervalId);
-  }, [schedules]);
+    evaluateReminder();
+    const intervalId = setInterval(evaluateReminder, 10000);
+    return () => clearInterval(intervalId);
+  }, [schedules, manuallyFinishedIds]);
 
   const fetchSchedules = async () => {
     if (!session?.user?.id) return;
     try {
       const { data, error } = await supabase.from('teacher_schedules').select('*').eq('teacher_id', session.user.id);
       if (!error && data) {
-         // Auto-Cleanup Link: Hapus link jika kelas sudah selesai > 45 menit atau beda hari
-         const now = new Date();
-         const dayMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-         const currentDay = dayMap[now.getDay()];
-         const currentMins = now.getHours() * 60 + now.getMinutes();
+        const now = new Date();
+        const dayMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+        const currentDay = dayMap[now.getDay()];
+        const currentMins = now.getHours() * 60 + now.getMinutes();
 
-         const cleanedData = await Promise.all(data.map(async (s) => {
-            if (s.meeting_link) {
-               const timeMatch = s.time_slot.match(/^(\d{2})\.(\d{2})\s-\s(\d{2})\.(\d{2})/);
-               if (timeMatch) {
-                  const endH = parseInt(timeMatch[3], 10);
-                  const endM = parseInt(timeMatch[4], 10);
-                  const totalEndMins = endH * 60 + endM;
+        const cleanedData = await Promise.all(data.map(async (s) => {
+          if (s.meeting_link) {
+            const timeMatch = s.time_slot.match(/^(\d{2})\.(\d{2})\s-\s(\d{2})\.(\d{2})/);
+            if (timeMatch) {
+              const endH = parseInt(timeMatch[3], 10);
+              const endM = parseInt(timeMatch[4], 10);
+              const totalEndMins = endH * 60 + endM;
 
-                  const isExpiredToday = (s.day_of_week === currentDay && currentMins >= (totalEndMins + 45));
-                  const isOldDay = (s.day_of_week !== currentDay);
+              const isExpiredToday = (s.day_of_week === currentDay && currentMins >= (totalEndMins + 45));
+              const isOldDay = (s.day_of_week !== currentDay);
 
-                  if (isExpiredToday || isOldDay) {
-                     // Bersihkan di database secara diam-diam
-                     await supabase.from('teacher_schedules').update({ meeting_link: null }).eq('id', s.id);
-                     return { ...s, meeting_link: null }; // Update state lokal
-                  }
-               }
+              if (isExpiredToday || isOldDay) {
+                await supabase.from('teacher_schedules').update({ meeting_link: null }).eq('id', s.id);
+                return { ...s, meeting_link: null };
+              }
             }
-            return s;
-         }));
+          }
+          return s;
+        }));
 
-         setSchedules(cleanedData);
+        setSchedules(cleanedData);
       }
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const handleAddSchedule = async () => {
@@ -279,8 +280,7 @@ export const usePengajar = (session) => {
       Toast.show({ type: 'error', text1: 'Sistem Terkunci 🔒', text2: 'Pengajar Mitra hanya dapat mengisi maksimal 1 jadwal per minggu.' });
       return;
     }
-    
-    // Validasi Waktu
+
     const timeRegex = /^([01]?[0-9]|2[0-3])\.[0-5][0-9]$/;
     if (!timeRegex.test(jadwalStart) || !timeRegex.test(jadwalEnd)) {
       Toast.show({ type: 'error', text1: 'Format Salah', text2: 'Gunakan pemisah titik (.) bukan titik dua (Contoh: 16.30)' });
@@ -292,13 +292,11 @@ export const usePengajar = (session) => {
     const totalStartMins = startH * 60 + startM;
     const totalEndMins = endH * 60 + endM;
 
-    // Batas pengajaran: 00:00 - 23:59 (Bebas 24 Jam)
     if (totalStartMins < 0 || totalEndMins > 24 * 60 || totalStartMins >= totalEndMins) {
       Toast.show({ type: 'error', text1: 'Format Jam Salah', text2: 'Jadwal waktu (Mulai & Selesai) harus logis dan di antara 00.00 hingga 23.59.' });
       return;
     }
 
-    // Durasi terbatas: 25 - 45 menit
     const duration = totalEndMins - totalStartMins;
     if (duration < 25 || duration > 45) {
       Toast.show({ type: 'error', text1: 'Durasi Ditolak', text2: 'Durasi sesi mengajar minimal 25 menit dan maksimal 45 menit.' });
@@ -306,8 +304,6 @@ export const usePengajar = (session) => {
     }
 
     const timeSlotFinal = `${jadwalStart} - ${jadwalEnd} WIB`;
-
-    // Cegah duplikat
     const isDuplicate = schedules.find(s => s.day_of_week === jadwalDay && s.time_slot === timeSlotFinal);
     if (isDuplicate) {
       Toast.show({ type: 'info', text1: 'Jadwal Bentrok', text2: 'Anda sudah mendaftarkan jadwal di waktu tersebut.' });
@@ -339,17 +335,16 @@ export const usePengajar = (session) => {
     try {
       const { error } = await supabase.from('teacher_schedules').delete().eq('id', id);
       if (!error) {
-         Toast.show({ type: 'info', text1: 'Terhapus', text2: 'Jadwal Anda telah ditarik.' });
-         fetchSchedules();
+        Toast.show({ type: 'info', text1: 'Terhapus', text2: 'Jadwal Anda telah ditarik.' });
+        fetchSchedules();
       }
-    } catch (err) {}
+    } catch (err) { }
   };
 
   const handleGenerateLink = async (scheduleId) => {
     setIsLoading(true);
     try {
       const randomId = Math.random().toString(36).substring(2, 12);
-      // Menggunakan free community server (meet.ffmuc.net) yang TIDAK wajib login Google/FB
       const meetingLink = `https://meet.ffmuc.net/iqlab-${randomId}`;
 
       const { data, error } = await supabase
@@ -359,13 +354,9 @@ export const usePengajar = (session) => {
         .select();
 
       if (error) throw error;
-      if (!data || data.length === 0) throw new Error("Gagal menyimpan ke database (Supabase RLS menolak akses form mu).");
+      if (!data || data.length === 0) throw new Error("Gagal menyimpan ke database.");
 
-      Toast.show({
-        type: 'success',
-        text1: 'Link Berhasil Dibuat! 🚀',
-        text2: 'Tautan kelas Anda telah terdaftar dan siap digunakan.',
-      });
+      Toast.show({ type: 'success', text1: 'Link Berhasil Dibuat! 🚀', text2: 'Tautan kelas Anda telah terdaftar.' });
       fetchSchedules();
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Gagal Membuat Link', text2: err.message });
@@ -375,44 +366,35 @@ export const usePengajar = (session) => {
   };
 
   const handleFinishMeeting = async (scheduleId) => {
+    // 0. UPDATE UI SEKETIKA (Pindahkan ID ke daftar manual)
+    setManuallyFinishedIds(prev => [...prev, scheduleId]);
+
     setIsLoading(true);
     try {
-      // 0. Kirim Sinyal BROADCAST (Cepat & Real-time) ke semua murid di ruangan
+      // 1. Kirim Sinyal BROADCAST (Cepat)
       const channel = supabase.channel(`room_${scheduleId}`);
       await channel.subscribe(async (status) => {
-         if (status === 'SUBSCRIBED') {
-            await channel.send({
-               type: 'broadcast',
-               event: 'FORCE_END_MEETING',
-               payload: { msg: 'Teacher ended session' }
-            });
-            supabase.removeChannel(channel);
-         }
+        if (status === 'SUBSCRIBED') {
+          await channel.send({
+            type: 'broadcast',
+            event: 'FORCE_END_MEETING',
+            payload: { msg: 'Teacher ended session' }
+          });
+          supabase.removeChannel(channel);
+        }
       });
 
-      // 1. Bersihkan link di tabel teacher_schedules
-      const { error: scheduleError } = await supabase
-        .from('teacher_schedules')
-        .update({ meeting_link: null, current_students_count: 0 })
-        .eq('id', scheduleId);
-      
-      if (scheduleError) throw scheduleError;
+      // 2. Bersihkan database (Link & Antrean)
+      await supabase.from('teacher_schedules').update({ meeting_link: null, current_students_count: 0 }).eq('id', scheduleId);
+      await supabase.from('active_class_participants').delete().eq('schedule_id', scheduleId);
 
-      // 2. Bersihkan seluruh antrian murid di kelas tersebut
-      const { error: participantError } = await supabase
-        .from('active_class_participants')
-        .delete()
-        .eq('schedule_id', scheduleId);
-
-      if (participantError) throw participantError;
-      
-      Toast.show({ 
-        type: 'success', 
-        text1: 'Sesi Selesai 🏁', 
-        text2: 'Kelas telah resmi ditutup dan semua murid dikeluarkan.' 
+      Toast.show({
+        type: 'success',
+        text1: 'Sesi Selesai 🏁',
+        text2: 'Kelas telah resmi ditutup.'
       });
-      
-      fetchSchedules(); 
+
+      fetchSchedules();
       return true;
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Gagal Menutup Sesi', text2: err.message });
@@ -425,7 +407,7 @@ export const usePengajar = (session) => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setIsTeacherLoggedIn(false);
-    Toast.show({ type: 'info', text1: 'Sesi Berakhir', text2: 'Anda telah keluar dari Hub Pengajar.' });
+    Toast.show({ type: 'info', text1: 'Sesi Berakhir', text2: 'Anda telah keluar.' });
   };
 
   return {

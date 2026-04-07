@@ -5,8 +5,8 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
-import Svg, { Defs, Pattern, Circle, Rect } from 'react-native-svg';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import HomeHeader from '../components/HomeHeader';
 import Toast from 'react-native-toast-message';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
@@ -36,67 +36,11 @@ export default function HomeScreen({ onNavigate, session }) {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }}>
       <View style={styles.container}>
 
-      {/* Header Card */}
-      <View style={styles.headerWrapper}>
-        <LinearGradient
-          colors={['#1d4ed8', '#1e3a8a']} // Gradient biru dari terang ke gelap
-          style={styles.headerGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          {/* Pattern Titik-Titik (Dotted Overlay) */}
-          <View style={[StyleSheet.absoluteFill, { overflow: 'hidden', borderBottomLeftRadius: 30, borderBottomRightRadius: 30 }]}>
-            <Svg width="100%" height="100%">
-              <Defs>
-                <Pattern id="dots" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
-                  <Circle cx="2" cy="2" r="1.5" fill="rgba(255,255,255,0.15)" />
-                </Pattern>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#dots)" />
-            </Svg>
-          </View>
-
-          {/* Efek Cahaya Mengkilap (Shimmer) */}
-          <Animated.View style={[
-            StyleSheet.absoluteFill,
-            {
-              width: 150,
-              height: '180%',
-              top: '-40%',
-              transform: [
-                { translateX: translateX },
-                { rotate: '30deg' } // Kemiringan cahaya
-              ]
-            }
-          ]}>
-            <LinearGradient
-              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={{ flex: 1 }}
-            />
-          </Animated.View>
-
-          {/* Logo (Tanpa Kotak) - Hidden Trigger */}
-          <TouchableOpacity 
-            activeOpacity={0.8} 
-            onLongPress={() => {
-              setShowAdminHub(true);
-            }}
-            delayLongPress={3000}
-          >
-            <Image
-              source={require('../../assets/logo.svg')}
-              style={styles.logo}
-              contentFit="contain"
-            />
-          </TouchableOpacity>
-
-          {/* Texts */}
-          <Text style={styles.titleText}>Quran Friendly, Tajwid Easy ✨</Text>
-          <Text style={styles.subtitleText}>BACA, TADABBUR DAN TAJWID INTERACTIVE 🚀</Text>
-        </LinearGradient>
-      </View>
+      {/* Header Card Component */}
+      <HomeHeader 
+        translateX={translateX}
+        onLogoLongPress={() => setShowAdminHub(true)}
+      />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
@@ -320,39 +264,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f1f5f9', // Warna body background sedikit abu-abu muda
-  },
-  headerWrapper: {
-    // Hilangkan padding samping agar full layar
-  },
-  headerGradient: {
-    padding: 24,
-    paddingTop: Platform.OS === 'android' ? 50 : 30, // Geser padding atas ke dalam gradient
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    overflow: 'hidden', // Pastikan konten di dalamnya (titik-titik) tidak keluar batas
-    // Efek modern glow (optional/dapat disesuaikan)
-    shadowColor: '#1d4ed8',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 15,
-    elevation: 8,
-  },
-  logo: {
-    width: 140,
-    height: 48,
-    marginBottom: 20, // Tambah jarak bawah sedikit karena box hilang
-  },
-  titleText: {
-    color: '#ffffff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitleText: {
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.5,
   },
   scrollContent: {
     paddingBottom: 40,
