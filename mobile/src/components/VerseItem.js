@@ -16,7 +16,8 @@ const VerseItem = React.memo(({
   isInteractiveActive,
   isPassed,
   isLocked,
-  onSend
+  onSend,
+  fontSize
 }) => {
   return (
     <View style={styles.verseCardModal}>
@@ -90,7 +91,16 @@ const VerseItem = React.memo(({
       </View>
 
       <View style={styles.verseTextContainer}>
-        <Text style={[styles.verseArabicText, { fontFamily: fontFamily || 'Uthmanic-Neo-Color' }]}>{verse.teks_arab}</Text>
+        <Text style={[
+          styles.verseArabicText, 
+          { 
+            fontFamily: fontFamily || 'Uthmanic-Neo-Color',
+            fontSize: fontSize || 30,
+            lineHeight: (fontSize || 30) * 1.8
+          }
+        ]}>
+          {verse.teks_arab}
+        </Text>
         <Text style={styles.verseTranslationText}>{(verse.terjemahan || "").replace(/<sup[^>]*>.*?<\/sup>/g, '')}</Text>
       </View>
 

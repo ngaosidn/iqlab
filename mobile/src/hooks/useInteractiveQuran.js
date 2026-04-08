@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Animated, Dimensions, Keyboard, LayoutAnimation, PanResponder, Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { useFonts } from 'expo-font';
-import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { quranService } from '../services/quranService';
 import { teacherService } from '../services/teacherService';
 import { progressService } from '../services/progressService';
@@ -45,12 +45,33 @@ export const useInteractiveQuran = (onBack, session) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [versesPerPage] = useState(10);
 
+  const [fontSize, setFontSize] = useState(30);
+
   // RPG Progression & Lobby State
   const [userProgress, setUserProgress] = useState({ unlockedSurah: 1, unlockedAyah: 1, isLockedToday: false });
   const [lobbyVisible, setLobbyVisible] = useState(false);
   const [activeTeachers, setActiveTeachers] = useState([]);
   const [targetSubmit, setTargetSubmit] = useState(null);
   const [inClassUrl, setInClassUrl] = useState(null);
+  
+  // Load settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const savedSize = await AsyncStorage.getItem('quran_font_size');
+        if (savedSize) setFontSize(parseInt(savedSize));
+      } catch (e) {}
+    };
+    loadSettings();
+  }, []);
+
+  const updateFontSize = async (increment) => {
+    const newSize = Math.max(16, Math.min(60, fontSize + (increment ? 2 : -2)));
+    setFontSize(newSize);
+    try {
+      await AsyncStorage.setItem('quran_font_size', newSize.toString());
+    } catch (e) {}
+  };
 
   useEffect(() => {
     isAutoPlayRef.current = isAutoPlay;
@@ -451,6 +472,8 @@ export const useInteractiveQuran = (onBack, session) => {
     joinTeacherClass,
     inClassUrl,
     setInClassUrl,
-    handleOpenLobby
+    handleOpenLobby,
+    fontSize,
+    updateFontSize
   };
 };

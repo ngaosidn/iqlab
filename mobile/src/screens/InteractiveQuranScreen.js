@@ -67,7 +67,9 @@ export default function InteractiveQuranScreen({ onBack, session }) {
         joinTeacherClass,
         inClassUrl,
         setInClassUrl,
-        handleOpenLobby
+        handleOpenLobby,
+        fontSize,
+        updateFontSize
     } = quranHook;
 
     const checkAuth = (onSuccess) => {
@@ -123,10 +125,11 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                 isInteractiveActive={isActiveAyah}
                 isPassed={isPassedAyah}
                 isLocked={isLocked}
+                fontSize={fontSize}
                 onSend={() => checkAuth(() => handleOpenLobby(selectedSurah?.id, verse.ayat))}
             />
         );
-    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby]);
+    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize]);
 
 
 
@@ -250,6 +253,8 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                     isLoggedIn={isLoggedIn}
                     tafsirDataMap={tafsirDataMap}
                     userProgress={userProgress}
+                    fontSize={fontSize}
+                    updateFontSize={updateFontSize}
                 />
 
                 <TeacherLobby

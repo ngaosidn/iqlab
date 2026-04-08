@@ -28,7 +28,9 @@ const MushafModal = ({
   playingAyah,
   isLoggedIn,
   tafsirDataMap,
-  userProgress
+  userProgress,
+  fontSize,
+  updateFontSize
 }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
@@ -52,9 +54,9 @@ const MushafModal = ({
                       if (!isNaN(num) && num > 0 && num <= versesData.length) {
                         const targetIndex = num - 1;
                         modalScrollRef.current?.scrollToIndex({
-                          index: targetIndex,
-                          animated: false,
-                          viewPosition: 0
+                           index: targetIndex,
+                           animated: false,
+                           viewPosition: 0
                         });
                         setTimeout(() => {
                           modalScrollRef.current?.scrollToIndex({
@@ -96,10 +98,21 @@ const MushafModal = ({
                     style={[styles.mushafOption, mushafType === type && styles.mushafOptionActive]}
                   >
                     <Text style={[styles.mushafOptionText, mushafType === type && styles.mushafOptionTextActive]}>
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                      {type === 'uthmani' ? 'Uth' : 'Indp'}
                     </Text>
                   </TouchableOpacity>
                 ))}
+              </View>
+              <View style={styles.fontSizeControl}>
+                <TouchableOpacity onPress={() => updateFontSize(false)} style={styles.fontBtn}>
+                  <Text style={styles.fontBtnText}>A-</Text>
+                </TouchableOpacity>
+                <View style={styles.fontSizeDisplay}>
+                  <Text style={styles.fontSizeValue}>{fontSize}</Text>
+                </View>
+                <TouchableOpacity onPress={() => updateFontSize(true)} style={styles.fontBtn}>
+                  <Text style={styles.fontBtnText}>A+</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -176,8 +189,42 @@ const styles = StyleSheet.create({
   mushafSwitcher: { flex: 1, flexDirection: 'row', backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, padding: 2, gap: 2 },
   mushafOption: { flex: 1, paddingVertical: 5, alignItems: 'center', borderRadius: 8 },
   mushafOptionActive: { backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe' },
-  mushafOptionText: { fontSize: 9, fontWeight: 'bold', color: '#64748b' },
+  mushafOptionText: { fontSize: 13, fontWeight: 'bold', color: '#64748b' },
   mushafOptionTextActive: { color: '#3b82f6' },
+  fontSizeControl: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 10,
+    padding: 2,
+    gap: 2,
+    width: 100,
+  },
+  fontBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fontBtnText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#475569',
+  },
+  fontSizeDisplay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fontSizeValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0f172a',
+  },
   closeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fee2e2', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#fecaca' },
   modalFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, paddingHorizontal: 16, backgroundColor: '#f8fafc', borderTopWidth: 1, borderTopColor: '#cbd5e1' },
   paginationBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' },
