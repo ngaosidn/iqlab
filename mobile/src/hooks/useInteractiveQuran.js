@@ -7,9 +7,6 @@ import { quranService } from '../services/quranService';
 import { teacherService } from '../services/teacherService';
 import { progressService } from '../services/progressService';
 
-import verseUthmani from '../../assets/data/verse.json';
-import verseKemenag from '../../assets/data/kemenag.json';
-import verseIndopak from '../../assets/data/indopak.json';
 
 export const useInteractiveQuran = (onBack, session) => {
   const [fontsLoaded] = useFonts({
@@ -52,7 +49,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const [userProgress, setUserProgress] = useState({ unlockedSurah: 1, unlockedAyah: 1, isLockedToday: false });
   const [lobbyVisible, setLobbyVisible] = useState(false);
   const [activeTeachers, setActiveTeachers] = useState([]);
-  const [targetSubmit, setTargetSubmit] = useState(null); 
+  const [targetSubmit, setTargetSubmit] = useState(null);
   const [inClassUrl, setInClassUrl] = useState(null);
 
   useEffect(() => {
@@ -125,10 +122,10 @@ export const useInteractiveQuran = (onBack, session) => {
       try {
         const surahs = await quranService.fetchSurahs();
         setAllSurahs(surahs);
-        
+
         if (session?.user?.id) {
-            const progress = await progressService.fetchUserProgress(session.user.id);
-            setUserProgress(progress);
+          const progress = await progressService.fetchUserProgress(session.user.id);
+          setUserProgress(progress);
         }
       } catch (error) {
         console.error('Error initializing Quran data:', error);
@@ -257,14 +254,19 @@ export const useInteractiveQuran = (onBack, session) => {
     setExpandedTafsir(null);
     setTafsirDataMap({});
 
+    // Langsung buka modal agar terasa instan
+    setModalVisible(true);
+    setVersesData([]);
+
     try {
       const surahNomor = surah.id || surah.nomor;
-      const activeJson = mushafType === 'uthmani' ? verseUthmani :
-        mushafType === 'kemenag' ? verseKemenag : verseIndopak;
+      const data = await quranService.getSurahVerses(surahNomor, mushafType);
 
-      const data = activeJson[surahNomor]?.ayat || [];
-      setVersesData(data);
-      setModalVisible(true);
+      // Beri jeda sangat singkat agar animasi modal tidak terganggu
+      setTimeout(() => {
+        setVersesData(data);
+      }, 50);
+
 
       // Background fetch full surah tafsir
       quranService.fetchFullSurahTafsir(surahNomor).then(map => {
@@ -304,68 +306,100 @@ export const useInteractiveQuran = (onBack, session) => {
   };
 
   useEffect(() => {
-    if (modalVisible && selectedSurah) {
-      const activeJson = mushafType === 'uthmani' ? verseUthmani :
-        mushafType === 'kemenag' ? verseKemenag : verseIndopak;
-      const data = activeJson[selectedSurah.id]?.ayat || [];
-      setVersesData(data);
-    }
+    const refreshVerses = async () => {
+      if (modalVisible && selectedSurah) {
+        const data = await quranService.getSurahVerses(selectedSurah.id, mushafType);
+        setVersesData(data);
+      }
+    };
+    refreshVerses();
   }, [mushafType, modalVisible, selectedSurah]);
+
+
+  // Ref untuk versesData guna menghindari stale closure di callback audio
+  const versesDataRef = useRef([]);
+  useEffect(() => {
+    versesDataRef.current = versesData;
+  }, [versesData]);
 
   const handlePlayAyah = async (surahId, ayahNumber) => {
     try {
-      if (sound && playingAyah === ayahNumber) {
-        setPlayingAyah(null);
-        await sound.unloadAsync();
-        setSound(null);
-        return;
-      }
-
+      // 1. Bersihkan audio yang sedang berjalan dengan aman
       if (sound) {
-        sound.stopAsync().then(() => sound.unloadAsync()).catch(e => { });
+        setPlayingAyah(null);
+        try {
+          // Berhenti dulu baru unload untuk kestabilan di Android
+          await sound.stopAsync();
+          await sound.unloadAsync();
+        } catch (e) {
+          console.log('Audio reset cleanup:', e.message);
+        }
         setSound(null);
+        
+        // Jika klik tombol yang sama (Toggle Off), stop di sini
+        if (playingAyah === ayahNumber) return;
       }
 
       setPlayingAyah(ayahNumber);
 
       const pad = (num, size) => String(num).padStart(size, '0');
-      const url = `https://everyayah.com/data/Alafasy_64kbps/${pad(surahId, 3)}${pad(ayahNumber, 3)}.mp3`;
+      // Menggunakan Alafasy 128kbps untuk kualitas lebih baik
+      const url = `https://everyayah.com/data/Alafasy_128kbps/${pad(surahId, 3)}${pad(ayahNumber, 3)}.mp3`;
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: url },
-        {
-          shouldPlay: true,
-          progressUpdateIntervalMillis: 100,
-          androidImplementation: 'MediaPlayer'
-        },
-        null,
-        false
+        { 
+          shouldPlay: true, 
+          progressUpdateIntervalMillis: 1000 // Interval lebih santai
+        }
       );
 
       setSound(newSound);
 
       newSound.setOnPlaybackStatusUpdate((status) => {
+        if (!status.isLoaded) {
+          if (status.error) {
+            console.warn(`Audio error @ ${surahId}:${ayahNumber}:`, status.error);
+            handleAudioError(surahId, ayahNumber);
+          }
+          return;
+        }
+
         if (status.didJustFinish) {
           setPlayingAyah(null);
-
           if (isAutoPlayRef.current) {
-            const currentIndex = versesData.findIndex(v => v.ayat === ayahNumber);
-            if (currentIndex !== -1 && currentIndex < versesData.length - 1) {
-              const nextAyah = versesData[currentIndex + 1];
-              const nextAyahPage = Math.ceil((currentIndex + 2) / versesPerPage);
-              if (nextAyahPage > currentPage) {
-                setCurrentPage(nextAyahPage);
-              }
-              setTimeout(() => {
-                handlePlayAyah(surahId, nextAyah.ayat);
-              }, 600);
-            } else {
-              setIsAutoPlay(false);
-            }
+            autoPlayNext(surahId, ayahNumber);
           }
         }
       });
-    } catch (e) { console.error('Audio play error', e); }
+    } catch (e) { 
+      console.error('Initial Load Error:', e.message);
+      handleAudioError(surahId, ayahNumber);
+    }
+  };
+
+  const handleAudioError = (surahId, ayahNumber) => {
+    setPlayingAyah(null);
+    if (isAutoPlayRef.current) {
+      // Jika error, lompat ke ayat berikutnya setelah 1 detik
+      setTimeout(() => autoPlayNext(surahId, ayahNumber), 1000);
+    }
+  };
+
+  const autoPlayNext = (surahId, currentAyah) => {
+    const data = versesDataRef.current;
+    const currentIndex = data.findIndex(v => v.ayat === currentAyah);
+    
+    if (currentIndex !== -1 && currentIndex < data.length - 1) {
+      const nextAyah = data[currentIndex + 1];
+      // Jeda 600ms sebagai "napas" antar ayat
+      setTimeout(() => {
+        handlePlayAyah(surahId, nextAyah.ayat);
+      }, 600);
+    } else {
+      setIsAutoPlay(false);
+      setPlayingAyah(null);
+    }
   };
 
   const handlePageChange = useCallback((newPage) => {

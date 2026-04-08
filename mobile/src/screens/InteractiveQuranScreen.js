@@ -249,6 +249,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                     playingAyah={playingAyah}
                     isLoggedIn={isLoggedIn}
                     tafsirDataMap={tafsirDataMap}
+                    userProgress={userProgress}
                 />
 
                 <TeacherLobby

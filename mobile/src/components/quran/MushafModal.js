@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View, Modal, TouchableOpacity, Animated, TextInput, Dimensions, Platform } from 'react-native';
+import { StyleSheet, Text, View, Modal, TouchableOpacity, Animated, TextInput, Dimensions, Platform, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import Toast from 'react-native-toast-message';
@@ -27,7 +27,8 @@ const MushafModal = ({
   expandedTafsir,
   playingAyah,
   isLoggedIn,
-  tafsirDataMap
+  tafsirDataMap,
+  userProgress
 }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
@@ -88,7 +89,7 @@ const MushafModal = ({
                 <Text style={[styles.autoBtnText, isAutoPlay && styles.autoBtnTextActive]}>AUTO</Text>
               </TouchableOpacity>
               <View style={styles.mushafSwitcher}>
-                {['uthmani', 'kemenag', 'indopak'].map(type => (
+                {['uthmani', 'indopak'].map(type => (
                   <TouchableOpacity
                     key={type}
                     onPress={() => checkAuth(() => setMushafType(type))}
@@ -103,19 +104,36 @@ const MushafModal = ({
             </View>
           </View>
           <View style={{ flex: 1, width: '100%' }}>
-            <AnimatedFlashList
-              ref={modalScrollRef}
-              data={versesData}
-              renderItem={renderVerseItem}
-              extraData={{ expandedTafsir, playingAyah, mushafType, isLoggedIn, tafsirDataMap }}
-              estimatedItemSize={350}
-              drawDistance={Dimensions.get('window').height * 4}
-              removeClippedSubviews={Platform.OS === 'android'}
-              keyExtractor={(item) => `verse-${item.ayat}`}
-              contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
-              ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-              keyboardShouldPersistTaps="always"
-            />
+            {versesData.length === 0 ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator size="large" color="#3b82f6" />
+                <Text style={{ marginTop: 10, color: '#64748b', fontSize: 13 }}>Memuat ayat...</Text>
+              </View>
+            ) : (
+              <AnimatedFlashList
+                ref={modalScrollRef}
+                data={versesData}
+                renderItem={renderVerseItem}
+                extraData={{
+                  expandedTafsir,
+                  playingAyah,
+                  mushafType,
+                  isLoggedIn,
+                  tafsirDataMap,
+                  unlockedAyah: userProgress?.unlockedAyah,
+                  unlockedSurah: userProgress?.unlockedSurah
+                }}
+                estimatedItemSize={280}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                removeClippedSubviews={true}
+                keyExtractor={(item) => `${selectedSurah?.id}-${item.ayat}`}
+                contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
+                ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+                keyboardShouldPersistTaps="always"
+              />
+            )}
           </View>
           <View style={[styles.modalFooter, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
             <TouchableOpacity style={styles.paginationBtn} onPress={() => modalScrollRef.current?.scrollToIndex({ index: 0, animated: true })}>

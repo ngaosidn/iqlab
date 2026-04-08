@@ -91,7 +91,7 @@ const VerseItem = React.memo(({
 
       <View style={styles.verseTextContainer}>
         <Text style={[styles.verseArabicText, { fontFamily: fontFamily || 'Uthmanic-Neo-Color' }]}>{verse.teks_arab}</Text>
-        <Text style={styles.verseTranslationText}>{verse.terjemahan.replace(/<sup[^>]*>.*?<\/sup>/g, '')}</Text>
+        <Text style={styles.verseTranslationText}>{(verse.terjemahan || "").replace(/<sup[^>]*>.*?<\/sup>/g, '')}</Text>
       </View>
 
       {isExpanded && (

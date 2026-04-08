@@ -15,6 +15,8 @@ import InteractiveQuranScreen from './src/screens/InteractiveQuranScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import PengajarScreen from './src/screens/PengajarScreen';
 import { supabase } from './src/lib/supabase';
+import { databaseService } from './src/services/databaseService';
+
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -39,6 +41,14 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    // Initialize & Bootstrap SQLite
+    if (Platform.OS !== 'web') {
+      databaseService.bootstrap().catch(err => console.log('DB Bootstrap Error:', err));
+    }
+  }, []);
+
 
   useEffect(() => {
     // Sembunyikan Splash Native dengan sedikit jeda agar transisi benar-benar mulus
