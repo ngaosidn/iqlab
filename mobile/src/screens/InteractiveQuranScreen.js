@@ -354,7 +354,9 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                             />
                                         </View>
                                     </View>
-                                    <TouchableOpacity onPress={() => { setModalVisible(false); if (sound) sound.unloadAsync(); setPlayingAyah(null); }} style={styles.closeBtn}><Feather name="x" size={18} color="#64748b" /></TouchableOpacity>
+                                                                         <TouchableOpacity onPress={() => { setModalVisible(false); if (sound) sound.unloadAsync(); setPlayingAyah(null); }} style={styles.closeBtn}>
+                                         <Feather name="x" size={24} color="#ef4444" />
+                                     </TouchableOpacity>
                                 </View>
                                 <View style={styles.modalHeaderBottomRow}>
                                     <TouchableOpacity style={[styles.autoBtn, isAutoPlay && styles.autoBtnActive]} onPress={() => checkAuth(() => setIsAutoPlay(!isAutoPlay))}>
@@ -380,7 +382,8 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                     renderItem={renderVerseItem}
                                     extraData={{ expandedTafsir, playingAyah, mushafType, isLoggedIn, tafsirDataMap }}
                                     estimatedItemSize={350} // Estimasi rata-rata yang lebih seimbang
-                                    drawDistance={Dimensions.get('window').height * 3} // Render lebih banyak area agar scroll presisi
+                                    drawDistance={Dimensions.get('window').height * 4} // Render lebih luas di latar belakang agar scroll super mulus
+                                    removeClippedSubviews={Platform.OS === 'android'} // Sangat membantu hemat RAM di Android
                                     keyExtractor={(item) => `verse-${item.ayat}`}
                                     contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
                                     ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -515,7 +518,7 @@ const styles = StyleSheet.create({
     mushafOptionActive: { backgroundColor: '#eff6ff', borderWidth: 1, borderColor: '#bfdbfe' },
     mushafOptionText: { fontSize: 9, fontWeight: 'bold', color: '#64748b' },
     mushafOptionTextActive: { color: '#3b82f6' },
-    closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' },
+    closeBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#fee2e2', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#fecaca' },
     modalFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, paddingHorizontal: 16, backgroundColor: '#f8fafc', borderTopWidth: 1, borderTopColor: '#cbd5e1' },
     paginationBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' },
     paginationBtnText: { fontSize: 13, fontWeight: '600', color: '#94a3b8', marginLeft: 6 },
