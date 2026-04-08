@@ -249,12 +249,12 @@ export const useInteractiveQuran = (onBack, session) => {
     setTimeout(() => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       const lowerText = userText.toLowerCase().replace(/\s+/g, '');
-      
+
       // Pencarian Surah Berdasarkan Nama atau Angka
       const foundSurah = allSurahs.find(s => {
-          const latin = s.name_simple.toLowerCase().replace(/[-\s]/g, '');
-          const id = String(s.id);
-          return latin.includes(lowerText) || id === lowerText;
+        const latin = s.name_simple.toLowerCase().replace(/[-\s]/g, '');
+        const id = String(s.id);
+        return latin.includes(lowerText) || id === lowerText;
       });
 
       if (lowerText === 'daftar' || lowerText === 'list') {

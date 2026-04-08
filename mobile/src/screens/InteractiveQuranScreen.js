@@ -150,7 +150,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }}>
-            <StatusBar style="light" />
+            <StatusBar style="light" backgroundColor="#1e3a8a" translucent={false} />
             <View style={styles.container}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -158,7 +158,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                     keyboardVerticalOffset={0}
                     enabled={Platform.OS === 'ios'}
                 >
-                    <HomeHeader 
+                    <HomeHeader
                         translateX={translateX}
                         title="Ahlan Bikum! 👋"
                         subtitle="MAU BACA DAN TADABBUR AYAT APA HARI INI? ✨"
@@ -185,7 +185,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                 <Text style={{ color: '#94a3b8', marginTop: 12, fontSize: 13, fontWeight: '600' }}>Menyiapkan Mushaf... ✨</Text>
                             </View>
                         )}
-                        
+
                         {fontsLoaded && messages.map((msg, index) => {
                             if (msg.type === 'user') {
                                 return (
@@ -209,8 +209,8 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                             </View>
                                         ) : msg.subType === 'surah_card' ? (
                                             <View style={[styles.botBubble, { padding: 0, overflow: 'hidden', width: '85%', maxWidth: 320, backgroundColor: 'white' }]}>
-                                                <LinearGradient 
-                                                    colors={['#1d4ed8', '#1e3a8a']} 
+                                                <LinearGradient
+                                                    colors={['#1d4ed8', '#1e3a8a']}
                                                     start={{ x: 0, y: 0 }}
                                                     end={{ x: 1, y: 1 }}
                                                     style={{ padding: 20 }}
@@ -224,7 +224,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                                         <Text style={{ color: 'white', fontSize: 32, fontWeight: 'bold', fontFamily: Platform.OS === 'android' ? 'serif' : 'System' }}>{msg.surah.name_arabic}</Text>
                                                     </View>
                                                 </LinearGradient>
-                                                
+
                                                 <View style={{ padding: 16 }}>
                                                     <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
                                                         <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -238,17 +238,17 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                                             <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#475569' }}>{msg.surah.verses_count} Ayat</Text>
                                                         </View>
                                                     </View>
-                                                    
-                                                    <TouchableOpacity 
+
+                                                    <TouchableOpacity
                                                         activeOpacity={0.8}
                                                         onPress={() => handleOpenSurah(msg.surah)}
-                                                        style={{ 
-                                                            backgroundColor: '#3b82f6', 
-                                                            padding: 14, 
-                                                            borderRadius: 14, 
-                                                            alignItems: 'center', 
-                                                            flexDirection: 'row', 
-                                                            justifyContent: 'center', 
+                                                        style={{
+                                                            backgroundColor: '#3b82f6',
+                                                            padding: 14,
+                                                            borderRadius: 14,
+                                                            alignItems: 'center',
+                                                            flexDirection: 'row',
+                                                            justifyContent: 'center',
                                                             gap: 10,
                                                             elevation: 2,
                                                             shadowColor: '#3b82f6',
@@ -334,16 +334,16 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                                         const targetIndex = num - 1;
                                                         // Strategi Teleportasi & Kalibrasi (Untuk lompatan jauh seperti ayat 100-200+)
                                                         // 1. Teleportasi Instan ke area target
-                                                        modalScrollRef.current?.scrollToIndex({ 
-                                                            index: targetIndex, 
+                                                        modalScrollRef.current?.scrollToIndex({
+                                                            index: targetIndex,
                                                             animated: false,
-                                                            viewPosition: 0 
+                                                            viewPosition: 0
                                                         });
-                                                        
+
                                                         // 2. Kalibrasi Presisi setelah sistem menghitung tinggi asli kartu di area target
                                                         setTimeout(() => {
-                                                            modalScrollRef.current?.scrollToIndex({ 
-                                                                index: targetIndex, 
+                                                            modalScrollRef.current?.scrollToIndex({
+                                                                index: targetIndex,
                                                                 animated: true,
                                                                 viewPosition: 0,
                                                                 viewOffset: 8
@@ -354,9 +354,9 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                             />
                                         </View>
                                     </View>
-                                                                         <TouchableOpacity onPress={() => { setModalVisible(false); if (sound) sound.unloadAsync(); setPlayingAyah(null); }} style={styles.closeBtn}>
-                                         <Feather name="x" size={24} color="#ef4444" />
-                                     </TouchableOpacity>
+                                    <TouchableOpacity onPress={() => { setModalVisible(false); if (sound) sound.unloadAsync(); setPlayingAyah(null); }} style={styles.closeBtn}>
+                                        <Feather name="x" size={24} color="#ef4444" />
+                                    </TouchableOpacity>
                                 </View>
                                 <View style={styles.modalHeaderBottomRow}>
                                     <TouchableOpacity style={[styles.autoBtn, isAutoPlay && styles.autoBtnActive]} onPress={() => checkAuth(() => setIsAutoPlay(!isAutoPlay))}>
@@ -443,7 +443,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                 </View>
                             </View>
                         )}
-                        
+
                         {/* Tambahkan Toast di dalam Modal agar tidak tertutup */}
                         <Toast config={toastConfig} />
 

@@ -71,10 +71,10 @@ export default function App() {
 
   // --- RENDER CLUSTER ---
   return (
-    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#0f172a' }}>
-      <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
+      <StatusBar style="light" backgroundColor="#1e3a8a" translucent={false} />
       {isShowSplash ? (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
           <Animated.View style={styles.splashContainer}>
 
             {/* Background Biru Modern */}
