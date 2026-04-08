@@ -1,13 +1,11 @@
 import { Platform } from 'react-native';
 import { databaseService } from './databaseService';
 
-import verseUthmani from '../../assets/data/verse.json';
-import verseIndopak from '../../assets/data/indopak.json';
-
-const JSON_DATA = {
-  uthmani: verseUthmani,
-  indopak: verseIndopak
-};
+// Hanya import JSON di web untuk menghemat size APK & RAM di Mobile
+const JSON_DATA = Platform.OS === 'web' ? {
+  uthmani: require('../../assets/data/verse.json'),
+  indopak: require('../../assets/data/indopak.json')
+} : null;
 
 export const quranService = {
   async fetchSurahs() {
@@ -27,7 +25,7 @@ export const quranService = {
     }
 
     try {
-      // 1. Prioritas Utama: SQLite (Sangat Cepat)
+      // 1. Prioritas Utama: SQLite (Sangat Cepat & Modern)
       const verses = await databaseService.getVerses(surahId, mushafType);
       
       if (verses && verses.length > 0) {
@@ -35,14 +33,21 @@ export const quranService = {
         return verses;
       }
 
-      // 2. Prioritas Kedua: JSON Lokal
-      console.log(`📂 Mode: JSON Fallback (Memuat Surah ${surahId} - ${mushafType})`);
-      const source = mushafType === 'indopak' ? verseIndopak : verseUthmani;
-      return source[surahId]?.ayat || [];
+      // 2. Fallback jika SQLite kosong (biasanya di Web)
+      if (JSON_DATA) {
+        console.log(`📂 Mode: JSON Fallback (Memuat Surah ${surahId} - ${mushafType})`);
+        const source = JSON_DATA[mushafType];
+        return source?.[surahId]?.ayat || [];
+      }
+      
+      return [];
     } catch (error) {
-      console.log('Safety switch to JSON due to error:', error.message);
-      const source = mushafType === 'indopak' ? verseIndopak : verseUthmani;
-      return source[surahId]?.ayat || [];
+      console.log('Error fetching verses:', error.message);
+      if (JSON_DATA) {
+        const source = JSON_DATA[mushafType];
+        return source?.[surahId]?.ayat || [];
+      }
+      return [];
     }
   },
 
