@@ -136,7 +136,7 @@ export default function HomeScreen({ onNavigate, session }) {
           <Animated.View style={[styles.statusDot, { opacity: dotOpacity }]} />
           <Text style={styles.statusText}>SIAP UNTUK BELAJAR</Text>
         </View>
-        <Text style={styles.footerCopyright}>© 2026 - by Tahseena</Text>
+        <Text style={styles.footerCopyright}>© 2026 - Powered by Tahseena</Text>
       </View>
 
 

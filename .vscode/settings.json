@@ -3,7 +3,12 @@
     "java.compile.nullAnalysis.mode": "automatic",
     "java.import.excludes": [
         "**/node_modules/**",
-        "mobile/node_modules/**"
+        "**/mobile/node_modules/**",
+        "**/android/**/.settings/**",
+        "**/android/**/bin/**",
+        "**/android/**/.project",
+        "**/expo-modules-autolinking/android/expo-gradle-plugin/**",
+        "**/expo-modules-core/expo-module-gradle-plugin/**"
     ],
     "files.exclude": {
         "**/.git": true,
@@ -12,7 +17,10 @@
         "**/CVS": true,
         "**/.DS_Store": true,
         "**/Thumbs.db": true,
-        "mobile/node_modules/**": true
+        "**/node_modules": true,
+        "**/.settings": true,
+        "**/.project": true,
+        "**/bin": true
     },
     "files.watcherExclude": {
         "**/.git/objects/**": true,

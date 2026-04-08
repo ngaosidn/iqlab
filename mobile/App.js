@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Animated, Platform, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -6,6 +7,9 @@ import { Image } from 'expo-image';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+
+SplashScreen.preventAutoHideAsync();
+
 import HomeScreen from './src/screens/HomeScreen';
 import InteractiveQuranScreen from './src/screens/InteractiveQuranScreen';
 import AdminScreen from './src/screens/AdminScreen';
@@ -76,6 +80,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    // Sembunyikan Splash Native dengan sedikit jeda agar transisi benar-benar mulus
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     let returning = false;
 
     // Cek apakah web me-redirect balik dengan token login (URL Hash dari Google OAuth)
@@ -98,15 +110,15 @@ export default function App() {
 
   // --- RENDER CLUSTER ---
   return (
-    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#f1f5f9' }}>
-      <StatusBar style="light" backgroundColor="#0f172a" translucent={false} />
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#ffffff' }}>
+      <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
       {isShowSplash ? (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
           <Animated.View style={styles.splashContainer}>
 
             {/* Background Biru Modern */}
             <LinearGradient
-              colors={['#0f172a', '#1e3a8a', '#3b82f6']}
+              colors={['#1e3a8a', '#1e3a8a', '#3b82f6']}
               style={StyleSheet.absoluteFillObject}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -125,7 +137,7 @@ export default function App() {
             {/* Footer Copyright */}
             <View style={styles.footer}>
               <Text style={styles.copyrightText}>
-                © {new Date().getFullYear()} - by Tahseena
+                © {new Date().getFullYear()} - Powered by Tahseena
               </Text>
             </View>
           </Animated.View>

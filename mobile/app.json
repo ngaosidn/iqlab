@@ -7,54 +7,56 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#ffffff",
     "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0f172a"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true
     },
     "plugins": [
-       "react-native-video",
-       "./withAndroidNativeBuildFixes",
-       [
-         "expo-build-properties",
-         {
-           "android": {
-             "minSdkVersion": 26,
-             "includeCompileSdkVersionInResources": true
-           }
-         }
-       ]
-     ],
-     "android": {
-       "adaptiveIcon": {
-         "foregroundImage": "./assets/adaptive-icon.png",
-         "backgroundColor": "#ffffff"
-       },
-       "edgeToEdgeEnabled": false,
-       "package": "com.didimdim.quranchatmobile",
-       "permissions": [
-         "CAMERA",
-         "RECORD_AUDIO",
-         "FOREGROUND_SERVICE",
-         "FOREGROUND_SERVICE_MEDIA_PROJECTION",
-         "MODIFY_AUDIO_SETTINGS",
-         "ACCESS_WIFI_STATE",
-         "ACCESS_NETWORK_STATE"
-       ]
-     },
-     "androidStatusBar": {
-       "barStyle": "light-content",
-       "backgroundColor": "#0f172a",
-       "translucent": false
-     },
-     "web": {
-       "favicon": "./assets/favicon.png"
-     },
-     "extra": {
+      "react-native-video",
+      "./withAndroidNativeBuildFixes",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "includeCompileSdkVersionInResources": true
+          }
+        }
+      ],
+      "expo-asset"
+    ],
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/splash-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": false,
+      "package": "com.didimdim.quranchatmobile",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_MEDIA_PROJECTION",
+        "MODIFY_AUDIO_SETTINGS",
+        "ACCESS_WIFI_STATE",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "androidStatusBar": {
+      "barStyle": "dark-content",
+      "backgroundColor": "#ffffff",
+      "translucent": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
       "eas": {
         "projectId": "e5b1eb2c-d62e-4312-9316-14fcd65ae136"
       }
