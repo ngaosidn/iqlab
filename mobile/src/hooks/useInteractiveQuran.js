@@ -248,7 +248,14 @@ export const useInteractiveQuran = (onBack, session) => {
 
     setTimeout(() => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      const lowerText = userText.toLowerCase();
+      const lowerText = userText.toLowerCase().replace(/\s+/g, '');
+      
+      // Pencarian Surah Berdasarkan Nama atau Angka
+      const foundSurah = allSurahs.find(s => {
+          const latin = s.name_simple.toLowerCase().replace(/[-\s]/g, '');
+          const id = String(s.id);
+          return latin.includes(lowerText) || id === lowerText;
+      });
 
       if (lowerText === 'daftar' || lowerText === 'list') {
         if (allSurahs.length > 0) {
@@ -263,10 +270,17 @@ export const useInteractiveQuran = (onBack, session) => {
             content: 'Maaf, data surah masih memuat, silakan coba sebentar lagi.'
           }]);
         }
+      } else if (foundSurah) {
+        // Jika Surah Ditemukan, Munculkan Kartu Surah
+        setMessages(prev => [...prev, {
+          type: 'bot',
+          subType: 'surah_card',
+          surah: foundSurah
+        }]);
       } else {
         setMessages(prev => [...prev, {
           type: 'bot',
-          content: '❌ Maaf, saya belum mengerti perintah Anda. Silakan ketik "daftar" untuk melihat surah.'
+          content: '❌ Surah tidak ditemukan. Coba ketik nama surah (misal: Al Baqarah) atau nomor surah (misal: 1).'
         }]);
       }
       setIsLoading(false);

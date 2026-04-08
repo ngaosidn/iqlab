@@ -7,6 +7,7 @@ import { Image } from 'expo-image';
 import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import HomeHeader from '../components/HomeHeader';
 import Toast from 'react-native-toast-message';
+import { toastConfig } from '../lib/toastConfig';
 import { FlashList } from '@shopify/flash-list';
 
 // Menggunakan Animated component untuk FlashList
@@ -203,6 +204,62 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                                 <View style={[styles.guideBox, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}>
                                                     <View style={styles.guideBoxHeader}><View style={[styles.guideIconContainer, { backgroundColor: '#dbeafe' }]}><Ionicons name="book" size={14} color="#3b82f6" /></View><Text style={[styles.guideBoxTitle, { color: '#2563eb' }]}>TAMPILKAN SURAH</Text></View>
                                                     <View style={styles.bulletRow}><View style={[styles.bulletDot, { backgroundColor: '#3b82f6' }]} /><Text style={styles.bulletText}><Text style={styles.boldText}>Semua Surah:</Text> Ketik [Daftar]</Text></View>
+                                                    <View style={styles.bulletRow}><View style={[styles.bulletDot, { backgroundColor: '#3b82f6' }]} /><Text style={styles.bulletText}><Text style={styles.boldText}>Cari Surah:</Text> Ketik [Nama Surah] atau [Nomor Surah]</Text></View>
+                                                </View>
+                                            </View>
+                                        ) : msg.subType === 'surah_card' ? (
+                                            <View style={[styles.botBubble, { padding: 0, overflow: 'hidden', width: '85%', maxWidth: 320, backgroundColor: 'white' }]}>
+                                                <LinearGradient 
+                                                    colors={['#1d4ed8', '#1e3a8a']} 
+                                                    start={{ x: 0, y: 0 }}
+                                                    end={{ x: 1, y: 1 }}
+                                                    style={{ padding: 20 }}
+                                                >
+                                                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <View style={{ flex: 1 }}>
+                                                            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 'bold', marginBottom: 2 }}>Surah Ke-{msg.surah.id}</Text>
+                                                            <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>{msg.surah.name_simple}</Text>
+                                                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, fontStyle: 'italic', marginTop: 2 }}>"{msg.surah.translated_name.name}"</Text>
+                                                        </View>
+                                                        <Text style={{ color: 'white', fontSize: 32, fontWeight: 'bold', fontFamily: Platform.OS === 'android' ? 'serif' : 'System' }}>{msg.surah.name_arabic}</Text>
+                                                    </View>
+                                                </LinearGradient>
+                                                
+                                                <View style={{ padding: 16 }}>
+                                                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                                                        <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                            <Ionicons name="location-outline" size={14} color="#64748b" />
+                                                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#475569' }}>
+                                                                {msg.surah.revelation_place === 'makkah' || msg.surah.revelation_place === 'meccan' ? 'Makkiyah' : 'Madaniyah'}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ backgroundColor: '#f1f5f9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                                            <Ionicons name="list-outline" size={14} color="#64748b" />
+                                                            <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#475569' }}>{msg.surah.verses_count} Ayat</Text>
+                                                        </View>
+                                                    </View>
+                                                    
+                                                    <TouchableOpacity 
+                                                        activeOpacity={0.8}
+                                                        onPress={() => handleOpenSurah(msg.surah)}
+                                                        style={{ 
+                                                            backgroundColor: '#3b82f6', 
+                                                            padding: 14, 
+                                                            borderRadius: 14, 
+                                                            alignItems: 'center', 
+                                                            flexDirection: 'row', 
+                                                            justifyContent: 'center', 
+                                                            gap: 10,
+                                                            elevation: 2,
+                                                            shadowColor: '#3b82f6',
+                                                            shadowOffset: { width: 0, height: 4 },
+                                                            shadowOpacity: 0.2,
+                                                            shadowRadius: 8
+                                                        }}
+                                                    >
+                                                        <Ionicons name="book" size={18} color="white" />
+                                                        <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 15 }}>Baca Surah</Text>
+                                                    </TouchableOpacity>
                                                 </View>
                                             </View>
                                         ) : (
@@ -274,7 +331,24 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                                 onChangeText={(text) => {
                                                     const num = parseInt(text);
                                                     if (!isNaN(num) && num > 0 && num <= versesData.length) {
-                                                        modalScrollRef.current?.scrollToIndex({ index: num - 1, animated: true });
+                                                        const targetIndex = num - 1;
+                                                        // Strategi Teleportasi & Kalibrasi (Untuk lompatan jauh seperti ayat 100-200+)
+                                                        // 1. Teleportasi Instan ke area target
+                                                        modalScrollRef.current?.scrollToIndex({ 
+                                                            index: targetIndex, 
+                                                            animated: false,
+                                                            viewPosition: 0 
+                                                        });
+                                                        
+                                                        // 2. Kalibrasi Presisi setelah sistem menghitung tinggi asli kartu di area target
+                                                        setTimeout(() => {
+                                                            modalScrollRef.current?.scrollToIndex({ 
+                                                                index: targetIndex, 
+                                                                animated: true,
+                                                                viewPosition: 0,
+                                                                viewOffset: 8
+                                                            });
+                                                        }, 300); // Jeda 300ms sangat krusial untuk lompatan jauh
                                                     }
                                                 }}
                                             />
@@ -305,7 +379,8 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                     data={versesData}
                                     renderItem={renderVerseItem}
                                     extraData={{ expandedTafsir, playingAyah, mushafType, isLoggedIn, tafsirDataMap }}
-                                    estimatedItemSize={250}
+                                    estimatedItemSize={350} // Estimasi rata-rata yang lebih seimbang
+                                    drawDistance={Dimensions.get('window').height * 3} // Render lebih banyak area agar scroll presisi
                                     keyExtractor={(item) => `verse-${item.ayat}`}
                                     contentContainerStyle={{ padding: 16, paddingBottom: 20 }}
                                     ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -322,6 +397,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                 </TouchableOpacity>
                             </View>
                         </Animated.View>
+
 
                         {/* LOBBY OVERYLAY: Pilih Guru Aktif (Inside Main Modal) */}
                         {lobbyVisible && (
@@ -364,6 +440,9 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                 </View>
                             </View>
                         )}
+                        
+                        {/* Tambahkan Toast di dalam Modal agar tidak tertutup */}
+                        <Toast config={toastConfig} />
 
                     </View>
                 </Modal>
