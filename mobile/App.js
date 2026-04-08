@@ -110,7 +110,7 @@ export default function App() {
 
   // --- RENDER CLUSTER ---
   return (
-    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#ffffff' }}>
+    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#0f172a' }}>
       <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
       {isShowSplash ? (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>

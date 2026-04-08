@@ -188,7 +188,7 @@ export const useHome = (session, onNavigate) => {
         Animated.timing(dotOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
       ])
     ).start();
-  }, [shimmerValue]);
+  }, []); // Hapus dependency shimmerValue agar tidak re-trigger loop
 
   const translateX = shimmerValue.interpolate({
     inputRange: [-1, 2],

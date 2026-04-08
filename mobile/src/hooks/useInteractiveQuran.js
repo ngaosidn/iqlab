@@ -116,7 +116,7 @@ export const useInteractiveQuran = (onBack, session) => {
         useNativeDriver: true,
       })
     ]).start();
-  }, [shimmerValue]);
+  }, []);
 
   useEffect(() => {
     const fetchSurahs = async () => {

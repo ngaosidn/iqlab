@@ -127,11 +127,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
         );
     }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby]);
 
-    if (!fontsLoaded) return (
-        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-            <ActivityIndicator size="large" color="#3b82f6" />
-        </View>
-    );
+
 
     if (inClassUrl) {
         const currentSchedule = activeTeachers.find(t => t.meeting_link === inClassUrl);
@@ -182,7 +178,14 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                         keyboardShouldPersistTaps="handled"
                         keyboardDismissMode="on-drag"
                     >
-                        {messages.map((msg, index) => {
+                        {!fontsLoaded && (
+                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
+                                <ActivityIndicator size="large" color="#3b82f6" />
+                                <Text style={{ color: '#94a3b8', marginTop: 12, fontSize: 13, fontWeight: '600' }}>Menyiapkan Mushaf... ✨</Text>
+                            </View>
+                        )}
+                        
+                        {fontsLoaded && messages.map((msg, index) => {
                             if (msg.type === 'user') {
                                 return (
                                     <View key={index} style={styles.userBubbleWrapper}>
@@ -228,6 +231,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                                 );
                             }
                         })}
+
                         {isLoading && (
                             <View style={styles.bubbleWrapper}>
                                 <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>

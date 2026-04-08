@@ -32,21 +32,29 @@ const HomeHeader = ({
           </Svg>
         </View>
 
-        {/* Efek Cahaya Mengkilap (Shimmer) */}
         <Animated.View style={[
-          StyleSheet.absoluteFill,
           {
-            width: 150,
-            height: '180%',
-            top: '-40%',
+            position: 'absolute',
+            width: 300, // Lebih lebar supaya gradasi punya ruang napas
+            height: 1000, // Sangat tinggi supaya tidak terpotong saat miring
+            top: -300,   // Ditarik jauh ke atas
+            left: -150,  // Titik awal
             transform: [
               { translateX: translateX },
-              { rotate: '30deg' } // Kemiringan cahaya
-            ]
+              { rotate: '35deg' }
+            ],
+            // backgroundColor: 'rgba(255,0,0,0.1)' // Debug: buka ini untuk lihat area kilat
           }
         ]}>
           <LinearGradient
-            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.4)', 'rgba(255,255,255,0)']}
+            colors={[
+              'rgba(255,255,255,0)', 
+              'rgba(255,255,255,0.05)', 
+              'rgba(255,255,255,0.6)', 
+              'rgba(255,255,255,0.05)', 
+              'rgba(255,255,255,0)'
+            ]}
+            locations={[0, 0.4, 0.5, 0.6, 1]} // Garis lebih tajam di tengah
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={{ flex: 1 }}
