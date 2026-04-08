@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
+import { authService } from '../services/authService';
+import { adminService } from '../services/adminService';
 
 export const useAdmin = (session) => {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
@@ -14,7 +16,6 @@ export const useAdmin = (session) => {
   const [totalMurid, setTotalMurid] = useState('...');
   const [totalPengajar, setTotalPengajar] = useState('...');
   
-  // State User Management
   const [currentAdminView, setCurrentAdminView] = useState('dashboard');
   const [staffRole, setStaffRole] = useState('pengajar');
   const [staffName, setStaffName] = useState('');
@@ -37,7 +38,6 @@ export const useAdmin = (session) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  // AUTO-LOGIN LOGIC
   useEffect(() => {
     if (session?.user?.user_metadata?.role === 'admin' && !hasShownWelcome) {
       setIsAdminLoggedIn(true);
@@ -59,14 +59,9 @@ export const useAdmin = (session) => {
 
   const fetchDashboardStats = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_dashboard_stats');
-      if (error) {
-         setTotalMurid('-');
-         setTotalPengajar('-');
-      } else {
-         setTotalMurid(data?.total_murid?.toString() || '0');
-         setTotalPengajar(data?.total_pengajar?.toString() || '0');
-      }
+      const stats = await adminService.getDashboardStats();
+      setTotalMurid(stats.totalMurid);
+      setTotalPengajar(stats.totalPengajar);
     } catch (error) {
       setTotalMurid('-');
       setTotalPengajar('-');
@@ -83,10 +78,10 @@ export const useAdmin = (session) => {
 
   const fetchStaffData = async () => {
     setIsFetchingStaff(true);
-    const { data, error } = await supabase.rpc('get_all_staff');
-    if (!error && data) {
-      setStaffData(data);
-    }
+    try {
+      const staff = await adminService.getAllStaff();
+      setStaffData(staff);
+    } catch (error) { }
     setIsFetchingStaff(false);
   };
 
@@ -97,16 +92,14 @@ export const useAdmin = (session) => {
   }, [currentAdminView, manageTab]);
 
   const handleDeleteStaff = async (uid) => {
-     try {
-       const { error } = await supabase.rpc('delete_user_by_id', { user_id: uid });
-       if (!error) {
-         Toast.show({ type: 'success', text1: 'Sistem Terhubung', text2: 'Akun berhasil dihapus secara sistematis.' });
-         fetchStaffData();
-         fetchDashboardStats();
-       } else throw error;
-     } catch (err) {
-       Toast.show({ type: 'error', text1: 'Gagal Hapus', text2: err.message });
-     }
+      try {
+        await adminService.deleteUser(uid);
+        Toast.show({ type: 'success', text1: 'Sistem Terhubung', text2: 'Akun berhasil dihapus secara sistematis.' });
+        fetchStaffData();
+        fetchDashboardStats();
+      } catch (err) {
+        Toast.show({ type: 'error', text1: 'Gagal Hapus', text2: err.message });
+      }
   };
 
   const handleIconTap = () => {
@@ -129,13 +122,7 @@ export const useAdmin = (session) => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) throw error;
-
+      const data = await authService.signInWithEmail(email, password);
       const userRole = data.user.user_metadata?.role;
       if (userRole === 'admin') {
         setIsAdminLoggedIn(true);
@@ -145,7 +132,7 @@ export const useAdmin = (session) => {
           text2: `Selamat datang Admin, ${data.user.user_metadata?.full_name || 'Staff'}.`,
         });
       } else {
-        await supabase.auth.signOut();
+        await authService.signOut();
         Toast.show({
           type: 'error',
           text1: 'Akses Ditolak! 🛑',
@@ -171,19 +158,7 @@ export const useAdmin = (session) => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          data: {
-            role: 'admin',
-            full_name: fullName,
-          },
-        },
-      });
-
-      if (error) throw error;
-
+      await authService.signUpWithEmail(email, password, { role: 'admin', full_name: fullName });
       Toast.show({
         type: 'success',
         text1: 'Pendaftaran Berhasil! 📝',
@@ -192,18 +167,14 @@ export const useAdmin = (session) => {
       setIsSignupMode(false);
       setPassword('');
     } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Gagal Daftar',
-        text2: error.message,
-      });
+      Toast.show({ type: 'error', text1: 'Gagal Daftar', text2: error.message });
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await authService.signOut();
     setIsAdminLoggedIn(false);
     Toast.show({ type: 'info', text1: 'Sesi Berakhir', text2: 'Anda telah logout dari Admin Panel.' });
   };
@@ -217,19 +188,11 @@ export const useAdmin = (session) => {
     setIsLoading(true);
     try {
       if (editingStaffId) {
-         const { error } = await supabase.rpc('update_user_meta', {
-             uid: editingStaffId,
-             payload: { full_name: staffName, age: staffAge, phone: staffPhone, gender: staffGender, role: staffRole, lembaga: finalLembaga }
-         });
-         if (error) throw error;
+         await adminService.updateUserMeta(editingStaffId, { full_name: staffName, age: staffAge, phone: staffPhone, gender: staffGender, role: staffRole, lembaga: finalLembaga });
          
          if (staffOldPassword && staffPassword) {
-            const { data: passSuccess, error: passErr } = await supabase.rpc('update_staff_password', {
-               target_uid: editingStaffId,
-               old_pass: staffOldPassword,
-               new_pass: staffPassword
-            });
-            if (passErr || !passSuccess) {
+            const passSuccess = await adminService.updateStaffPassword(editingStaffId, staffOldPassword, staffPassword);
+            if (!passSuccess) {
                 Toast.show({ type: 'error', text1: 'Gagal Ubah Password', text2: 'Password lama tidak cocok atau sistem eror.' });
                 setIsLoading(false);
                 return;
@@ -237,16 +200,8 @@ export const useAdmin = (session) => {
          }
          Toast.show({ type: 'success', text1: 'Update Sukses! ✏️', text2: staffOldPassword ? `Data staf & password berhasil diperbarui.` : `Data staf berhasil diperbarui.` });
       } else {
-         const { data: { session: currentSession } } = await supabase.auth.getSession();
-         const { error } = await supabase.auth.signUp({
-           email: staffEmail,
-           password: staffPassword,
-           options: {
-             data: { role: staffRole, full_name: staffName, age: staffAge, phone: staffPhone, gender: staffGender, lembaga: finalLembaga },
-           },
-         });
-
-         if (error) throw error;
+         const currentSession = await authService.getSession();
+         await authService.signUpWithEmail(staffEmail, staffPassword, { role: staffRole, full_name: staffName, age: staffAge, phone: staffPhone, gender: staffGender, lembaga: finalLembaga });
 
          if (currentSession) {
             await supabase.auth.setSession({ access_token: currentSession.access_token, refresh_token: currentSession.refresh_token });
@@ -285,11 +240,9 @@ export const useAdmin = (session) => {
      if (staff.role === 'admin') {
        setIsTahseena(true);
        setStaffLembaga('');
-       setSearchLembagaText('');
      } else if (staff.lembaga === 'Tahseena') {
        setIsTahseena(true);
        setStaffLembaga('');
-       setSearchLembagaText('');
      } else {
        setIsTahseena(false);
        setStaffLembaga(staff.lembaga || '');

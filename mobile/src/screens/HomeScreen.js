@@ -20,7 +20,7 @@ import AdminHubModal from '../components/home/AdminHubModal';
 WebBrowser.maybeCompleteAuthSession();
 export default function HomeScreen({ onNavigate, session }) {
   const insets = useSafeAreaInsets();
-  
+
   const {
     showProfileModal,
     setShowProfileModal,
@@ -39,122 +39,122 @@ export default function HomeScreen({ onNavigate, session }) {
     <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }}>
       <View style={styles.container}>
 
-      {/* Header Card Component */}
-      <HomeHeader 
-        translateX={translateX}
-        onLogoLongPress={() => setShowAdminHub(true)}
-      />
+        {/* Header Card Component */}
+        <HomeHeader
+          translateX={translateX}
+          onLogoLongPress={() => setShowAdminHub(true)}
+        />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-        {/* MENU CARD */}
-        <View style={styles.cardContainer}>
-          {/* Main Card Content */}
-          <View style={styles.menuCard}>
-            <Text style={styles.helloText}>Ahlan Bikum! 👋</Text>
-            <Text style={styles.subtitleMenuText}>PILIH MENU UTAMA ANDA :</Text>
+          {/* MENU CARD */}
+          <View style={styles.cardContainer}>
+            {/* Main Card Content */}
+            <View style={styles.menuCard}>
+              <Text style={styles.helloText}>Ahlan Bikum! 👋</Text>
+              <Text style={styles.subtitleMenuText}>PILIH MENU UTAMA ANDA :</Text>
 
-            {/* Menu Buttons */}
-            <TouchableOpacity style={styles.menuBtn} activeOpacity={0.8} onPress={() => onNavigate && onNavigate('interactive')}>
-              <LinearGradient colors={['#4f46e5', '#3b82f6']} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-              <View style={styles.menuIconBox}><Feather name="book-open" size={20} color="white" /></View>
-              <Text style={styles.menuBtnText}>Interactive Quran</Text>
-              <Feather name="chevron-right" size={20} color="white" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuBtn} 
-              activeOpacity={0.8} 
-              onPress={() => checkAuth(() => console.log('Tajwid Interactive'))}
-            >
-              <LinearGradient colors={['#b91c1c', '#d946ef', '#9333ea']} locations={[0, 0.1, 1]} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-              <View style={styles.menuIconBox}><FontAwesome5 name="graduation-cap" size={16} color="white" /></View>
-              <Text style={styles.menuBtnText}>Tajwid Interactive</Text>
-              <Feather name="chevron-right" size={20} color="white" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuBtn} 
-              activeOpacity={0.8}
-              onPress={() => checkAuth(() => console.log('Hadist'))}
-            >
-              <LinearGradient colors={['#059669', '#10b981']} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-              <View style={styles.menuIconBox}><Feather name="book" size={20} color="white" /></View>
-              <Text style={styles.menuBtnText}>Hadist</Text>
-              <Feather name="chevron-right" size={20} color="white" />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.menuBtn} 
-              activeOpacity={0.8}
-              onPress={() => checkAuth(() => console.log('Fiqih'))}
-            >
-              <LinearGradient colors={['#d97706', '#ea580c']} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
-              <View style={styles.menuIconBox}><FontAwesome5 name="building" size={18} color="white" /></View>
-              <Text style={styles.menuBtnText}>Fiqih 4 Madzhab</Text>
-              <Feather name="chevron-right" size={20} color="white" />
-            </TouchableOpacity>
-
-
-            {/* Small Action Buttons */}
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.actionBtnYellow}>
-                <Feather name="heart" size={16} color="#d97706" />
-                <Text style={styles.actionBtnTextYellow}>Gratitude</Text>
+              {/* Menu Buttons */}
+              <TouchableOpacity style={styles.menuBtn} activeOpacity={0.8} onPress={() => onNavigate && onNavigate('interactive')}>
+                <LinearGradient colors={['#4f46e5', '#3b82f6']} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                <View style={styles.menuIconBox}><Feather name="book-open" size={20} color="white" /></View>
+                <Text style={styles.menuBtnText}>Interactive Quran</Text>
+                <Feather name="chevron-right" size={20} color="white" />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtnPink}>
-                <FontAwesome5 name="coins" size={14} color="#be123c" />
-                <Text style={styles.actionBtnTextPink}>Support Kami</Text>
+
+              <TouchableOpacity
+                style={styles.menuBtn}
+                activeOpacity={0.8}
+                onPress={() => checkAuth(() => console.log('Tajwid Interactive'))}
+              >
+                <LinearGradient colors={['#b91c1c', '#d946ef', '#9333ea']} locations={[0, 0.1, 1]} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                <View style={styles.menuIconBox}><FontAwesome5 name="graduation-cap" size={16} color="white" /></View>
+                <Text style={styles.menuBtnText}>Tajwid Interactive</Text>
+                <Feather name="chevron-right" size={20} color="white" />
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuBtn}
+                activeOpacity={0.8}
+                onPress={() => checkAuth(() => console.log('Hadist'))}
+              >
+                <LinearGradient colors={['#059669', '#10b981']} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                <View style={styles.menuIconBox}><Feather name="book" size={20} color="white" /></View>
+                <Text style={styles.menuBtnText}>Hadist</Text>
+                <Feather name="chevron-right" size={20} color="white" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuBtn}
+                activeOpacity={0.8}
+                onPress={() => checkAuth(() => console.log('Fiqih'))}
+              >
+                <LinearGradient colors={['#d97706', '#ea580c']} style={StyleSheet.absoluteFill} borderRadius={16} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} />
+                <View style={styles.menuIconBox}><FontAwesome5 name="building" size={18} color="white" /></View>
+                <Text style={styles.menuBtnText}>Fiqih 4 Madzhab</Text>
+                <Feather name="chevron-right" size={20} color="white" />
+              </TouchableOpacity>
+
+
+              {/* Small Action Buttons */}
+              <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.actionBtnYellow}>
+                  <Feather name="heart" size={16} color="#d97706" />
+                  <Text style={styles.actionBtnTextYellow}>Gratitude</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionBtnPink}>
+                  <FontAwesome5 name="coins" size={14} color="#be123c" />
+                  <Text style={styles.actionBtnTextPink}>Support Kami</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Google Login / Logout Button */}
+              <TouchableOpacity style={styles.googleBtn} onPress={handleAuth}>
+                {session ? (
+                  <>
+                    <Feather name="log-out" size={18} color="#ef4444" />
+                    <Text style={[styles.googleBtnText, { color: '#ef4444' }]}>Logout</Text>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesome5 name="google" size={18} color="#ea4335" />
+                    <Text style={styles.googleBtnText}>Login via Google</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
             </View>
 
-            {/* Google Login / Logout Button */}
-            <TouchableOpacity style={styles.googleBtn} onPress={handleAuth}>
-              {session ? (
-                <>
-                  <Feather name="log-out" size={18} color="#ef4444" />
-                  <Text style={[styles.googleBtnText, { color: '#ef4444' }]}>Logout</Text>
-                </>
-              ) : (
-                <>
-                  <FontAwesome5 name="google" size={18} color="#ea4335" />
-                  <Text style={styles.googleBtnText}>Login via Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
+            {/* Floating Avatar User (Blue Circle on left edge) */}
+            <View style={styles.floatingAvatar}>
+              <FontAwesome5 name="user-alt" size={18} color="white" />
+            </View>
           </View>
 
-          {/* Floating Avatar User (Blue Circle on left edge) */}
-          <View style={styles.floatingAvatar}>
-            <FontAwesome5 name="user-alt" size={18} color="white" />
+        </ScrollView>
+
+        {/* BOTTOM FOOTER */}
+        <View style={[styles.bottomFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+          <View style={styles.statusPill}>
+            <Animated.View style={[styles.statusDot, { opacity: dotOpacity }]} />
+            <Text style={styles.statusText}>SIAP UNTUK BELAJAR</Text>
           </View>
+          <Text style={styles.footerCopyright}>© 2026 - Powered by Tahseena</Text>
         </View>
 
-      </ScrollView>
 
-      {/* BOTTOM FOOTER */}
-      <View style={[styles.bottomFooter, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-        <View style={styles.statusPill}>
-          <Animated.View style={[styles.statusDot, { opacity: dotOpacity }]} />
-          <Text style={styles.statusText}>SIAP UNTUK BELAJAR</Text>
-        </View>
-        <Text style={styles.footerCopyright}>© 2026 - Powered by Tahseena</Text>
-      </View>
+        {/* MODAL LENGKAPI PROFIL - MOVED TO COMPONENT */}
+        <ProfileModal
+          visible={showProfileModal}
+          session={session}
+          age={age}
+          setAge={setAge}
+          gender={gender}
+          setGender={setGender}
+          saveProfileData={saveProfileData}
+        />
 
-
-      {/* MODAL LENGKAPI PROFIL - MOVED TO COMPONENT */}
-      <ProfileModal 
-        visible={showProfileModal}
-        session={session}
-        age={age}
-        setAge={setAge}
-        gender={gender}
-        setGender={setGender}
-        saveProfileData={saveProfileData}
-      />
-
-        <AdminHubModal 
+        <AdminHubModal
           visible={showAdminHub}
           onClose={() => setShowAdminHub(false)}
           onNavigate={onNavigate}

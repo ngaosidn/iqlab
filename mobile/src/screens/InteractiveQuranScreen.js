@@ -198,26 +198,26 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                     <View style={styles.bottomWrapper}>
                         <View style={[styles.chatInputContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
                             <View style={styles.inputInnerContainer}>
-                                <TouchableOpacity 
-                                    style={styles.attachBtn} 
+                                <TouchableOpacity
+                                    style={styles.attachBtn}
                                     onPress={() => setMessages([{ type: 'bot', isGuide: true, content: "Assalamu'alaikum!..." }])}
                                 >
                                     <Feather name="trash-2" size={20} color="#94a3b8" />
                                 </TouchableOpacity>
-                                
-                                <TextInput 
-                                    style={styles.textInput} 
-                                    placeholder="Tanya apapun tentang Al-Quran..." 
-                                    placeholderTextColor="#94a3b8" 
-                                    value={input} 
-                                    onChangeText={setInput} 
-                                    onSubmitEditing={handleSend} 
+
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Tanya apapun tentang Al-Quran..."
+                                    placeholderTextColor="#94a3b8"
+                                    value={input}
+                                    onChangeText={setInput}
+                                    onSubmitEditing={handleSend}
                                     returnKeyType="send"
                                     multiline={true}
                                 />
-                                
-                                <TouchableOpacity 
-                                    style={[styles.newSendBtn, input.trim().length > 0 && styles.newSendBtnActive]} 
+
+                                <TouchableOpacity
+                                    style={[styles.newSendBtn, input.trim().length > 0 && styles.newSendBtnActive]}
                                     onPress={handleSend}
                                     disabled={input.trim().length === 0}
                                 >
@@ -228,7 +228,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                     </View>
                 </KeyboardAvoidingView>
 
-                <MushafModal 
+                <MushafModal
                     visible={modalVisible}
                     insets={insets}
                     panY={panY}
@@ -251,7 +251,7 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                     tafsirDataMap={tafsirDataMap}
                 />
 
-                <TeacherLobby 
+                <TeacherLobby
                     visible={lobbyVisible}
                     onClose={() => setLobbyVisible(false)}
                     activeTeachers={activeTeachers}
@@ -272,11 +272,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#3b82f6',
     },
     bottomWrapper: { position: 'relative', backgroundColor: 'transparent', zIndex: 20 },
-    chatInputContainer: { 
-        backgroundColor: '#ffffff', 
-        paddingHorizontal: 16, 
-        paddingVertical: 12, 
-        borderTopWidth: 1, 
+    chatInputContainer: {
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderTopWidth: 1,
         borderTopColor: '#f1f5f9',
         elevation: 10,
         shadowColor: '#000',

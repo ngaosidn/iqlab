@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
+import { authService } from '../services/authService';
+import { teacherService } from '../services/teacherService';
 
 export const usePengajar = (session) => {
   const [isTeacherLoggedIn, setIsTeacherLoggedIn] = useState(false);
@@ -32,7 +34,6 @@ export const usePengajar = (session) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
-  // AUTO-LOGIN LOGIC: Jika pengajar sudah login Google di Homescreen dan punya role pengajar
   useEffect(() => {
     if (session?.user?.user_metadata?.role === 'pengajar') {
       setTeacherName(session.user.user_metadata.full_name || 'Pengajar');
@@ -73,13 +74,7 @@ export const usePengajar = (session) => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) throw error;
-
+      const data = await authService.signInWithEmail(email, password);
       const userRole = data.user.user_metadata?.role;
       if (userRole === 'pengajar') {
         setTeacherName(data.user.user_metadata?.full_name || 'Ustadz/ah');
@@ -90,7 +85,7 @@ export const usePengajar = (session) => {
           text2: `Selamat bertugas, ${data.user.user_metadata?.full_name || 'Ustadz/ah'}.`,
         });
       } else {
-        await supabase.auth.signOut();
+        await authService.signOut();
         Toast.show({
           type: 'error',
           text1: 'Akses Ditolak! 🛑',
@@ -116,19 +111,7 @@ export const usePengajar = (session) => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            role: 'pengajar',
-            full_name: fullName,
-          },
-        },
-      });
-
-      if (error) throw error;
-
+      await authService.signUpWithEmail(email, password, { role: 'pengajar', full_name: fullName });
       Toast.show({
         type: 'success',
         text1: 'Pendaftaran Berhasil! ✨',
@@ -146,45 +129,27 @@ export const usePengajar = (session) => {
   const handleUpdateSettings = async () => {
     setIsLoading(true);
     try {
-      const emailObj = session?.user?.email;
-      if (!emailObj) throw new Error("Gagal mengidentifikasi sesi Anda.");
-
       if (settingsNewPassword) {
         if (!settingsOldPassword) throw new Error("Password lama wajib diisi untuk keamanan.");
-
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: emailObj,
-          password: settingsOldPassword
-        });
-
-        if (signInError) throw new Error("Password lama Anda salah!");
-
-        const { error: passUpdateError } = await supabase.auth.updateUser({
-          password: settingsNewPassword
-        });
-
-        if (passUpdateError) throw passUpdateError;
+        const emailObj = session?.user?.email;
+        await authService.signInWithEmail(emailObj, settingsOldPassword);
+        await authService.updatePassword(settingsNewPassword);
       }
 
       if (settingsPhone !== undefined) {
-        const { error: metaError } = await supabase.auth.updateUser({
-          data: { phone: settingsPhone }
-        });
-        if (metaError) throw metaError;
+        await authService.updateUserMetadata({ phone: settingsPhone });
       }
 
       Toast.show({ type: 'success', text1: 'Berhasil 🥳', text2: 'Profil Pengajar telah diperbarui.' });
       setSettingsOldPassword('');
       setSettingsNewPassword('');
       setCurrentTeacherView('dashboard');
-
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Gagal Update', text2: err.message });
     } finally {
       setIsLoading(false);
     }
   };
-
 
   useEffect(() => {
     if (isTeacherLoggedIn && session?.user?.id) {
@@ -202,12 +167,9 @@ export const usePengajar = (session) => {
       const now = new Date();
       const dayMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
       const currentDay = dayMap[now.getDay()];
-      const currentHour = now.getHours();
-      const currentMin = now.getMinutes();
-      const totalCurrentMins = currentHour * 60 + currentMin;
+      const totalCurrentMins = now.getHours() * 60 + now.getMinutes();
 
       let foundOngoing = null;
-
       for (let s of schedules) {
         if (s.day_of_week === currentDay) {
           const timeMatch = s.time_slot.match(/^(\d{2})\.(\d{2})\s-\s(\d{2})\.(\d{2})/);
@@ -216,14 +178,10 @@ export const usePengajar = (session) => {
             const startM = parseInt(timeMatch[2], 10);
             const endH = parseInt(timeMatch[3], 10);
             const endM = parseInt(timeMatch[4], 10);
-
             const totalStartSlotMins = startH * 60 + startM;
             const totalEndSlotMins = endH * 60 + endM;
 
-            const startReminderMins = totalStartSlotMins - 3; // 3 menit sebelum mulai
-            const endReminderMins = totalEndSlotMins; // TEPAT di jam berakhir (Tidak -5 lagi)
-
-            if (totalCurrentMins >= startReminderMins && totalCurrentMins < endReminderMins) {
+            if (totalCurrentMins >= (totalStartSlotMins - 3) && totalCurrentMins < totalEndSlotMins) {
               if (!manuallyFinishedIds.includes(s.id)) {
                 foundOngoing = s;
                 break;
@@ -243,35 +201,30 @@ export const usePengajar = (session) => {
   const fetchSchedules = async () => {
     if (!session?.user?.id) return;
     try {
-      const { data, error } = await supabase.from('teacher_schedules').select('*').eq('teacher_id', session.user.id);
-      if (!error && data) {
-        const now = new Date();
-        const dayMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-        const currentDay = dayMap[now.getDay()];
-        const currentMins = now.getHours() * 60 + now.getMinutes();
+      const data = await teacherService.fetchTeacherSchedules(session.user.id);
+      const now = new Date();
+      const dayMap = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const currentDay = dayMap[now.getDay()];
+      const currentMins = now.getHours() * 60 + now.getMinutes();
 
-        const cleanedData = await Promise.all(data.map(async (s) => {
-          if (s.meeting_link) {
-            const timeMatch = s.time_slot.match(/^(\d{2})\.(\d{2})\s-\s(\d{2})\.(\d{2})/);
-            if (timeMatch) {
-              const endH = parseInt(timeMatch[3], 10);
-              const endM = parseInt(timeMatch[4], 10);
-              const totalEndMins = endH * 60 + endM;
-
-              const isExpiredToday = (s.day_of_week === currentDay && currentMins >= (totalEndMins + 45));
-              const isOldDay = (s.day_of_week !== currentDay);
-
-              if (isExpiredToday || isOldDay) {
-                await supabase.from('teacher_schedules').update({ meeting_link: null }).eq('id', s.id);
-                return { ...s, meeting_link: null };
-              }
+      const cleanedData = await Promise.all(data.map(async (s) => {
+        if (s.meeting_link) {
+          const timeMatch = s.time_slot.match(/^(\d{2})\.(\d{2})\s-\s(\d{2})\.(\d{2})/);
+          if (timeMatch) {
+            const endH = parseInt(timeMatch[3], 10);
+            const endM = parseInt(timeMatch[4], 10);
+            const totalEndMins = endH * 60 + endM;
+            const isExpiredToday = (s.day_of_week === currentDay && currentMins >= (totalEndMins + 45));
+            const isOldDay = (s.day_of_week !== currentDay);
+            if (isExpiredToday || isOldDay) {
+              await supabase.from('teacher_schedules').update({ meeting_link: null }).eq('id', s.id);
+              return { ...s, meeting_link: null };
             }
           }
-          return s;
-        }));
-
-        setSchedules(cleanedData);
-      }
+        }
+        return s;
+      }));
+      setSchedules(cleanedData);
     } catch (err) { }
   };
 
@@ -291,35 +244,23 @@ export const usePengajar = (session) => {
     const [endH, endM] = jadwalEnd.split('.').map(Number);
     const totalStartMins = startH * 60 + startM;
     const totalEndMins = endH * 60 + endM;
-
-    if (totalStartMins < 0 || totalEndMins > 24 * 60 || totalStartMins >= totalEndMins) {
-      Toast.show({ type: 'error', text1: 'Format Jam Salah', text2: 'Jadwal waktu (Mulai & Selesai) harus logis dan di antara 00.00 hingga 23.59.' });
-      return;
-    }
-
     const duration = totalEndMins - totalStartMins;
-    if (duration < 25 || duration > 45) {
-      Toast.show({ type: 'error', text1: 'Durasi Ditolak', text2: 'Durasi sesi mengajar minimal 25 menit dan maksimal 45 menit.' });
+
+    if (totalStartMins < 0 || totalEndMins > 24 * 60 || totalStartMins >= totalEndMins || duration < 25 || duration > 45) {
+      Toast.show({ type: 'error', text1: 'Format Jam Salah', text2: 'Cek kembali jam mulai/selesai (Min 25m, Max 45m).' });
       return;
     }
 
     const timeSlotFinal = `${jadwalStart} - ${jadwalEnd} WIB`;
-    const isDuplicate = schedules.find(s => s.day_of_week === jadwalDay && s.time_slot === timeSlotFinal);
-    if (isDuplicate) {
-      Toast.show({ type: 'info', text1: 'Jadwal Bentrok', text2: 'Anda sudah mendaftarkan jadwal di waktu tersebut.' });
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const { error } = await supabase.from('teacher_schedules').insert({
+      await teacherService.addSchedule({
         teacher_id: session.user.id,
         day_of_week: jadwalDay,
         time_slot: timeSlotFinal,
         teacher_name: session.user.user_metadata?.full_name || 'Pengajar I-Qlab',
         teacher_gender: session.user.user_metadata?.gender || 'Laki-laki'
       });
-      if (error) throw error;
       Toast.show({ type: 'success', text1: 'Jadwal Aktif!', text2: 'Sesi ketersediaan Anda berhasil ditambahkan.' });
       setJadwalStart('');
       setJadwalEnd('');
@@ -333,11 +274,9 @@ export const usePengajar = (session) => {
 
   const handleDeleteSchedule = async (id) => {
     try {
-      const { error } = await supabase.from('teacher_schedules').delete().eq('id', id);
-      if (!error) {
-        Toast.show({ type: 'info', text1: 'Terhapus', text2: 'Jadwal Anda telah ditarik.' });
-        fetchSchedules();
-      }
+      await teacherService.deleteSchedule(id);
+      Toast.show({ type: 'info', text1: 'Terhapus', text2: 'Jadwal Anda telah ditarik.' });
+      fetchSchedules();
     } catch (err) { }
   };
 
@@ -346,16 +285,7 @@ export const usePengajar = (session) => {
     try {
       const randomId = Math.random().toString(36).substring(2, 12);
       const meetingLink = `https://meet.ffmuc.net/iqlab-${randomId}`;
-
-      const { data, error } = await supabase
-        .from('teacher_schedules')
-        .update({ meeting_link: meetingLink })
-        .eq('id', scheduleId)
-        .select();
-
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error("Gagal menyimpan ke database.");
-
+      await teacherService.updateScheduleLink(scheduleId, meetingLink);
       Toast.show({ type: 'success', text1: 'Link Berhasil Dibuat! 🚀', text2: 'Tautan kelas Anda telah terdaftar.' });
       fetchSchedules();
     } catch (err) {
@@ -366,34 +296,18 @@ export const usePengajar = (session) => {
   };
 
   const handleFinishMeeting = async (scheduleId) => {
-    // 0. UPDATE UI SEKETIKA (Pindahkan ID ke daftar manual)
     setManuallyFinishedIds(prev => [...prev, scheduleId]);
-
     setIsLoading(true);
     try {
-      // 1. Kirim Sinyal BROADCAST (Cepat)
       const channel = supabase.channel(`room_${scheduleId}`);
       await channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await channel.send({
-            type: 'broadcast',
-            event: 'FORCE_END_MEETING',
-            payload: { msg: 'Teacher ended session' }
-          });
+          await channel.send({ type: 'broadcast', event: 'FORCE_END_MEETING', payload: { msg: 'Teacher ended session' } });
           supabase.removeChannel(channel);
         }
       });
-
-      // 2. Bersihkan database (Link & Antrean)
-      await supabase.from('teacher_schedules').update({ meeting_link: null, current_students_count: 0 }).eq('id', scheduleId);
-      await supabase.from('active_class_participants').delete().eq('schedule_id', scheduleId);
-
-      Toast.show({
-        type: 'success',
-        text1: 'Sesi Selesai 🏁',
-        text2: 'Kelas telah resmi ditutup.'
-      });
-
+      await teacherService.finishMeeting(scheduleId);
+      Toast.show({ type: 'success', text1: 'Sesi Selesai 🏁', text2: 'Kelas telah resmi ditutup.' });
       fetchSchedules();
       return true;
     } catch (err) {
@@ -405,7 +319,7 @@ export const usePengajar = (session) => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await authService.signOut();
     setIsTeacherLoggedIn(false);
     Toast.show({ type: 'info', text1: 'Sesi Berakhir', text2: 'Anda telah keluar.' });
   };
@@ -428,16 +342,12 @@ export const usePengajar = (session) => {
     isTeacherLoggedIn,
     isSignupMode,
     setIsSignupMode,
-    email,
-    setEmail,
-    password,
-    setPassword,
-    fullName,
-    setFullName,
+    email, setEmail,
+    password, setPassword,
+    fullName, setFullName,
     isLoading,
     teacherName,
-    fadeAnim,
-    slideAnim,
+    fadeAnim, slideAnim,
     handleIconTap,
     handleLogin,
     handleSignup,

@@ -1,9 +1,12 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Platform, Animated, Dimensions, Keyboard, LayoutAnimation, PanResponder } from 'react-native';
+import { Animated, Dimensions, Keyboard, LayoutAnimation, PanResponder, Alert } from 'react-native';
 import { Audio } from 'expo-av';
 import { useFonts } from 'expo-font';
 import Toast from 'react-native-toast-message';
-import { supabase } from '../lib/supabase';
+import { quranService } from '../services/quranService';
+import { teacherService } from '../services/teacherService';
+import { progressService } from '../services/progressService';
+
 import verseUthmani from '../../assets/data/verse.json';
 import verseKemenag from '../../assets/data/kemenag.json';
 import verseIndopak from '../../assets/data/indopak.json';
@@ -35,7 +38,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedSurah, setSelectedSurah] = useState(null);
   const [versesData, setVersesData] = useState([]);
-  const [mushafType, setMushafType] = useState('uthmani'); // 'uthmani', 'kemenag', 'indopak'
+  const [mushafType, setMushafType] = useState('uthmani');
   const [expandedTafsir, setExpandedTafsir] = useState(null);
   const [tafsirDataMap, setTafsirDataMap] = useState({});
   const [sound, setSound] = useState(null);
@@ -49,7 +52,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const [userProgress, setUserProgress] = useState({ unlockedSurah: 1, unlockedAyah: 1, isLockedToday: false });
   const [lobbyVisible, setLobbyVisible] = useState(false);
   const [activeTeachers, setActiveTeachers] = useState([]);
-  const [targetSubmit, setTargetSubmit] = useState(null); // {surahId, ayahNumber}
+  const [targetSubmit, setTargetSubmit] = useState(null); 
   const [inClassUrl, setInClassUrl] = useState(null);
 
   useEffect(() => {
@@ -95,7 +98,6 @@ export const useInteractiveQuran = (onBack, session) => {
   ).current;
 
   useEffect(() => {
-    // 1. Inisialisasi Audio Mode agar Streaming lebih optimal
     Audio.setAudioModeAsync({
       allowsRecordingIOS: false,
       staysActiveInBackground: true,
@@ -119,50 +121,27 @@ export const useInteractiveQuran = (onBack, session) => {
   }, []);
 
   useEffect(() => {
-    const fetchSurahs = async () => {
+    const initData = async () => {
       try {
-        const response = await fetch('https://api.quran.com/api/v4/chapters?language=id');
-        const data = await response.json();
-        setAllSurahs(data.chapters);
+        const surahs = await quranService.fetchSurahs();
+        setAllSurahs(surahs);
+        
+        if (session?.user?.id) {
+            const progress = await progressService.fetchUserProgress(session.user.id);
+            setUserProgress(progress);
+        }
       } catch (error) {
-        console.error('Error fetching surahs:', error);
+        console.error('Error initializing Quran data:', error);
       }
     };
-    fetchSurahs();
-    fetchUserProgress();
+    initData();
   }, [session]);
 
   const fetchUserProgress = async () => {
     if (!session?.user?.id) return;
     try {
-      // Cari log progress terakhir
-      const { data, error } = await supabase
-        .from('quran_progress')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .order('surah_id', { ascending: false })
-        .order('ayah_number', { ascending: false })
-        .limit(1);
-
-      if (!error && data && data.length > 0) {
-        const lastRow = data[0];
-        let nextSurah = lastRow.surah_id;
-        let nextAyah = lastRow.ayah_number;
-
-        if (lastRow.status === 'passed') {
-          nextAyah += 1; // Simplifikasi (harusnya ngecek max ayat per surah, tp gpp)
-        }
-
-        // Cek apakah hari ini sudah submit (last_assessed_at hitung berdasarkan kalender)
-        let lockedToday = false;
-        if (lastRow.last_assessed_at) {
-          const lastDate = new Date(lastRow.last_assessed_at).toDateString();
-          const todayDate = new Date().toDateString();
-          if (lastDate === todayDate) lockedToday = true;
-        }
-
-        setUserProgress({ unlockedSurah: nextSurah, unlockedAyah: nextAyah, isLockedToday: lockedToday });
-      }
+      const progress = await progressService.fetchUserProgress(session.user.id);
+      setUserProgress(progress);
     } catch (err) { }
   };
 
@@ -180,18 +159,9 @@ export const useInteractiveQuran = (onBack, session) => {
   const fetchActiveTeachers = async () => {
     if (!session?.user) return;
     try {
-      // Ambil guru yang meeting_link nya tidak null (sedang broadcast)
-      const myGender = session.user.user_metadata?.gender || 'Laki-laki'; // default jika blm set
-
-      const { data, error } = await supabase
-        .from('teacher_schedules')
-        .select('*')
-        .not('meeting_link', 'is', null)
-        .eq('teacher_gender', myGender); // Saringan Anti-Ikhtilat
-
-      if (!error && data) {
-        setActiveTeachers(data);
-      }
+      const myGender = session.user.user_metadata?.gender || 'Laki-laki';
+      const teachers = await teacherService.fetchActiveTeachers(myGender);
+      setActiveTeachers(teachers);
     } catch (err) { }
   };
 
@@ -201,26 +171,21 @@ export const useInteractiveQuran = (onBack, session) => {
       return;
     }
 
-    // Insert ke tabel antrean
     try {
       const userGender = session.user.user_metadata?.gender || 'Laki-laki';
       const userName = session.user.user_metadata?.full_name || 'Murid Hamba Allah';
 
-      const { error } = await supabase.from('active_class_participants').insert({
-        schedule_id: schedule.id,
-        student_id: session.user.id,
-        student_name: userName,
-        student_gender: userGender,
-        target_surah_id: targetSubmit.surahId,
-        target_ayah: targetSubmit.ayahNumber
+      await teacherService.joinClass({
+        scheduleId: schedule.id,
+        studentId: session.user.id,
+        studentName: userName,
+        studentGender: userGender,
+        targetSurahId: targetSubmit.surahId,
+        targetAyah: targetSubmit.ayahNumber
       });
 
-      if (error) throw error;
-
-      // Berhasil daftar kursi, langsung teleport masuk Jitsi!
       setLobbyVisible(false);
       setInClassUrl(schedule.meeting_link);
-
     } catch (err) {
       Toast.show({ type: 'error', text1: 'Gagal Masuk', text2: err.message });
     }
@@ -250,7 +215,6 @@ export const useInteractiveQuran = (onBack, session) => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       const lowerText = userText.toLowerCase().replace(/\s+/g, '');
 
-      // Pencarian Surah Berdasarkan Nama atau Angka
       const foundSurah = allSurahs.find(s => {
         const latin = s.name_simple.toLowerCase().replace(/[-\s]/g, '');
         const id = String(s.id);
@@ -271,7 +235,6 @@ export const useInteractiveQuran = (onBack, session) => {
           }]);
         }
       } else if (foundSurah) {
-        // Jika Surah Ditemukan, Munculkan Kartu Surah
         setMessages(prev => [...prev, {
           type: 'bot',
           subType: 'surah_card',
@@ -288,17 +251,13 @@ export const useInteractiveQuran = (onBack, session) => {
   };
 
   const handleOpenSurah = async (surah) => {
-    console.log('--- Opening Surah:', surah.nama_latin);
-
-    // Reset Modal States
     panY.setValue(0);
     setCurrentPage(1);
     setSelectedSurah(surah);
     setExpandedTafsir(null);
-    setTafsirDataMap({}); // Reset map for new surah
+    setTafsirDataMap({});
 
     try {
-      // 1. Get correct numbered surah
       const surahNomor = surah.id || surah.nomor;
       const activeJson = mushafType === 'uthmani' ? verseUthmani :
         mushafType === 'kemenag' ? verseKemenag : verseIndopak;
@@ -307,48 +266,14 @@ export const useInteractiveQuran = (onBack, session) => {
       setVersesData(data);
       setModalVisible(true);
 
-      // 2. Background fetch full surah tafsir from equran.id for caching
-      // Don't 'await' this so UI opens immediately
-      console.log(`[Background] Fetching full Tafsir for Surah ${surahNomor}...`);
-      fetch(`https://equran.id/api/v2/tafsir/${surahNomor}`)
-        .then(r => r.json())
-        .then(result => {
-          if (result.code === 200 && result.data && result.data.tafsir) {
-            const map = {};
-            result.data.tafsir.forEach(t => {
-              map[t.ayat] = t.teks;
-            });
-            setTafsirDataMap(prev => ({ ...prev, ...map }));
-            console.log(`[Background] Tafsir for Surah ${surahNomor} cached.`);
-          }
-        })
-        .catch(err => {
-          console.log('Background Tafsir fetch error:', err.message);
-        });
+      // Background fetch full surah tafsir
+      quranService.fetchFullSurahTafsir(surahNomor).then(map => {
+        setTafsirDataMap(prev => ({ ...prev, ...map }));
+      }).catch(err => console.log('Background Tafsir fetch error:', err.message));
 
     } catch (error) {
       console.error('Error opening surah:', error);
       Alert.alert('Gagal', 'Gagal memuat ayat surah');
-    }
-  };
-
-  const fetchFullSurahTafsir = async (surahId) => {
-    try {
-      console.log(`[Background] Fetching full Tafsir for Surah ${surahId}...`);
-      const response = await fetch(`https://equran.id/api/v2/tafsir/${surahId}`);
-      const result = await response.json();
-
-      if (result.code === 200 && result.data && result.data.tafsir) {
-        const map = {};
-        result.data.tafsir.forEach(t => {
-          map[t.ayat] = t.teks;
-        });
-
-        setTafsirDataMap(prev => ({ ...prev, ...map }));
-        console.log(`[Background] Tafsir for Surah ${surahId} cached.`);
-      }
-    } catch (error) {
-      throw error;
     }
   };
 
@@ -358,27 +283,18 @@ export const useInteractiveQuran = (onBack, session) => {
     } else {
       setExpandedTafsir(ayahNumber);
 
-      // If tafsir for this specific ayah is not yet in map, fetch it instantly
       if (!selectedSurah) return;
 
       if (!tafsirDataMap[ayahNumber]) {
-        console.log(`[Instant] Fetching single Tafsir for Ayah ${ayahNumber}...`);
         try {
           const surahId = selectedSurah.nomor || selectedSurah.id;
           if (!surahId) return;
-          // Use Quran.com API for single ayah (Resource 164 is Kemenag)
-          const resp = await fetch(`https://api.quran.com/api/v4/tafsirs/164/by_ayah/${surahId}:${ayahNumber}`);
-          const data = await resp.json();
-
-          if (data.tafsir && data.tafsir.text) {
-            // Clean up basic HTML tags if any
-            const cleanText = data.tafsir.text.replace(/<\/?[^>]+(>|$)/g, "");
-
+          const cleanText = await quranService.fetchSingleAyahTafsir(surahId, ayahNumber);
+          if (cleanText) {
             setTafsirDataMap(prev => ({
               ...prev,
               [ayahNumber]: cleanText
             }));
-            console.log(`[Instant] Ayah ${ayahNumber} loaded.`);
           }
         } catch (e) {
           console.log('Single ayah fetch failed:', e.message);
@@ -387,7 +303,6 @@ export const useInteractiveQuran = (onBack, session) => {
     }
   };
 
-  // Sync verses when mushafType changes
   useEffect(() => {
     if (modalVisible && selectedSurah) {
       const activeJson = mushafType === 'uthmani' ? verseUthmani :
@@ -399,7 +314,6 @@ export const useInteractiveQuran = (onBack, session) => {
 
   const handlePlayAyah = async (surahId, ayahNumber) => {
     try {
-      // 1. Jika klik ayat yang SAMA dengan yang sedang memutar -> Berhenti total
       if (sound && playingAyah === ayahNumber) {
         setPlayingAyah(null);
         await sound.unloadAsync();
@@ -407,19 +321,16 @@ export const useInteractiveQuran = (onBack, session) => {
         return;
       }
 
-      // 2. Clear suara yang sedang berjalan (tanpa await agar UI tidak nge-hang)
       if (sound) {
         sound.stopAsync().then(() => sound.unloadAsync()).catch(e => { });
         setSound(null);
       }
 
-      // 3. Update UI SANGAT CEPAT (Langsung ganti ikon ke Pause/Active)
       setPlayingAyah(ayahNumber);
 
       const pad = (num, size) => String(num).padStart(size, '0');
       const url = `https://everyayah.com/data/Alafasy_64kbps/${pad(surahId, 3)}${pad(ayahNumber, 3)}.mp3`;
 
-      // 4. Buat objek suara baru secara async
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: url },
         {
@@ -428,7 +339,7 @@ export const useInteractiveQuran = (onBack, session) => {
           androidImplementation: 'MediaPlayer'
         },
         null,
-        false // Do not download whole audio at once
+        false
       );
 
       setSound(newSound);
@@ -438,23 +349,18 @@ export const useInteractiveQuran = (onBack, session) => {
           setPlayingAyah(null);
 
           if (isAutoPlayRef.current) {
-            // Find next ayah in current surah data
             const currentIndex = versesData.findIndex(v => v.ayat === ayahNumber);
             if (currentIndex !== -1 && currentIndex < versesData.length - 1) {
               const nextAyah = versesData[currentIndex + 1];
-
-              // Handle Pagination switch if needed
               const nextAyahPage = Math.ceil((currentIndex + 2) / versesPerPage);
               if (nextAyahPage > currentPage) {
                 setCurrentPage(nextAyahPage);
               }
-
-              // Delay a bit for natural transition
               setTimeout(() => {
                 handlePlayAyah(surahId, nextAyah.ayat);
               }, 600);
             } else {
-              setIsAutoPlay(false); // End of surah
+              setIsAutoPlay(false);
             }
           }
         }
@@ -464,13 +370,10 @@ export const useInteractiveQuran = (onBack, session) => {
 
   const handlePageChange = useCallback((newPage) => {
     setCurrentPage(newPage);
-    // Scroll ke atas otomatis
     if (modalScrollRef.current) {
       modalScrollRef.current.scrollToOffset({ offset: 0, animated: true });
     }
   }, [modalScrollRef]);
-
-
 
   return {
     fontsLoaded,

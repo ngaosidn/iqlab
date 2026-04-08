@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Platform, Alert } from 'react-native';
+import { Animated, Dimensions, Platform } from 'react-native';
 import Toast from 'react-native-toast-message';
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
 import { supabase } from '../lib/supabase';
+import { authService } from '../services/authService';
 
 export const useHome = (session, onNavigate) => {
   const shimmerValue = useRef(new Animated.Value(-1)).current;
@@ -100,47 +99,17 @@ export const useHome = (session, onNavigate) => {
   };
 
   const handleAuth = async () => {
-    if (session) {
-      await supabase.auth.signOut();
-      if (Platform.OS === 'web' && typeof window !== 'undefined') {
-        window.history.replaceState(null, '', window.location.pathname);
-      }
-    } else {
-      const redirectUrl = makeRedirectUri({
-        preferLocalhost: false,
-      });
-
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: Platform.OS !== 'web',
+    try {
+      if (session) {
+        await authService.signOut();
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.history.replaceState(null, '', window.location.pathname);
         }
-      });
-
-      if (error) {
-        if (Platform.OS === 'web') alert(error.message);
-        return;
+      } else {
+        await authService.signInWithGoogle();
       }
-
-      if (Platform.OS !== 'web' && data?.url) {
-        const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
-
-        if (res.type === 'success' && res.url) {
-          const match = res.url.match(/(?:#|\?)(.*)/);
-          if (match && match[1]) {
-            const urlParams = new URLSearchParams(match[1].replace('?', '&'));
-            const access_token = urlParams.get('access_token');
-            const refresh_token = urlParams.get('refresh_token');
-
-            if (access_token && refresh_token) {
-              await supabase.auth.setSession({ access_token, refresh_token });
-            } else if (urlParams.get('error_description')) {
-              Alert.alert('Gagal', decodeURIComponent(urlParams.get('error_description').replace(/\+/g, ' ')));
-            }
-          }
-        }
-      }
+    } catch (error) {
+       console.log('Auth Error:', error.message);
     }
   };
 
@@ -156,15 +125,12 @@ export const useHome = (session, onNavigate) => {
       return;
     }
 
-    const { error } = await supabase.auth.updateUser({
-      data: { age: age, gender: gender }
-    });
-
-    if (error) {
-      Toast.show({ type: 'error', text1: 'Gagal Menyimpan', text2: error.message, position: 'bottom', bottomOffset: 90 });
-    } else {
+    try {
+      await authService.updateUserMetadata({ age, gender });
       setShowProfileModal(false);
       Toast.show({ type: 'success', text1: 'Profil Tersimpan!', text2: 'Terima kasih, data kamu sudah masuk.', position: 'bottom', bottomOffset: 90 });
+    } catch (error) {
+      Toast.show({ type: 'error', text1: 'Gagal Menyimpan', text2: error.message, position: 'bottom', bottomOffset: 90 });
     }
   };
 
@@ -188,7 +154,7 @@ export const useHome = (session, onNavigate) => {
         Animated.timing(dotOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
       ])
     ).start();
-  }, []); // Hapus dependency shimmerValue agar tidak re-trigger loop
+  }, []);
 
   const translateX = shimmerValue.interpolate({
     inputRange: [-1, 2],
