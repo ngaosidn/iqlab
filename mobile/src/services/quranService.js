@@ -73,5 +73,25 @@ export const quranService = {
       }
       return null;
     } catch (error) { return null; }
+  },
+
+  async getSingleAyah(surahId, ayahNumber, mushafType = 'uthmani') {
+    if (Platform.OS === 'web') {
+      return JSON_DATA[mushafType]?.[surahId]?.ayat?.find(v => v.ayat === ayahNumber) || null;
+    }
+
+    try {
+      const ayah = await databaseService.getSingleAyah(surahId, ayahNumber, mushafType);
+      if (ayah) return ayah;
+
+      if (JSON_DATA) {
+        const source = JSON_DATA[mushafType];
+        return source?.[surahId]?.ayat?.find(v => v.ayat === ayahNumber) || null;
+      }
+      return null;
+    } catch (error) {
+      console.log('Error getSingleAyah:', error.message);
+      return null;
+    }
   }
 };

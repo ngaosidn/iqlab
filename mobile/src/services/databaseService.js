@@ -68,5 +68,14 @@ export const databaseService = {
       `SELECT ayat_number as ayat, ${column} as teks_arab, terjemahan FROM quran WHERE surah_id = ? ORDER BY ayat_number ASC`,
       [surahId]
     );
+  },
+
+  async getSingleAyah(surahId, ayahNumber, mushafType = 'uthmani') {
+    const database = await this.init();
+    const column = mushafType === 'indopak' ? 'teks_indopak' : 'teks_uthmani';
+    return await database.getFirstAsync(
+      `SELECT ayat_number as ayat, ${column} as teks_arab, terjemahan FROM quran WHERE surah_id = ? AND ayat_number = ?`,
+      [surahId, ayahNumber]
+    );
   }
 };

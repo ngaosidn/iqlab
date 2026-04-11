@@ -6,7 +6,18 @@ import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
-import verseData from '../../assets/data/verse.json';
+import { quranService } from '../services/quranService';
+
+const TeacherVersePreview = ({ surahId, ayahNumber }) => {
+   const [text, setText] = useState('...');
+   useEffect(() => {
+      quranService.getSingleAyah(surahId, ayahNumber).then(res => {
+         if (res) setText(res.teks_arab);
+         else setText('Ayat tidak ditemukan');
+      });
+   }, [surahId, ayahNumber]);
+   return <Text style={styles.previewText} numberOfLines={2}>{text}</Text>;
+};
 
 export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, session }) {
    const [showPanel, setShowPanel] = useState(false);
@@ -124,25 +135,40 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
    }, [activeId, isTeacher, session?.user?.id, myParticipantId]);
 
    const fetchMyTarget = async () => {
-      if (!session?.user?.id || !activeId) return;
+      if (!session?.user?.id || !activeId) {
+         console.log("JitsiWebView: session or activeId missing", { activeId, userId: session?.user?.id });
+         return;
+      }
+      
       try {
          const { data, error } = await supabase
             .from('active_class_participants')
             .select('*')
             .eq('schedule_id', activeId)
             .eq('student_id', session.user.id)
-            .order('created_at', { ascending: false })
             .limit(1);
 
-         if (error) return;
+         if (error) {
+            console.error("Supabase Error fetchMyTarget:", error);
+            Toast.show({ type: 'error', text1: 'Error Database', text2: error.message });
+            return;
+         }
 
          if (data && data.length > 0) {
             const studentData = data[0];
-            setMyParticipantId(studentData.id); // Simpan ID antrian kita
+            setMyParticipantId(studentData.id);
 
-            const surahIdStr = String(studentData.target_surah_id);
-            const surahObj = verseData[surahIdStr];
-            const textObj = surahObj?.ayat?.find(v => v.ayat === studentData.target_ayah);
+            console.log("JitsiWebView: Participant found, fetching verse...", { 
+               surah: studentData.target_surah_id, 
+               ayah: studentData.target_ayah 
+            });
+
+            // AMBIL DATA DARI SQLITE LEWAT QURAN SERVICE
+            // Gunakan Number() untuk memastikan tipe data cocok dengan query SQLite
+            const sId = Number(studentData.target_surah_id);
+            const aNum = Number(studentData.target_ayah);
+            
+            const textObj = await quranService.getSingleAyah(sId, aNum);
 
             if (textObj) {
                setMyTarget({
@@ -150,9 +176,23 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
                   text: textObj.teks_arab,
                   translation: textObj.terjemahan
                });
+               console.log("JitsiWebView: myTarget successfully loaded");
+            } else {
+               console.warn("JitsiWebView: Verse NOT FOUND in SQLite for", { sId, aNum });
+               Toast.show({ 
+                  type: 'error', 
+                  text1: 'Ayat Tidak Ditemukan', 
+                  text2: `Surah ${sId} Ayat ${aNum} tidak ada di database lokal.` 
+               });
             }
+         } else {
+            console.log("JitsiWebView: No participant record found for", { scheduleIdNum, userId: session.user.id });
+            // Jangan toast dulu karena mungkin proses joinClass baru saja selesai (race condition)
          }
-      } catch (err) { }
+      } catch (err) {
+         console.error("fetchMyTarget Fatal Error:", err);
+         Toast.show({ type: 'error', text1: 'System Error', text2: err.message });
+      }
    };
 
    const fetchParticipants = async () => {
@@ -339,9 +379,6 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
                            <Text style={styles.targetInfoText}>Membaca: Surah {myTarget.target_surah_id} - Ayat {myTarget.target_ayah}</Text>
                         </View>
                         <Text style={styles.mainAyatText}>{myTarget.text}</Text>
-                        <View style={styles.translationContainer}>
-                           <Text style={styles.translationText}>{myTarget.translation?.replace(/<sup[^>]*>.*?<\/sup>/g, '')}</Text>
-                        </View>
                         <Text style={styles.mushafTip}>*Bacalah dengan tartil, ustadz sedang menyimak bacaan Anda.</Text>
                      </ScrollView>
                   ) : (
@@ -388,9 +425,7 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
 
                               {/* Preview Ayat buat Guru juga biar ga repot buka mushaf */}
                               <View style={styles.previewBox}>
-                                 <Text style={styles.previewText} numberOfLines={2}>
-                                    {verseData[String(p.target_surah_id)]?.ayat.find(v => v.ayat === p.target_ayah)?.teks_arab}
-                                 </Text>
+                                 <TeacherVersePreview surahId={p.target_surah_id} ayahNumber={p.target_ayah} />
                               </View>
 
                               <View style={styles.actionRow}>
