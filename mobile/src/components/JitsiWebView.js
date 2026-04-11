@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Modal, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Text, Modal, ScrollView, ActivityIndicator, Alert, Animated } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
 import { quranService } from '../services/quranService';
+import { teacherService } from '../services/teacherService';
 
 const TeacherVersePreview = ({ surahId, ayahNumber }) => {
    const [text, setText] = useState('...');
@@ -27,7 +28,23 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
    const [myTarget, setMyTarget] = useState(null);
    const [activeId, setActiveId] = useState(scheduleId);
    const [isFinished, setIsFinished] = useState(false);
+   const [finishReason, setFinishReason] = useState('teacher_ended'); // 'teacher_ended' | 'user_left' | 'student_removed'
    const [myParticipantId, setMyParticipantId] = useState(null);
+   const [showConfirmEnd, setShowConfirmEnd] = useState(false);
+   const confirmAnim = useRef(new Animated.Value(0)).current;
+
+   useEffect(() => {
+      if (showConfirmEnd) {
+         Animated.spring(confirmAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 8
+         }).start();
+      } else {
+         confirmAnim.setValue(0);
+      }
+   }, [showConfirmEnd]);
 
    const meetUrl = url.includes('#')
       ? url
@@ -101,11 +118,13 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
                filter: `id=eq.${activeId}`
             }, (payload) => {
                if (payload.new && payload.new.meeting_link === null) {
+                  setFinishReason('teacher_ended');
                   setIsFinished(true);
                }
             })
             .on('broadcast', { event: 'FORCE_END_MEETING' }, () => {
                // CEPAT: Sinyal langsung dari HP Pengajar
+               setFinishReason('teacher_ended');
                setIsFinished(true);
             })
             .subscribe();
@@ -122,6 +141,7 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
                   table: 'active_class_participants',
                   filter: `id=eq.${myParticipantId}`
                }, () => {
+                  setFinishReason('student_removed');
                   setIsFinished(true);
                })
                .subscribe();
@@ -186,8 +206,7 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
                });
             }
          } else {
-            console.log("JitsiWebView: No participant record found for", { scheduleIdNum, userId: session.user.id });
-            // Jangan toast dulu karena mungkin proses joinClass baru saja selesai (race condition)
+            console.log("JitsiWebView: No participant record found for", { activeId, userId: session.user.id });
          }
       } catch (err) {
          console.error("fetchMyTarget Fatal Error:", err);
@@ -258,58 +277,84 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
    };
 
    const handleBackPress = async () => {
-      if (!isTeacher && myParticipantId && activeId) {
+      if (!isTeacher && activeId) {
          setIsProcessing(true);
          try {
-            // 1. Hapus dari daftar antrean
-            await supabase.from('active_class_participants').delete().eq('id', myParticipantId);
+            // 1. CARI ID ANTREAN (Jika myParticipantId belum sempat ter-load)
+            let pId = myParticipantId;
+            if (!pId && session?.user?.id) {
+               const { data } = await supabase
+                  .from('active_class_participants')
+                  .select('id')
+                  .eq('schedule_id', activeId)
+                  .eq('student_id', session.user.id)
+                  .limit(1);
+               if (data && data.length > 0) pId = data[0].id;
+            }
 
-            // 2. Ambil count terbaru dan kurangi 1
-            const { data: scheduleData } = await supabase
-               .from('teacher_schedules')
-               .select('current_students_count')
-               .eq('id', activeId)
-               .single();
+            if (pId) {
+               // 2. HAPUS DARI ANTREAN
+               await supabase.from('active_class_participants').delete().eq('id', pId);
 
-            if (scheduleData) {
-               const currentCount = scheduleData.current_students_count ?? 0;
-               const newCount = Math.max(0, currentCount - 1);
-               await supabase
+               // 3. KURANGI COUNT DI JADWAL
+               const { data: scheduleData } = await supabase
                   .from('teacher_schedules')
-                  .update({ current_students_count: newCount })
-                  .eq('id', activeId);
+                  .select('current_students_count')
+                  .eq('id', activeId)
+                  .single();
+
+               if (scheduleData) {
+                  const currentCount = scheduleData.current_students_count ?? 0;
+                  const newCount = Math.max(0, currentCount - 1);
+                  await supabase
+                     .from('teacher_schedules')
+                     .update({ current_students_count: newCount })
+                     .eq('id', activeId);
+               }
             }
          } catch (err) {
             console.log('Error leaving class:', err.message);
          } finally {
             setIsProcessing(false);
-            onLeave();
+            setFinishReason('user_left');
+            setIsFinished(true);
          }
       } else if (isTeacher && activeId) {
-         setIsProcessing(true);
-         try {
-            // Kirim sinyal cepat ke semua murid agar mereka langsung keluar layar Jitsi
-            const channel = supabase.channel(`room_${activeId}`);
-            await channel.subscribe(async (status) => {
-               if (status === 'SUBSCRIBED') {
-                  await channel.send({
-                     type: 'broadcast',
-                     event: 'FORCE_END_MEETING',
-                     payload: { msg: 'Teacher ended session' }
-                  });
-                  supabase.removeChannel(channel);
-               }
-            });
-
-            // Panggil fungsi pembersihan parent (PengajarScreen)
-            onLeave();
-         } catch (err) {
-            onLeave();
-         } finally {
-            setIsProcessing(false);
-         }
+         setShowConfirmEnd(true);
       } else {
          onLeave();
+      }
+   };
+
+   const handleForceEndSession = async () => {
+      setIsProcessing(true);
+      try {
+         // 1. SINYAL BROADCAST KE SEMUA MURID (PAKSA KELUAR)
+         const channel = supabase.channel(`room_${activeId}`);
+         channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+               await channel.send({
+                  type: 'broadcast',
+                  event: 'FORCE_END_MEETING',
+                  payload: { msg: 'Teacher ended session' }
+               });
+               // Hapus channel setelah terkirim
+               setTimeout(() => supabase.removeChannel(channel), 1000);
+            }
+         });
+
+         // 2. HAPUS LINK DI SUPABASE (Finish Class)
+         await teacherService.finishMeeting(activeId);
+         
+         setShowConfirmEnd(false);
+         Toast.show({ type: 'success', text1: 'Sesi Selesai 🏁', text2: 'Kelas telah resmi ditutup.' });
+         onLeave();
+      } catch (err) {
+         console.error('Error ending class:', err);
+         setShowConfirmEnd(false);
+         onLeave();
+      } finally {
+         setIsProcessing(false);
       }
    };
 
@@ -349,10 +394,23 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
             <View style={styles.finishedWrapper}>
                <LinearGradient colors={['#0f172a', '#1e293b']} style={StyleSheet.absoluteFill} />
                <View style={styles.finishCard}>
-                  <View style={styles.successIcon}><Feather name="check-circle" size={50} color="#10b981" /></View>
-                  <Text style={styles.finishTitle}>Sesi Selesai ✨</Text>
-                  <Text style={styles.finishText}>Ustadz/ah telah menutup ruang kelas. Alhamdulillah untuk ilmu hari ini!</Text>
-                  <TouchableOpacity onPress={onLeave} style={styles.btnDone}>
+                  <View style={[styles.successIcon, finishReason === 'user_left' && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+                     <Feather 
+                       name={finishReason === 'user_left' ? "log-out" : "check-circle"} 
+                       size={50} 
+                       color={finishReason === 'user_left' ? "#ef4444" : "#10b981"} 
+                     />
+                  </View>
+                  <Text style={styles.finishTitle}>
+                     {finishReason === 'user_left' ? 'Sesi Selesai' : 
+                      finishReason === 'student_removed' ? 'Antrian Selesai' : 'Sesi Selesai ✨'}
+                  </Text>
+                  <Text style={styles.finishText}>
+                     {finishReason === 'user_left' ? 'Anda telah keluar sesi live. Silahkan masuk kembali jika belum selesai!' :
+                      finishReason === 'student_removed' ? 'Ustadz/ah telah memproses bacaan Anda. Cek progres Anda di Lobby.' :
+                      'Ustadz/ah telah menutup ruang kelas. Alhamdulillah untuk ilmu hari ini!'}
+                  </Text>
+                  <TouchableOpacity onPress={onLeave} style={[styles.btnDone, finishReason === 'user_left' && { backgroundColor: '#ef4444' }]}>
                      <Text style={[styles.btnLulusText, { fontSize: 16 }]}>Kembali ke Beranda</Text>
                   </TouchableOpacity>
                </View>
@@ -445,6 +503,57 @@ export default function JitsiWebView({ url, onLeave, scheduleId, isTeacher, sess
                </View>
             </View>
          )}
+
+         <Modal visible={showConfirmEnd} transparent animationType="fade">
+            <View style={styles.confirmOverlay}>
+               <Animated.View style={[
+                  styles.confirmCard,
+                  {
+                     transform: [
+                        { scale: confirmAnim },
+                        { translateY: confirmAnim.interpolate({
+                           inputRange: [0, 1],
+                           outputRange: [50, 0]
+                        }) }
+                     ],
+                     opacity: confirmAnim
+                  }
+               ]}>
+                  <View style={styles.confirmIconBg}>
+                      <Feather name="power" size={32} color="#ef4444" />
+                  </View>
+                  <Text style={styles.confirmTitle}>Akhiri Sesi Live?</Text>
+                  <Text style={styles.confirmSubtitle}>
+                     Tautan kelas akan dihapus otomatis dari database dan semua murid akan dipaksa keluar dari jitsi meet sekarang juga.
+                  </Text>
+                  
+                  <View style={styles.confirmActionCol}>
+                     <TouchableOpacity 
+                        onPress={handleForceEndSession} 
+                        disabled={isProcessing}
+                        style={styles.btnConfirmEnd}
+                     >
+                        {isProcessing ? (
+                           <ActivityIndicator color="white" />
+                        ) : (
+                           <>
+                              <Feather name="log-out" size={18} color="white" style={{marginRight: 8}} />
+                              <Text style={styles.btnConfirmEndText}>Ya, Selesaikan Kelas</Text>
+                           </>
+                        )}
+                     </TouchableOpacity>
+
+                     <TouchableOpacity 
+                        onPress={() => setShowConfirmEnd(false)} 
+                        disabled={isProcessing}
+                        style={styles.btnConfirmCancel}
+                     >
+                        <Text style={styles.btnConfirmCancelText}>Lanjutkan Mengajar</Text>
+                     </TouchableOpacity>
+                  </View>
+               </Animated.View>
+            </View>
+         </Modal>
       </SafeAreaView>
    );
 }
@@ -501,5 +610,17 @@ const styles = StyleSheet.create({
    successIcon: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#f0fdf4', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
    finishTitle: { fontSize: 24, fontWeight: 'bold', color: '#1e293b', marginBottom: 12 },
    finishText: { fontSize: 15, color: '#64748b', textAlign: 'center', lineHeight: 22, marginBottom: 30 },
-   btnDone: { backgroundColor: '#10b981', paddingHorizontal: 40, paddingVertical: 16, borderRadius: 20, width: '100%', alignItems: 'center' }
+   btnDone: { backgroundColor: '#10b981', paddingHorizontal: 40, paddingVertical: 16, borderRadius: 20, width: '100%', alignItems: 'center' },
+
+   // Confirm End Modal Styles
+   confirmOverlay: { flex: 1, backgroundColor: 'rgba(15, 23, 42, 0.85)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+   confirmCard: { backgroundColor: '#ffffff', width: '100%', borderRadius: 32, padding: 32, alignItems: 'center', elevation: 25, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20 },
+   confirmIconBg: { width: 70, height: 70, borderRadius: 35, backgroundColor: 'rgba(239, 68, 68, 0.1)', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+   confirmTitle: { fontSize: 22, fontWeight: 'bold', color: '#0f172a', marginBottom: 12 },
+   confirmSubtitle: { fontSize: 14, color: '#64748b', textAlign: 'center', lineHeight: 22, marginBottom: 30 },
+   confirmActionCol: { width: '100%', gap: 12 },
+   btnConfirmEnd: { backgroundColor: '#ef4444', height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', flexDirection: 'row', width: '100%' },
+   btnConfirmEndText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
+   btnConfirmCancel: { backgroundColor: '#f1f5f9', height: 56, borderRadius: 18, justifyContent: 'center', alignItems: 'center', width: '100%' },
+   btnConfirmCancelText: { color: '#64748b', fontWeight: 'bold', fontSize: 15 }
 });

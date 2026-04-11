@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { quranService } from '../services/quranService';
 import { teacherService } from '../services/teacherService';
 import { progressService } from '../services/progressService';
+import { supabase as supabaseClient } from '../lib/supabase';
 
 
 export const useInteractiveQuran = (onBack, session) => {
@@ -183,16 +184,65 @@ export const useInteractiveQuran = (onBack, session) => {
     } catch (err) { }
   };
 
-  const joinTeacherClass = async (schedule) => {
-    if (schedule.current_students_count >= 4) {
-      Toast.show({ type: 'error', text1: 'Penuh 🔒', text2: 'Kursi ustadz ini sedang penuh (4/4). Tunggu sebentar.' });
-      return;
-    }
+  // Real-time listener untuk Lobby (Agar saat ustadz Power Off, di murid langsung hilang)
+  useEffect(() => {
+    if (lobbyVisible && session?.user) {
+      // 1. Fetch langsung saat lobby terbuka
+      fetchActiveTeachers();
 
+      // 2. Listen ke perubahan real-time
+      const channel = supabaseClient
+        .channel('lobby_realtime')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'teacher_schedules' 
+        }, (payload) => {
+          console.log("Realtime Lobby Update:", payload.eventType);
+          fetchActiveTeachers();
+        })
+        .subscribe();
+
+      return () => {
+        supabaseClient.removeChannel(channel);
+      };
+    }
+  }, [lobbyVisible, session?.user]);
+
+  const joinTeacherClass = async (schedule) => {
     try {
+      setIsLoading(true);
       const userGender = session.user.user_metadata?.gender || 'Laki-laki';
       const userName = session.user.user_metadata?.full_name || 'Murid Hamba Allah';
 
+      if (!supabaseClient) {
+        throw new Error("Supabase client is not initialized");
+      }
+
+      // 1. CEK APAKAH KITA SUDAH ADA DI DAFTAR (Antisipasi Re-join)
+      const { data: existing, error: checkError } = await supabaseClient
+        .from('active_class_participants')
+        .select('id')
+        .eq('schedule_id', schedule.id)
+        .eq('student_id', session.user.id)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (existing && existing.length > 0) {
+        console.log("ℹ️ Student already in class, re-joining...");
+        setLobbyVisible(false);
+        setInClassUrl(schedule.meeting_link);
+        return;
+      }
+
+      // 2. CEK KUOTA (Hanya jika murid baru)
+      if (schedule.current_students_count >= 4) {
+        Toast.show({ type: 'error', text1: 'Penuh 🔒', text2: 'Kursi ustadz ini sedang penuh (4/4). Tunggu sebentar.' });
+        return;
+      }
+
+      // 3. INSERT PESERTA
       await teacherService.joinClass({
         scheduleId: schedule.id,
         studentId: session.user.id,
@@ -202,10 +252,22 @@ export const useInteractiveQuran = (onBack, session) => {
         targetAyah: targetSubmit.ayahNumber
       });
 
+      // 4. INCREMENT COUNT DI JADWAL
+      const newCount = (schedule.current_students_count || 0) + 1;
+      const { error: updateError } = await supabaseClient
+        .from('teacher_schedules')
+        .update({ current_students_count: newCount })
+        .eq('id', schedule.id);
+
+      if (updateError) throw updateError;
+
       setLobbyVisible(false);
       setInClassUrl(schedule.meeting_link);
     } catch (err) {
+      console.error("Error joining class details:", err);
       Toast.show({ type: 'error', text1: 'Gagal Masuk', text2: err.message });
+    } finally {
+      setIsLoading(false);
     }
   };
 
