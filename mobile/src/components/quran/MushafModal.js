@@ -32,7 +32,11 @@ const MushafModal = ({
   fontSize,
   updateFontSize,
   targetScrollAyah,
-  setTargetScrollAyah
+  setTargetScrollAyah,
+  bookmarks,
+  toggleBookmark,
+  readingCheckpoint,
+  toggleCheckpoint
 }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
@@ -136,7 +140,9 @@ const MushafModal = ({
                   isLoggedIn,
                   tafsirDataMap,
                   unlockedAyah: userProgress?.unlockedAyah,
-                  unlockedSurah: userProgress?.unlockedSurah
+                  unlockedSurah: userProgress?.unlockedSurah,
+                  bookmarks,
+                  readingCheckpoint
                 }}
                 estimatedItemSize={280}
                 initialNumToRender={10}

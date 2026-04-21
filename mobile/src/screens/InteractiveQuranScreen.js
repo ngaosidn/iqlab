@@ -73,7 +73,12 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         fontSize,
         updateFontSize,
         targetScrollAyah,
-        setTargetScrollAyah
+        setTargetScrollAyah,
+        bookmarks,
+        toggleBookmark,
+        handleResumeReading,
+        readingCheckpoint,
+        toggleCheckpoint
     } = quranHook;
 
     const [shareModalVisible, setShareModalVisible] = React.useState(false);
@@ -141,9 +146,13 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                 onSend={() => checkAuth(() => handleOpenLobby(selectedSurah?.id, verse.ayat))}
                 onShare={() => checkAuth(() => handleShareVerse(verse))}
                 highlightKeyword={quranHook.searchHighlight}
+                onBookmark={() => toggleBookmark(verse)}
+                isBookmarked={bookmarks.some(b => b.surah_id === (selectedSurah?.id) && b.ayah_number === verse.ayat)}
+                onCheckpoint={() => toggleCheckpoint(verse)}
+                isCheckpoint={readingCheckpoint?.surah_id === (selectedSurah?.id) && readingCheckpoint?.ayah_number === verse.ayat}
             />
         );
-    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse, quranHook.searchHighlight]);
+    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse, quranHook.searchHighlight, toggleBookmark, bookmarks, toggleCheckpoint, readingCheckpoint]);
 
 
 
@@ -204,7 +213,12 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                         )}
 
                         {fontsLoaded && messages.map((msg, index) => (
-                            <ChatBubble key={index} msg={msg} handleOpenSurah={handleOpenSurah} />
+                            <ChatBubble 
+                                key={index} 
+                                msg={msg} 
+                                handleOpenSurah={handleOpenSurah} 
+                                onResume={handleResumeReading}
+                            />
                         ))}
 
                         {isLoading && (
@@ -273,6 +287,10 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     setTargetScrollAyah={setTargetScrollAyah}
                     searchHighlight={quranHook.searchHighlight}
                     onShare={handleShareVerse}
+                    bookmarks={bookmarks}
+                    toggleBookmark={toggleBookmark}
+                    readingCheckpoint={readingCheckpoint}
+                    toggleCheckpoint={toggleCheckpoint}
                 />
 
                 <TeacherLobby

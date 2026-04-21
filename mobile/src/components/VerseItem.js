@@ -19,7 +19,11 @@ const VerseItem = React.memo(({
   onSend,
   onShare,
   fontSize,
-  highlightKeyword
+  highlightKeyword,
+  onBookmark,
+  isBookmarked,
+  onCheckpoint,
+  isCheckpoint
 }) => {
   const renderHighlightedTranslation = (text, keyword) => {
     if (!text) return null;
@@ -54,10 +58,16 @@ const VerseItem = React.memo(({
               <FontAwesome5 name={isPlaying ? 'pause' : 'play'} size={12} color={isPlaying ? '#ffffff' : '#3b82f6'} />
             </TouchableOpacity>
             <TouchableOpacity 
-              onPress={() => onAuthRestricted(() => console.log('Bookmark'))} 
-              style={[styles.actionCircleBtn, isLoggedIn && { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }]}
+              onPress={() => onAuthRestricted(onBookmark)} 
+              style={[styles.actionCircleBtn, isBookmarked && { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]}
             >
-              <FontAwesome5 name="bookmark" size={12} color={isLoggedIn ? '#16a34a' : '#64748b'} />
+              <FontAwesome5 name="bookmark" size={11} color={isBookmarked ? '#d97706' : '#64748b'} solid={isBookmarked} />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => onAuthRestricted(onCheckpoint)} 
+              style={[styles.actionCircleBtn, isCheckpoint && { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}
+            >
+              <FontAwesome5 name="flag" size={11} color={isCheckpoint ? '#ef4444' : '#64748b'} solid={isCheckpoint} />
             </TouchableOpacity>
           </View>
         </View>

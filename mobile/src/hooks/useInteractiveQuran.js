@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { quranService } from '../services/quranService';
 import { teacherService } from '../services/teacherService';
 import { progressService } from '../services/progressService';
+import { bookmarkService } from '../services/bookmarkService';
 import { supabase as supabaseClient } from '../lib/supabase';
 
 
@@ -56,6 +57,8 @@ export const useInteractiveQuran = (onBack, session) => {
   const [targetSubmit, setTargetSubmit] = useState(null);
   const [inClassUrl, setInClassUrl] = useState(null);
   const [searchHighlight, setSearchHighlight] = useState(null);
+  const [bookmarks, setBookmarks] = useState([]);
+  const [readingCheckpoint, setReadingCheckpoint] = useState(null);
   
   // Load settings
   useEffect(() => {
@@ -144,8 +147,40 @@ export const useInteractiveQuran = (onBack, session) => {
   useEffect(() => {
     const initData = async () => {
       try {
-        const surahs = await quranService.fetchSurahs();
+        const [surahs, bms, checkpoint] = await Promise.all([
+          quranService.fetchSurahs(),
+          bookmarkService.fetchBookmarks(session?.user?.id),
+          progressService.fetchCheckpoint(session?.user?.id)
+        ]);
+        
         setAllSurahs(surahs);
+        if (bms) setBookmarks(bms);
+        if (checkpoint) setReadingCheckpoint(checkpoint);
+
+        // Proactive AI Suggestion (Priority to Checkpoint)
+        const lastReadFallback = await progressService.fetchLastRead();
+        const activeSuggestion = checkpoint || lastReadFallback;
+
+        if (activeSuggestion) {
+          setTimeout(() => {
+            setMessages(prev => {
+              if (prev.some(m => m.lastReadSuggestion)) return prev;
+              
+              const isFromPin = !!checkpoint;
+              const title = isFromPin ? "Lanjutkan Penanda 🚩" : "Terakhir Dibuka ⏳";
+              const content = isFromPin 
+                ? `Assalamu'alaikum! Anda punya penanda di Surah ${checkpoint.surah_name} ayat ${checkpoint.ayah_number}. Lanjut dari sini?`
+                : `Assalamu'alaikum! Terakhir Anda membuka Surah ${lastReadFallback.surah_name} ayat ${lastReadFallback.ayah_number}. Ingin lanjut?`;
+
+              return [...prev, {
+                type: 'bot',
+                content: content,
+                lastReadSuggestion: activeSuggestion,
+                suggestionTitle: title
+              }];
+            });
+          }, 1500);
+        }
 
         if (session?.user?.id) {
           const progress = await progressService.fetchUserProgress(session.user.id);
@@ -157,6 +192,48 @@ export const useInteractiveQuran = (onBack, session) => {
     };
     initData();
   }, [session]);
+
+  const toggleBookmark = async (verse) => {
+    try {
+      const sName = allSurahs.find(s => s.id === (verse.surah_id || selectedSurah?.id))?.name_simple;
+      const verseData = {
+        surah_id: verse.surah_id || selectedSurah?.id,
+        ayah_number: verse.ayat,
+        surah_name: sName || `Surah ${verse.surah_id || selectedSurah?.id}`
+      };
+      
+      const updated = await bookmarkService.toggleBookmark(session?.user?.id, verseData);
+      setBookmarks(updated);
+    } catch (err) {
+      console.error('Toggle Bookmark error:', err);
+      Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan bookmark.');
+    }
+  };
+
+  const toggleCheckpoint = async (verse) => {
+    try {
+      const sName = allSurahs.find(s => s.id === (verse.surah_id || selectedSurah?.id))?.name_simple;
+      const data = {
+        surah_id: verse.surah_id || selectedSurah?.id,
+        ayah_number: verse.ayat,
+        surah_name: sName || `Surah ${verse.surah_id || selectedSurah?.id}`
+      };
+      
+      const newCheckpoint = await progressService.saveCheckpoint(session?.user?.id, data);
+      setReadingCheckpoint(newCheckpoint);
+      
+      const { default: Toast } = require('react-native-toast-message');
+      Toast.show({
+        type: 'success',
+        text1: 'Penanda Disimpan 🚩',
+        text2: `Berhasil menandai ${data.surah_name} ayat ${data.ayah_number}.`,
+        position: 'bottom',
+        bottomOffset: 90
+      });
+    } catch (err) {
+      console.error('Toggle Checkpoint error:', err);
+    }
+  };
 
   const fetchUserProgress = async () => {
     if (!session?.user?.id) return;
@@ -299,6 +376,24 @@ export const useInteractiveQuran = (onBack, session) => {
       const rangeMatch = lowerTextRaw.match(/^(.*?)\s+(\d+)\s*(?:sampai|-|s\/d|sd|s\.d|to)\s*(\d+)$/);
       const singleMatch = lowerTextRaw.match(/^(.*?)\s+(\d+)$/);
       const isRandomCmd = ['nasihat', 'nasehat', 'random', 'acak', 'random ayat', 'acak ayat'].includes(lowerTextRaw);
+      const isBookmarkCmd = ['bookmark', 'bookmarks', 'simpanan', 'koleksi', 'save'].includes(lowerTextRaw);
+
+      if (isBookmarkCmd) {
+        if (bookmarks.length === 0) {
+          setMessages(prev => [...prev, { 
+            type: 'bot', 
+            content: '📭 Belum ada ayat favorit yang disimpan. Klik ikon bookmark di Mushaf untuk menyimpan ayat!' 
+          }]);
+        } else {
+          setMessages(prev => [...prev, { 
+            type: 'bot', 
+            content: `📚 Kamu punya ${bookmarks.length} ayat pilihan yang tersimpan:`,
+            bookmarks: bookmarks // We'll handle this in ChatBubble
+          }]);
+        }
+        setIsLoading(false);
+        return;
+      }
 
       if (isRandomCmd) {
         quranService.getRandomAyah(mushafType).then(randomAyah => {
@@ -425,6 +520,16 @@ export const useInteractiveQuran = (onBack, session) => {
   };
 
   const handleOpenSurah = async (surah, targetAyah = null) => {
+    // Save as Last Read
+    if (surah && surah.id) {
+      const curAyah = typeof targetAyah === 'number' ? targetAyah : (targetAyah?.start || 1);
+      progressService.saveLastRead(session?.user?.id, {
+        surah_id: surah.id,
+        ayah_number: curAyah,
+        surah_name: surah.name_simple
+      });
+    }
+    
     panY.setValue(0);
     setCurrentPage(1);
     setSelectedSurah(surah);
@@ -600,6 +705,16 @@ export const useInteractiveQuran = (onBack, session) => {
     }
   };
 
+  const handleResumeReading = (lastRead) => {
+    const surahObj = allSurahs.find(s => s.id === lastRead.surah_id);
+    if (surahObj) {
+      handleOpenSurah(surahObj, { 
+        start: lastRead.ayah_number, 
+        end: surahObj.verses_count 
+      });
+    }
+  };
+
   const handlePageChange = useCallback((newPage) => {
     setCurrentPage(newPage);
     if (modalScrollRef.current) {
@@ -654,6 +769,11 @@ export const useInteractiveQuran = (onBack, session) => {
     updateFontSize,
     targetScrollAyah,
     setTargetScrollAyah,
-    searchHighlight
+    searchHighlight,
+    bookmarks,
+    toggleBookmark,
+    handleResumeReading,
+    readingCheckpoint,
+    toggleCheckpoint
   };
 };

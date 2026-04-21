@@ -3,7 +3,7 @@ import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, Activit
 import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-const ChatBubble = ({ msg, handleOpenSurah }) => {
+const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
   if (msg.type === 'loading') {
     return (
       <View style={styles.bubbleWrapper}>
@@ -73,6 +73,10 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
             <View style={styles.bulletRow}>
               <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
               <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Acak:</Text> Ketik [Nasihat] / [Acak]</Text>
+            </View>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
+              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Bookmark:</Text> Ketik [Bookmark] / [Simpanan]</Text>
             </View>
           </View>
         </View>
@@ -169,6 +173,65 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
               </View>
             ))}
           </ScrollView>
+        </View>
+      </View>
+    );
+  }
+
+  // Bookmarks List Card
+  if (msg.bookmarks) {
+    return (
+      <View style={styles.bubbleWrapper}>
+        <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
+        <View style={styles.tutorialCard}>
+          <View style={styles.tutorialHeader}>
+            <Ionicons name="bookmark" size={20} color="#d97706" style={{ marginRight: 8 }} />
+            <Text style={styles.tutorialTitle}>Daftar Ayat Favorit</Text>
+          </View>
+          <Text style={styles.botMessageText}>{msg.content}</Text>
+          
+          <ScrollView style={[styles.surahListScroll, { maxHeight: 350 }]} nestedScrollEnabled={true}>
+            {msg.bookmarks.map((bm, index) => (
+              <TouchableOpacity 
+                key={index} 
+                onPress={() => handleOpenSurah({ id: bm.surah_id, name_simple: bm.surah_name }, bm.ayah_number)}
+                style={styles.bookmarkItem}
+              >
+                <View style={styles.bookmarkIconBox}>
+                  <Ionicons name="bookmark" size={18} color="#d97706" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.bookmarkTitle}>{bm.surah_name}</Text>
+                  <Text style={styles.bookmarkSubtitle}>Ayat ke-{bm.ayah_number}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    );
+  }
+
+  // Last Read Suggestion Card
+  if (msg.lastReadSuggestion) {
+    return (
+      <View style={styles.bubbleWrapper}>
+        <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
+        <View style={styles.tutorialCard}>
+          <View style={styles.tutorialHeader}>
+            <Ionicons name="time" size={20} color="#3b82f6" style={{ marginRight: 8 }} />
+            <Text style={styles.tutorialTitle}>Lanjut Tadabbur?</Text>
+          </View>
+          <Text style={styles.botMessageText}>{msg.content}</Text>
+          
+          <TouchableOpacity 
+            onPress={() => onResume(msg.lastReadSuggestion)}
+            style={[styles.readSurahBtn, { marginTop: 16, backgroundColor: '#3b82f6' }]}
+          >
+            <Ionicons name="play" size={18} color="white" />
+            <Text style={styles.readSurahBtnText}>Lanjutkan Membaca</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -289,6 +352,34 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     fontWeight: '500'
+  },
+  bookmarkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#f1f5f9'
+  },
+  bookmarkIconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#fffbeb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12
+  },
+  bookmarkTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#334155'
+  },
+  bookmarkSubtitle: {
+    fontSize: 12,
+    color: '#64748b'
   }
 });
 
