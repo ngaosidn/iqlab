@@ -1,14 +1,15 @@
 import { supabase } from '../lib/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BOOKMARKS_STORAGE_KEY = '@iqlab_bookmarks';
+const getStorageKey = (userId) => `@iqlab_bookmarks_${userId || 'guest'}`;
 
 export const bookmarkService = {
   // 1. Fetch Bookmarks (Cloud + Local Cache)
   async fetchBookmarks(userId) {
+    const key = getStorageKey(userId);
     try {
       // Load local cache first
-      const localData = await AsyncStorage.getItem(BOOKMARKS_STORAGE_KEY);
+      const localData = await AsyncStorage.getItem(key);
       const localBookmarks = localData ? JSON.parse(localData) : [];
 
       if (!userId) return localBookmarks;
@@ -23,12 +24,12 @@ export const bookmarkService = {
       if (error) throw error;
 
       // Update local cache with cloud data
-      await AsyncStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(cloudData));
+      await AsyncStorage.setItem(key, JSON.stringify(cloudData));
       return cloudData;
     } catch (error) {
       console.error('fetchBookmarks Error:', error.message);
       // Fallback to local if error
-      const localData = await AsyncStorage.getItem(BOOKMARKS_STORAGE_KEY);
+      const localData = await AsyncStorage.getItem(key);
       return localData ? JSON.parse(localData) : [];
     }
   },
@@ -36,10 +37,11 @@ export const bookmarkService = {
   // 2. Toggle Bookmark (Add/Remove)
   async toggleBookmark(userId, verseData) {
     const { surah_id, ayah_number, surah_name } = verseData;
+    const key = getStorageKey(userId);
 
     try {
       // Get current local data
-      const localData = await AsyncStorage.getItem(BOOKMARKS_STORAGE_KEY);
+      const localData = await AsyncStorage.getItem(key);
       let bookmarks = localData ? JSON.parse(localData) : [];
 
       const exists = bookmarks.find(b => b.surah_id === surah_id && b.ayah_number === ayah_number);
@@ -74,7 +76,7 @@ export const bookmarkService = {
       }
 
       // Update local cache
-      await AsyncStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(bookmarks));
+      await AsyncStorage.setItem(key, JSON.stringify(bookmarks));
       return bookmarks;
     } catch (error) {
       console.error('toggleBookmark Error:', error.message);

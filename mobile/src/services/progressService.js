@@ -45,6 +45,7 @@ export const progressService = {
 
   async saveLastRead(userId, data) {
     const { surah_id, ayah_number, surah_name } = data;
+    const key = `@iqlab_last_read_${userId || 'guest'}`;
     try {
       const lastReadObj = { 
         surah_id, 
@@ -55,7 +56,7 @@ export const progressService = {
       
       // Save locally
       const { default: AsyncStorage } = require('@react-native-async-storage/async-storage');
-      await AsyncStorage.setItem('@iqlab_last_read', JSON.stringify(lastReadObj));
+      await AsyncStorage.setItem(key, JSON.stringify(lastReadObj));
 
       // Save to Supabase (upsert or update is better, but here we can just create a record)
       if (userId) {
@@ -70,10 +71,11 @@ export const progressService = {
     }
   },
 
-  async fetchLastRead() {
+  async fetchLastRead(userId) {
+    const key = `@iqlab_last_read_${userId || 'guest'}`;
     try {
       const { default: AsyncStorage } = require('@react-native-async-storage/async-storage');
-      const data = await AsyncStorage.getItem('@iqlab_last_read');
+      const data = await AsyncStorage.getItem(key);
       return data ? JSON.parse(data) : null;
     } catch (e) {
       return null;
@@ -83,6 +85,7 @@ export const progressService = {
   // --- CHECKPOINT SYSTEM (Manual Pin 🚩) ---
   async saveCheckpoint(userId, data) {
     const { surah_id, ayah_number, surah_name } = data;
+    const key = `@iqlab_checkpoint_${userId || 'guest'}`;
     const checkpointObj = { 
       surah_id, 
       ayah_number, 
@@ -92,11 +95,11 @@ export const progressService = {
 
     try {
       const { default: AsyncStorage } = require('@react-native-async-storage/async-storage');
-      await AsyncStorage.setItem('@iqlab_checkpoint', JSON.stringify(checkpointObj));
+      await AsyncStorage.setItem(key, JSON.stringify(checkpointObj));
 
       if (userId) {
         // Upsert to Supabase 'checkpoints' table
-        await supabase
+        const { error } = await supabase
           .from('checkpoints')
           .upsert({
             user_id: userId,
@@ -105,15 +108,21 @@ export const progressService = {
             surah_name,
             updated_at: new Date().toISOString()
           }, { onConflict: 'user_id' });
+        
+        if (error) {
+          console.error('Supabase Checkpoint Error:', error.message);
+          throw error; // Throw so UI can catch and show Toast
+        }
       }
       return checkpointObj;
     } catch (err) {
-      console.log('saveCheckpoint cloud error (expected if table missing):', err.message);
-      return checkpointObj;
+      console.error('saveCheckpoint error:', err.message);
+      throw err;
     }
   },
 
   async fetchCheckpoint(userId) {
+    const key = `@iqlab_checkpoint_${userId || 'guest'}`;
     try {
       const { default: AsyncStorage } = require('@react-native-async-storage/async-storage');
       
@@ -126,12 +135,12 @@ export const progressService = {
           .single();
         
         if (data && !error) {
-          await AsyncStorage.setItem('@iqlab_checkpoint', JSON.stringify(data));
+          await AsyncStorage.setItem(key, JSON.stringify(data));
           return data;
         }
       }
 
-      const local = await AsyncStorage.getItem('@iqlab_checkpoint');
+      const local = await AsyncStorage.getItem(key);
       return local ? JSON.parse(local) : null;
     } catch (err) {
       return null;

@@ -78,7 +78,8 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         toggleBookmark,
         handleResumeReading,
         readingCheckpoint,
-        toggleCheckpoint
+        toggleCheckpoint,
+        handleClearHistory
     } = quranHook;
 
     const [shareModalVisible, setShareModalVisible] = React.useState(false);
@@ -231,7 +232,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                             <View style={styles.inputInnerContainer}>
                                 <TouchableOpacity
                                     style={styles.attachBtn}
-                                    onPress={() => setMessages([{ type: 'bot', isGuide: true, content: "Assalamu'alaikum!..." }])}
+                                    onPress={handleClearHistory}
                                 >
                                     <Feather name="trash-2" size={20} color="#94a3b8" />
                                 </TouchableOpacity>

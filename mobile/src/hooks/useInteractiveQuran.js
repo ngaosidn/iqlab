@@ -23,13 +23,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const modalScrollRef = useRef(null);
 
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      type: 'bot',
-      isGuide: true,
-      content: `Assalamu'alaikum! Silakan ketik perintah di bawah ini untuk berinteraksi:`
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [allSurahs, setAllSurahs] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -145,20 +139,35 @@ export const useInteractiveQuran = (onBack, session) => {
   }, []);
 
   useEffect(() => {
+    const chatKey = `@iqlab_chat_history_${session?.user?.id || 'guest'}`;
     const initData = async () => {
       try {
-        const [surahs, bms, checkpoint] = await Promise.all([
+        const [surahs, bms, checkpoint, savedChat] = await Promise.all([
           quranService.fetchSurahs(),
           bookmarkService.fetchBookmarks(session?.user?.id),
-          progressService.fetchCheckpoint(session?.user?.id)
+          progressService.fetchCheckpoint(session?.user?.id),
+          AsyncStorage.getItem(chatKey)
         ]);
         
         setAllSurahs(surahs);
         if (bms) setBookmarks(bms);
         if (checkpoint) setReadingCheckpoint(checkpoint);
 
+        // Restore chat or show guide if empty
+        if (savedChat) {
+          let chat = JSON.parse(savedChat);
+          chat = chat.filter(m => !m.lastReadSuggestion); 
+          setMessages(chat);
+        } else {
+          setMessages([{ 
+            type: 'bot', 
+            isGuide: true, 
+            content: `Assalamu'alaikum! Silakan ketik perintah di bawah ini untuk berinteraksi:`
+          }]);
+        }
+
         // Proactive AI Suggestion (Priority to Checkpoint)
-        const lastReadFallback = await progressService.fetchLastRead();
+        const lastReadFallback = await progressService.fetchLastRead(session?.user?.id);
         const activeSuggestion = checkpoint || lastReadFallback;
 
         if (activeSuggestion) {
@@ -193,6 +202,24 @@ export const useInteractiveQuran = (onBack, session) => {
     initData();
   }, [session]);
 
+  // Persistent Save Chat
+  useEffect(() => {
+    const chatKey = `@iqlab_chat_history_${session?.user?.id || 'guest'}`;
+    if (messages.length > 0) {
+      AsyncStorage.setItem(chatKey, JSON.stringify(messages)).catch(e => console.log('Save chat error:', e));
+    }
+  }, [messages, session?.user?.id]);
+
+  const handleClearHistory = async () => {
+    const chatKey = `@iqlab_chat_history_${session?.user?.id || 'guest'}`;
+    setMessages([{ 
+      type: 'bot', 
+      isGuide: true, 
+      content: `Assalamu'alaikum! Riwayat chat dicuci bersih. ✨ Silakan mulai interaksi baru:`
+    }]);
+    await AsyncStorage.removeItem(chatKey);
+  };
+
   const toggleBookmark = async (verse) => {
     try {
       const sName = allSurahs.find(s => s.id === (verse.surah_id || selectedSurah?.id))?.name_simple;
@@ -204,6 +231,16 @@ export const useInteractiveQuran = (onBack, session) => {
       
       const updated = await bookmarkService.toggleBookmark(session?.user?.id, verseData);
       setBookmarks(updated);
+      
+      const isAdded = updated.some(b => b.surah_id === verseData.surah_id && b.ayah_number === verseData.ayah_number);
+      const { default: Toast } = require('react-native-toast-message');
+      Toast.show({
+        type: 'success',
+        text1: isAdded ? 'Ditambahkan ke Favorit 📖' : 'Dihapus dari Favorit 🗑️',
+        text2: `${verseData.surah_name} ayat ${verseData.ayah_number}`,
+        position: 'bottom',
+        bottomOffset: 90
+      });
     } catch (err) {
       console.error('Toggle Bookmark error:', err);
       Alert.alert('Gagal', 'Terjadi kesalahan saat menyimpan bookmark.');
@@ -219,17 +256,40 @@ export const useInteractiveQuran = (onBack, session) => {
         surah_name: sName || `Surah ${verse.surah_id || selectedSurah?.id}`
       };
       
-      const newCheckpoint = await progressService.saveCheckpoint(session?.user?.id, data);
-      setReadingCheckpoint(newCheckpoint);
-      
-      const { default: Toast } = require('react-native-toast-message');
-      Toast.show({
-        type: 'success',
-        text1: 'Penanda Disimpan 🚩',
-        text2: `Berhasil menandai ${data.surah_name} ayat ${data.ayah_number}.`,
-        position: 'bottom',
-        bottomOffset: 90
-      });
+      try {
+        const newCheckpoint = await progressService.saveCheckpoint(session?.user?.id, data);
+        setReadingCheckpoint(newCheckpoint);
+
+        const { default: Toast } = require('react-native-toast-message');
+        Toast.show({
+          type: 'success',
+          text1: 'Penanda Disimpan 🚩',
+          text2: `${data.surah_name} ayat ${data.ayah_number}`,
+          position: 'bottom',
+          bottomOffset: 90
+        });
+
+        // Kirim pesan baru dari bot untuk konfirmasi kelanjutan
+        setMessages(prev => {
+          // Hapus saran lama
+          const filtered = prev.filter(m => !m.lastReadSuggestion);
+          return [...filtered, {
+            type: 'bot',
+            content: `Alhamdulillah! Penanda berhasil dipindah ke Surah ${data.surah_name} ayat ${data.ayah_number}. Nanti kalau buka aplikasi lagi, saya ingatkan ya!`,
+            lastReadSuggestion: newCheckpoint,
+            suggestionTitle: "Lanjutkan Penanda 🚩"
+          }];
+        });
+      } catch (err) {
+        const { default: Toast } = require('react-native-toast-message');
+        Toast.show({
+          type: 'error',
+          text1: 'Gagal Simpan Cloud ☁️',
+          text2: err.message || 'Cek koneksi atau izin tabel Supabase.',
+          position: 'bottom',
+          bottomOffset: 90
+        });
+      }
     } catch (err) {
       console.error('Toggle Checkpoint error:', err);
     }
@@ -774,6 +834,7 @@ export const useInteractiveQuran = (onBack, session) => {
     toggleBookmark,
     handleResumeReading,
     readingCheckpoint,
-    toggleCheckpoint
+    toggleCheckpoint,
+    handleClearHistory
   };
 };
