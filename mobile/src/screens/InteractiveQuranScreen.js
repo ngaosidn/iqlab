@@ -17,6 +17,7 @@ import JitsiWebView from '../components/JitsiWebView';
 import ChatBubble from '../components/quran/ChatBubble';
 import MushafModal from '../components/quran/MushafModal';
 import TeacherLobby from '../components/quran/TeacherLobby';
+import ShareModal from '../components/quran/ShareModal';
 
 export default function InteractiveQuranScreen({ navigation, session }) {
     const onBack = () => navigation.goBack();
@@ -75,6 +76,14 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         setTargetScrollAyah
     } = quranHook;
 
+    const [shareModalVisible, setShareModalVisible] = React.useState(false);
+    const [sharingVerse, setSharingVerse] = React.useState(null);
+
+    const handleShareVerse = React.useCallback((verse) => {
+        setSharingVerse(verse);
+        setShareModalVisible(true);
+    }, []);
+
     const checkAuth = (onSuccess) => {
         if (isLoggedIn) {
             onSuccess();
@@ -130,9 +139,10 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                 isLocked={isLocked}
                 fontSize={fontSize}
                 onSend={() => checkAuth(() => handleOpenLobby(selectedSurah?.id, verse.ayat))}
+                onShare={() => checkAuth(() => handleShareVerse(verse))}
             />
         );
-    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize]);
+    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse]);
 
 
 
@@ -268,6 +278,13 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     activeTeachers={activeTeachers}
                     joinTeacherClass={joinTeacherClass}
                     session={session}
+                />
+
+                <ShareModal 
+                    visible={shareModalVisible}
+                    onClose={() => setShareModalVisible(false)}
+                    verse={sharingVerse}
+                    surahName={selectedSurah?.name_simple || ''}
                 />
 
             </View>

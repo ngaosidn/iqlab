@@ -66,6 +66,10 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
               <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
               <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Rentang:</Text> Ketik [Nama] [A-B] (Cth: Yasin 1-5)</Text>
             </View>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
+              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Acak:</Text> Ketik [Nasihat] / [Acak]</Text>
+            </View>
           </View>
         </View>
       </View>
@@ -86,7 +90,10 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.surahNumberText}>Surah Ke-{msg.surah.id}{msg.targetAyah ? (typeof msg.targetAyah === 'object' ? ` | Ayat ${msg.targetAyah.start}-${msg.targetAyah.end}` : ` | Ayat ${msg.targetAyah}`) : ''}</Text>
+                <Text style={styles.surahNumberText}>
+                  {msg.isRandom ? '✨ Ayat Nasihat | ' : ''}
+                  Surah Ke-{msg.surah.id}{msg.targetAyah ? (typeof msg.targetAyah === 'object' ? ` | Ayat ${msg.targetAyah.start}-${msg.targetAyah.end}` : ` | Ayat ${msg.targetAyah}`) : ''}
+                </Text>
                 <Text style={styles.surahNameLatin}>{msg.surah.name_simple}</Text>
                 <Text style={styles.surahMeaning}>"{msg.surah.translated_name.name}"</Text>
               </View>

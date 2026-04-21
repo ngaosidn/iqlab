@@ -93,5 +93,14 @@ export const quranService = {
       console.log('Error getSingleAyah:', error.message);
       return null;
     }
+  },
+
+  async getRandomAyah(mushafType = 'uthmani') {
+    try {
+      return await databaseService.getRandomAyah(mushafType);
+    } catch (e) {
+      console.error('Error getRandomAyah:', e);
+      return null;
+    }
   }
 };

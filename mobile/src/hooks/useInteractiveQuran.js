@@ -297,6 +297,33 @@ export const useInteractiveQuran = (onBack, session) => {
       const lowerTextRaw = userText.toLowerCase().trim();
       const rangeMatch = lowerTextRaw.match(/^(.*?)\s+(\d+)\s*(?:sampai|-|s\/d|sd|s\.d|to)\s*(\d+)$/);
       const singleMatch = lowerTextRaw.match(/^(.*?)\s+(\d+)$/);
+      const isRandomCmd = ['nasihat', 'nasehat', 'random', 'acak', 'random ayat', 'acak ayat'].includes(lowerTextRaw);
+
+      if (isRandomCmd) {
+        quranService.getRandomAyah(mushafType).then(randomAyah => {
+          if (randomAyah) {
+            const surahObj = allSurahs.find(s => s.id === randomAyah.surah_id);
+            setMessages(prev => [...prev, {
+              type: 'bot',
+              subType: 'surah_card',
+              surah: { 
+                ...surahObj, 
+                id: randomAyah.surah_id, 
+                name_simple: surahObj ? surahObj.name_simple : `Surah ${randomAyah.surah_id}` 
+              },
+              targetAyah: randomAyah.ayat,
+              isRandom: true
+            }]);
+          } else {
+             setMessages(prev => [...prev, { type: 'bot', content: 'Gagal mengambil ayat nasihat. Coba lagi.' }]);
+          }
+          setIsLoading(false);
+        }).catch(err => {
+          setMessages(prev => [...prev, { type: 'bot', content: 'Gagal mengambil ayat nasihat. Coba lagi.' }]);
+          setIsLoading(false);
+        });
+        return; // Exit early as we're handling async here
+      }
 
       let searchSurahQuery = lowerTextRaw.replace(/\s+/g, '');
       let searchAyah = null;

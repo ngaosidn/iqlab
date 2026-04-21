@@ -17,6 +17,7 @@ const VerseItem = React.memo(({
   isPassed,
   isLocked,
   onSend,
+  onShare,
   fontSize
 }) => {
   return (
@@ -57,7 +58,7 @@ const VerseItem = React.memo(({
         
         <TouchableOpacity 
           style={[styles.tagBase, isLoggedIn ? styles.shareTagActive : styles.grayTag]} 
-          onPress={() => onAuthRestricted(() => console.log('Share'))}
+          onPress={onShare}
         >
           <Feather name="share-2" size={13} color={isLoggedIn ? '#2563eb' : '#94a3b8'} style={{marginRight: 6}} />
           <Text style={[styles.tagTextBase, isLoggedIn ? styles.shareTagTextActive : styles.grayTagText]}>Share</Text>

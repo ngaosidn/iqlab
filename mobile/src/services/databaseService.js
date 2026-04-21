@@ -77,5 +77,13 @@ export const databaseService = {
       `SELECT ayat_number as ayat, ${column} as teks_arab, terjemahan FROM quran WHERE surah_id = ? AND ayat_number = ?`,
       [surahId, ayahNumber]
     );
+  },
+
+  async getRandomAyah(mushafType = 'uthmani') {
+    const database = await this.init();
+    const column = mushafType === 'indopak' ? 'teks_indopak' : 'teks_uthmani';
+    return await database.getFirstAsync(
+      `SELECT surah_id, ayat_number as ayat, ${column} as teks_arab, terjemahan FROM quran ORDER BY RANDOM() LIMIT 1`
+    );
   }
 };
