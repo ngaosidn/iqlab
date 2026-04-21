@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Animated, Dimensions, Keyboard, LayoutAnimation, PanResponder, Alert } from 'react-native';
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from "expo-speech-recognition";
 import { Audio } from 'expo-av';
 import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -54,6 +55,8 @@ export const useInteractiveQuran = (onBack, session) => {
   const [bookmarks, setBookmarks] = useState([]);
   const [readingCheckpoint, setReadingCheckpoint] = useState(null);
   const [lastActiveAyah, setLastActiveAyah] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+  const voicePulseAnim = useRef(new Animated.Value(1)).current;
 
   // Auto-Checkpoint Tracking Refs
   const viewTimerRef = useRef(null);
@@ -210,8 +213,8 @@ export const useInteractiveQuran = (onBack, session) => {
               if (prev.some(m => m.suggestions)) return prev;
               
               const content = suggestions.length > 1 
-                ? "Assalamu'alaikum Bos! Senang melihat Bos kembali. Mau lanjut dari penanda resmi (🚩) atau dari jejak terakhir (👣)?"
-                : `Assalamu'alaikum Bos! Mau lanjut tadabbur ${suggestions[0].surah_name} ayat ${suggestions[0].ayah_number}?`;
+                ? "Assalamu'alaikum Sahabat! Senang melihatmu kembali. Mau lanjut dari penanda resmi (🚩) atau dari jejak terakhir (👣)?"
+                : `Assalamu'alaikum Sahabat! Mau lanjut tadabbur ${suggestions[0].surah_name} ayat ${suggestions[0].ayah_number}?`;
               
               return [...prev, {
                 type: 'bot',
@@ -349,6 +352,61 @@ export const useInteractiveQuran = (onBack, session) => {
     } catch (err) { }
   }, [allSurahs, selectedSurah, session?.user?.id]);
 
+  // VOICE RECOGNITION LOGIC
+  useSpeechRecognitionEvent("start", () => setIsListening(true));
+  useSpeechRecognitionEvent("end", () => {
+    setIsListening(false);
+    stopPulse();
+  });
+  useSpeechRecognitionEvent("result", (event) => {
+    const transcript = event.results[0]?.transcript;
+    if (transcript) {
+      setInput(transcript);
+    }
+  });
+  useSpeechRecognitionEvent("error", (event) => {
+    console.log("Speech Error:", event.error, event.message);
+    setIsListening(false);
+    stopPulse();
+  });
+
+  const startPulse = () => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(voicePulseAnim, { toValue: 1.5, duration: 500, useNativeDriver: true }),
+        Animated.timing(voicePulseAnim, { toValue: 1, duration: 500, useNativeDriver: true })
+      ])
+    ).start();
+  };
+
+  const stopPulse = () => {
+    voicePulseAnim.setValue(1);
+    voicePulseAnim.stopAnimation();
+  };
+
+  const toggleListening = async () => {
+    if (isListening) {
+      ExpoSpeechRecognitionModule.stop();
+      if (input.trim()) {
+        handleSend(input);
+      }
+    } else {
+      const result = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+      if (!result.granted) {
+        // Fallback jika izin ditolak
+        console.log("Mic Permission Denied");
+        return;
+      }
+      
+      setIsListening(true);
+      startPulse();
+      ExpoSpeechRecognitionModule.start({
+        lang: "id-ID",
+        interimResults: true,
+      });
+    }
+  };
+
   const fetchUserProgress = async () => {
     if (!session?.user?.id) return;
     try {
@@ -473,8 +531,9 @@ export const useInteractiveQuran = (onBack, session) => {
     outputRange: [-screenWidth, screenWidth * 1.5]
   });
 
-  const handleSend = () => {
-    const userText = input.trim();
+  const handleSend = (voiceText = null) => {
+    const actualVoiceText = typeof voiceText === 'string' ? voiceText : null;
+    const userText = actualVoiceText || input.trim();
     if (!userText) return;
 
     Keyboard.dismiss();
@@ -890,6 +949,9 @@ export const useInteractiveQuran = (onBack, session) => {
     readingCheckpoint,
     toggleCheckpoint,
     handleClearHistory,
-    onAutoHistoryUpdate
+    onAutoHistoryUpdate,
+    isListening,
+    toggleListening,
+    voicePulseAnim
   };
 };

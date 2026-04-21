@@ -80,7 +80,10 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         readingCheckpoint,
         toggleCheckpoint,
         handleClearHistory,
-        onAutoHistoryUpdate
+        onAutoHistoryUpdate,
+        isListening,
+        toggleListening,
+        voicePulseAnim
     } = quranHook;
 
     const [shareModalVisible, setShareModalVisible] = React.useState(false);
@@ -239,10 +242,19 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                                     <Feather name="trash-2" size={20} color="#94a3b8" />
                                 </TouchableOpacity>
 
+                                <Animated.View style={{ transform: [{ scale: voicePulseAnim }] }}>
+                                    <TouchableOpacity
+                                        style={[styles.voiceBtn, isListening && styles.voiceBtnActive]}
+                                        onPress={toggleListening}
+                                    >
+                                        <Feather name={isListening ? "mic" : "mic"} size={20} color={isListening ? "#ef4444" : "#64748b"} />
+                                    </TouchableOpacity>
+                                </Animated.View>
+
                                 <TextInput
                                     style={styles.textInput}
-                                    placeholder="Tanya apapun tentang Al-Quran..."
-                                    placeholderTextColor="#94a3b8"
+                                    placeholder={isListening ? "Mendengarkan..." : "Tanya apapun tentang Al-Quran..."}
+                                    placeholderTextColor={isListening ? "#ef4444" : "#94a3b8"}
                                     value={input}
                                     onChangeText={setInput}
                                     onSubmitEditing={handleSend}
@@ -353,6 +365,16 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    voiceBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    voiceBtnActive: {
+        backgroundColor: '#fee2e2',
     },
     textInput: {
         flex: 1,

@@ -30,7 +30,14 @@
         }
       ],
       "expo-asset",
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "I-QLab membutuhkan akses microphone untuk mendengar perintah suara Bos.",
+          "speechRecognitionPermission": "I-QLab membutuhkan izin Speech Recognition untuk mengubah suara Bos menjadi teks."
+        }
+      ]
     ],
     "android": {
       "adaptiveIcon": {

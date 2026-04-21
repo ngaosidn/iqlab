@@ -1,6 +1,21 @@
-const { withAppBuildGradle } = require('@expo/config-plugins');
+const { withAppBuildGradle, withAndroidManifest } = require('@expo/config-plugins');
 
 module.exports = function withNativeBuildFixes(config) {
+  // 1. AndroidManifest Fix (appComponentFactory conflict)
+  config = withAndroidManifest(config, (config) => {
+    const mainManifest = config.modResults.manifest;
+    const application = mainManifest.application[0];
+
+    // Ensure tools namespace exists
+    mainManifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
+
+    // Add tools:replace="android:appComponentFactory"
+    application.$['tools:replace'] = 'android:appComponentFactory';
+
+    return config;
+  });
+
+  // 2. build.gradle Fix
   return withAppBuildGradle(config, (config) => {
     let buildGradle = config.modResults.contents;
 
@@ -15,14 +30,11 @@ module.exports = function withNativeBuildFixes(config) {
 
     // Only add if it doesn't already exist to avoid duplication
     if (!buildGradle.includes('Wno-error=deprecated-declarations')) {
-        // Insert it into the defaultConfig block
-        // A simple way is to find the defaultConfig block and insert it
         const match = buildGradle.match(/defaultConfig\s*\{/);
         if (match) {
             const index = match.index + match[0].length;
             buildGradle = buildGradle.slice(0, index) + suppressFlags + buildGradle.slice(index);
         } else {
-            // Fallback: append to android block
             buildGradle = buildGradle.replace(/android\s*\{/, `android {${suppressFlags}`);
         }
     }

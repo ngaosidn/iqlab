@@ -230,26 +230,30 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
               <TouchableOpacity 
                 key={idx}
                 onPress={() => onResume(item)}
-                style={[
-                  styles.readSurahBtn, 
-                  { 
-                    backgroundColor: item.icon === 'flag' ? '#f59e0b' : '#3b82f6',
-                    borderWidth: 0,
-                    marginVertical: 0
-                  }
-                ]}
+                activeOpacity={0.8}
+                style={styles.suggestionBtnWrapper}
               >
-                <Ionicons 
-                  name={item.icon === 'flag' ? 'flag' : 'footsteps'} 
-                  size={18} 
-                  color="white" 
-                />
-                <View style={{ marginLeft: 8 }}>
-                  <Text style={[styles.readSurahBtnText, { fontSize: 13 }]}>{item.title}</Text>
-                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10 }}>
-                    {item.surah_name} : {item.ayah_number}
-                  </Text>
-                </View>
+                <LinearGradient
+                  colors={item.icon === 'flag' ? ['#f59e0b', '#d97706'] : ['#3b82f6', '#1d4ed8']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.suggestionGradient}
+                >
+                  <View style={styles.suggestionIconContainer}>
+                    <Ionicons 
+                      name={item.icon === 'flag' ? 'flag' : 'footsteps'} 
+                      size={20} 
+                      color="white" 
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.suggestionTitle}>{item.title}</Text>
+                    <Text style={styles.suggestionSubtitle}>
+                      {item.surah_name} • Ayat {item.ayah_number}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+                </LinearGradient>
               </TouchableOpacity>
             ))}
           </View>
@@ -425,6 +429,41 @@ const styles = StyleSheet.create({
   bookmarkSubtitle: {
     fontSize: 12,
     color: '#64748b'
+  },
+  suggestionBtnWrapper: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+  },
+  suggestionGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  suggestionIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  suggestionTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  suggestionSubtitle: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    fontWeight: '500',
+    marginTop: 2,
   }
 });
 
