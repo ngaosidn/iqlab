@@ -18,7 +18,8 @@ import ChatBubble from '../components/quran/ChatBubble';
 import MushafModal from '../components/quran/MushafModal';
 import TeacherLobby from '../components/quran/TeacherLobby';
 
-export default function InteractiveQuranScreen({ onBack, session }) {
+export default function InteractiveQuranScreen({ navigation, session }) {
+    const onBack = () => navigation.goBack();
     const insets = useSafeAreaInsets();
     const screenWidth = Dimensions.get('window').width;
     const isLoggedIn = !!session?.user;
@@ -69,7 +70,9 @@ export default function InteractiveQuranScreen({ onBack, session }) {
         setInClassUrl,
         handleOpenLobby,
         fontSize,
-        updateFontSize
+        updateFontSize,
+        targetScrollAyah,
+        setTargetScrollAyah
     } = quranHook;
 
     const checkAuth = (onSuccess) => {
@@ -255,6 +258,8 @@ export default function InteractiveQuranScreen({ onBack, session }) {
                     userProgress={userProgress}
                     fontSize={fontSize}
                     updateFontSize={updateFontSize}
+                    targetScrollAyah={targetScrollAyah}
+                    setTargetScrollAyah={setTargetScrollAyah}
                 />
 
                 <TeacherLobby

@@ -47,7 +47,24 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
             </View>
             <View style={styles.bulletRow}>
               <View style={[styles.bulletDot, { backgroundColor: '#3b82f6' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Surah:</Text> Ketik [Nama Surah] atau [Nomor Surah]</Text>
+              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Surah:</Text> Ketik [Nama/Nomor Surah]</Text>
+            </View>
+          </View>
+
+          <View style={[styles.guideBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', marginBottom: 0 }]}>
+            <View style={styles.guideBoxHeader}>
+              <View style={[styles.guideIconContainer, { backgroundColor: '#dcfce7' }]}>
+                <Ionicons name="search" size={14} color="#16a34a" />
+              </View>
+              <Text style={[styles.guideBoxTitle, { color: '#15803d' }]}>TAMPILKAN AYAT</Text>
+            </View>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
+              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Ayat:</Text> Ketik [Nama] [Ayat] (Cth: Yasin 10)</Text>
+            </View>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
+              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Rentang:</Text> Ketik [Nama] [A-B] (Cth: Yasin 1-5)</Text>
             </View>
           </View>
         </View>
@@ -69,7 +86,7 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
           >
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.surahNumberText}>Surah Ke-{msg.surah.id}</Text>
+                <Text style={styles.surahNumberText}>Surah Ke-{msg.surah.id}{msg.targetAyah ? (typeof msg.targetAyah === 'object' ? ` | Ayat ${msg.targetAyah.start}-${msg.targetAyah.end}` : ` | Ayat ${msg.targetAyah}`) : ''}</Text>
                 <Text style={styles.surahNameLatin}>{msg.surah.name_simple}</Text>
                 <Text style={styles.surahMeaning}>"{msg.surah.translated_name.name}"</Text>
               </View>
@@ -93,11 +110,11 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
 
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => handleOpenSurah(msg.surah)}
+              onPress={() => handleOpenSurah(msg.surah, msg.targetAyah)}
               style={styles.readSurahBtn}
             >
               <Ionicons name="book" size={18} color="white" />
-              <Text style={styles.readSurahBtnText}>Baca Surah</Text>
+              <Text style={styles.readSurahBtnText}>Baca {msg.targetAyah ? (typeof msg.targetAyah === 'object' ? `Ayat ${msg.targetAyah.start}-${msg.targetAyah.end}` : `Ayat ${msg.targetAyah}`) : 'Surah'}</Text>
             </TouchableOpacity>
           </View>
         </View>

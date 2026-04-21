@@ -8,7 +8,8 @@ import Toast from 'react-native-toast-message';
 import { supabase } from '../lib/supabase';
 import { useAdmin } from '../hooks/useAdmin';
 
-export default function AdminScreen({ onBack, session }) {
+export default function AdminScreen({ navigation, session }) {
+  const onBack = () => navigation.goBack();
   const {
     isAdminLoggedIn,
     isSignupMode,

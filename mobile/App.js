@@ -7,8 +7,12 @@ import { Image } from 'expo-image';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 SplashScreen.preventAutoHideAsync();
+
+const Stack = createNativeStackNavigator();
 
 import HomeScreen from './src/screens/HomeScreen';
 import InteractiveQuranScreen from './src/screens/InteractiveQuranScreen';
@@ -25,7 +29,6 @@ import { toastConfig } from './src/lib/toastConfig';
 
 export default function App() {
   const [isShowSplash, setIsShowSplash] = useState(true);
-  const [currentScreen, setCurrentScreen] = useState('home');
   const [session, setSession] = useState(null);
 
   useEffect(() => {
@@ -113,26 +116,23 @@ export default function App() {
             </View>
           </Animated.View>
         </SafeAreaView>
-      ) : currentScreen === 'interactive' ? (
-        <InteractiveQuranScreen 
-          session={session} 
-          onBack={() => setCurrentScreen('home')} 
-        />
-      ) : currentScreen === 'admin' ? (
-        <AdminScreen 
-          session={session} 
-          onBack={() => setCurrentScreen('home')} 
-        />
-      ) : currentScreen === 'pengajar' ? (
-        <PengajarScreen 
-          session={session} 
-          onBack={() => setCurrentScreen('home')} 
-        />
       ) : (
-        <HomeScreen 
-          session={session} 
-          onNavigate={(screen) => setCurrentScreen(screen)} 
-        />
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
+            <Stack.Screen name="Home">
+              {props => <HomeScreen {...props} session={session} />}
+            </Stack.Screen>
+            <Stack.Screen name="Interactive">
+              {props => <InteractiveQuranScreen {...props} session={session} />}
+            </Stack.Screen>
+            <Stack.Screen name="Admin">
+              {props => <AdminScreen {...props} session={session} />}
+            </Stack.Screen>
+            <Stack.Screen name="Pengajar">
+              {props => <PengajarScreen {...props} session={session} />}
+            </Stack.Screen>
+          </Stack.Navigator>
+        </NavigationContainer>
       )}
 
       {/* Global Toast Component */}

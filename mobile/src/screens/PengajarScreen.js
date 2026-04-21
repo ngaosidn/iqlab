@@ -10,7 +10,8 @@ import { supabase } from '../lib/supabase';
 import { usePengajar } from '../hooks/usePengajar';
 import JitsiWebView from '../components/JitsiWebView';
 
-export default function PengajarScreen({ onBack, session }) {
+export default function PengajarScreen({ navigation, session }) {
+  const onBack = () => navigation.goBack();
   const [isInMeeting, setIsInMeeting] = useState(false);
   const [meetingUrl, setMeetingUrl] = useState('');
   const [activeScheduleId, setActiveScheduleId] = useState(null);

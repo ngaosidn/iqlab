@@ -18,8 +18,15 @@ import AdminHubModal from '../components/home/AdminHubModal';
 
 // Harus dipanggil sekali di tingkat global (untuk support Web dan handle penutupan tab)
 WebBrowser.maybeCompleteAuthSession();
-export default function HomeScreen({ onNavigate, session }) {
+export default function HomeScreen({ navigation, session }) {
   const insets = useSafeAreaInsets();
+
+  const onNavigate = (screen) => {
+    if (screen === 'interactive') navigation.navigate('Interactive');
+    else if (screen === 'admin') navigation.navigate('Admin');
+    else if (screen === 'pengajar') navigation.navigate('Pengajar');
+    else navigation.navigate('Home');
+  };
 
   const {
     showProfileModal,

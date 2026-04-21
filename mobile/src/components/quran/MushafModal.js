@@ -30,7 +30,9 @@ const MushafModal = ({
   tafsirDataMap,
   userProgress,
   fontSize,
-  updateFontSize
+  updateFontSize,
+  targetScrollAyah,
+  setTargetScrollAyah
 }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>

@@ -47,6 +47,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const [versesPerPage] = useState(10);
 
   const [fontSize, setFontSize] = useState(30);
+  const [targetScrollAyah, setTargetScrollAyah] = useState(null);
 
   // RPG Progression & Lobby State
   const [userProgress, setUserProgress] = useState({ unlockedSurah: 1, unlockedAyah: 1, isLockedToday: false });
@@ -293,15 +294,30 @@ export const useInteractiveQuran = (onBack, session) => {
 
     setTimeout(() => {
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      const lowerText = userText.toLowerCase().replace(/\s+/g, '');
+      const lowerTextRaw = userText.toLowerCase().trim();
+      const rangeMatch = lowerTextRaw.match(/^(.*?)\s+(\d+)\s*(?:sampai|-|s\/d|sd|s\.d|to)\s*(\d+)$/);
+      const singleMatch = lowerTextRaw.match(/^(.*?)\s+(\d+)$/);
+
+      let searchSurahQuery = lowerTextRaw.replace(/\s+/g, '');
+      let searchAyah = null;
+
+      if (rangeMatch) {
+        searchSurahQuery = rangeMatch[1].replace(/\s+/g, '');
+        const a1 = parseInt(rangeMatch[2], 10);
+        const a2 = parseInt(rangeMatch[3], 10);
+        searchAyah = { start: Math.min(a1, a2), end: Math.max(a1, a2) };
+      } else if (singleMatch) {
+        searchSurahQuery = singleMatch[1].replace(/\s+/g, '');
+        searchAyah = parseInt(singleMatch[2], 10);
+      }
 
       const foundSurah = allSurahs.find(s => {
         const latin = s.name_simple.toLowerCase().replace(/[-\s]/g, '');
         const id = String(s.id);
-        return latin.includes(lowerText) || id === lowerText;
+        return latin.includes(searchSurahQuery) || id === searchSurahQuery;
       });
 
-      if (lowerText === 'daftar' || lowerText === 'list') {
+      if (lowerTextRaw === 'daftar' || lowerTextRaw === 'list') {
         if (allSurahs.length > 0) {
           setMessages(prev => [...prev, {
             type: 'bot',
@@ -318,7 +334,8 @@ export const useInteractiveQuran = (onBack, session) => {
         setMessages(prev => [...prev, {
           type: 'bot',
           subType: 'surah_card',
-          surah: foundSurah
+          surah: foundSurah,
+          targetAyah: searchAyah
         }]);
       } else {
         setMessages(prev => [...prev, {
@@ -330,7 +347,7 @@ export const useInteractiveQuran = (onBack, session) => {
     }, 600);
   };
 
-  const handleOpenSurah = async (surah) => {
+  const handleOpenSurah = async (surah, targetAyah = null) => {
     panY.setValue(0);
     setCurrentPage(1);
     setSelectedSurah(surah);
@@ -345,11 +362,24 @@ export const useInteractiveQuran = (onBack, session) => {
       const surahNomor = surah.id || surah.nomor;
       const data = await quranService.getSurahVerses(surahNomor, mushafType);
 
+      if (targetAyah) {
+        setTargetScrollAyah(targetAyah);
+      } else {
+        setTargetScrollAyah(null);
+      }
+
       // Beri jeda sangat singkat agar animasi modal tidak terganggu
       setTimeout(() => {
-        setVersesData(data);
+        if (targetAyah) {
+          if (typeof targetAyah === 'object') {
+            setVersesData(data.filter(v => v.ayat >= targetAyah.start && v.ayat <= targetAyah.end));
+          } else {
+            setVersesData(data.filter(v => v.ayat === targetAyah));
+          }
+        } else {
+          setVersesData(data);
+        }
       }, 50);
-
 
       // Background fetch full surah tafsir
       quranService.fetchFullSurahTafsir(surahNomor).then(map => {
@@ -392,11 +422,19 @@ export const useInteractiveQuran = (onBack, session) => {
     const refreshVerses = async () => {
       if (modalVisible && selectedSurah) {
         const data = await quranService.getSurahVerses(selectedSurah.id, mushafType);
-        setVersesData(data);
+        if (targetScrollAyah) {
+            if (typeof targetScrollAyah === 'object') {
+                setVersesData(data.filter(v => v.ayat >= targetScrollAyah.start && v.ayat <= targetScrollAyah.end));
+            } else {
+                setVersesData(data.filter(v => v.ayat === targetScrollAyah));
+            }
+        } else {
+            setVersesData(data);
+        }
       }
     };
     refreshVerses();
-  }, [mushafType, modalVisible, selectedSurah]);
+  }, [mushafType, modalVisible, selectedSurah, targetScrollAyah]);
 
 
   // Ref untuk versesData guna menghindari stale closure di callback audio
@@ -536,6 +574,8 @@ export const useInteractiveQuran = (onBack, session) => {
     setInClassUrl,
     handleOpenLobby,
     fontSize,
-    updateFontSize
+    updateFontSize,
+    targetScrollAyah,
+    setTargetScrollAyah
   };
 };
