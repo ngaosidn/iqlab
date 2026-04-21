@@ -102,5 +102,14 @@ export const quranService = {
       console.error('Error getRandomAyah:', e);
       return null;
     }
+  },
+
+  async searchByTranslation(keyword, mushafType = 'uthmani') {
+    try {
+      return await databaseService.searchByTranslation(keyword, mushafType);
+    } catch (e) {
+      console.error('Error searchByTranslation:', e);
+      return [];
+    }
   }
 };

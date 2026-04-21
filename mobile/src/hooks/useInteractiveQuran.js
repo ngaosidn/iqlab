@@ -55,6 +55,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const [activeTeachers, setActiveTeachers] = useState([]);
   const [targetSubmit, setTargetSubmit] = useState(null);
   const [inClassUrl, setInClassUrl] = useState(null);
+  const [searchHighlight, setSearchHighlight] = useState(null);
   
   // Load settings
   useEffect(() => {
@@ -358,6 +359,7 @@ export const useInteractiveQuran = (onBack, session) => {
           }]);
         }
       } else if (foundSurah) {
+        setSearchHighlight(null);
         setMessages(prev => [...prev, {
           type: 'bot',
           subType: 'surah_card',
@@ -365,6 +367,54 @@ export const useInteractiveQuran = (onBack, session) => {
           targetAyah: searchAyah
         }]);
       } else {
+        // Fallback: Indonesian Translation Search
+        const wordSearchMatch = userText.match(/^(?:cari|search)\s+(.+)$/i);
+        const searchKeyword = wordSearchMatch ? wordSearchMatch[1].trim() : (userText.length > 3 ? userText : null);
+        
+        if (searchKeyword) {
+          setSearchHighlight(searchKeyword);
+          quranService.searchByTranslation(searchKeyword, mushafType).then(results => {
+            if (results && results.length > 0) {
+              const surahGroups = results.reduce((acc, result) => {
+                const surahId = result.surah_id;
+                if (!acc[surahId]) {
+                  const sInfo = allSurahs.find(s => s.id === surahId);
+                  acc[surahId] = {
+                    surah: sInfo || { id: surahId, name_simple: `Surah ${surahId}` },
+                    count: 0,
+                    verses: []
+                  };
+                }
+                acc[surahId].count++;
+                acc[surahId].verses.push(result);
+                return acc;
+              }, {});
+
+              const finalGroups = Object.values(surahGroups).sort((a, b) => a.surah.id - b.surah.id);
+
+              setMessages(prev => [...prev, {
+                type: 'bot',
+                content: `🔍 Ditemukan ${results.length} ayat yang mengandung kata "${searchKeyword}":`,
+                wordSearchSummary: {
+                  word: searchKeyword,
+                  count: results.length,
+                  surahGroups: finalGroups
+                }
+              }]);
+            } else {
+              setMessages(prev => [...prev, {
+                type: 'bot',
+                content: `❌ Tidak ditemukan ayat yang mengandung kata "${searchKeyword}". Coba kata kunci lain.`
+              }]);
+            }
+            setIsLoading(false);
+          }).catch(err => {
+            setMessages(prev => [...prev, { type: 'bot', content: 'Terjadi kesalahan saat mencari. Coba lagi.' }]);
+            setIsLoading(false);
+          });
+          return;
+        }
+
         setMessages(prev => [...prev, {
           type: 'bot',
           content: '❌ Surah tidak ditemukan. Coba ketik nama surah (misal: Al Baqarah) atau nomor surah (misal: 1).'
@@ -603,6 +653,7 @@ export const useInteractiveQuran = (onBack, session) => {
     fontSize,
     updateFontSize,
     targetScrollAyah,
-    setTargetScrollAyah
+    setTargetScrollAyah,
+    searchHighlight
   };
 };

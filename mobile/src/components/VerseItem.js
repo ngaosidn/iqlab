@@ -18,8 +18,32 @@ const VerseItem = React.memo(({
   isLocked,
   onSend,
   onShare,
-  fontSize
+  fontSize,
+  highlightKeyword
 }) => {
+  const renderHighlightedTranslation = (text, keyword) => {
+    if (!text) return null;
+    const cleanText = text.replace(/<sup[^>]*>.*?<\/sup>/g, '');
+    
+    if (!keyword) {
+      return <Text style={styles.verseTranslationText}>{cleanText}</Text>;
+    }
+    
+    const parts = cleanText.split(new RegExp(`(${keyword})`, 'gi'));
+    
+    return (
+      <Text style={styles.verseTranslationText}>
+        {parts.map((part, index) => 
+          part.toLowerCase() === keyword.toLowerCase() ? (
+            <Text key={index} style={styles.highlightText}>{part}</Text>
+          ) : (
+            part
+          )
+        )}
+      </Text>
+    );
+  };
+
   return (
     <View style={styles.verseCardModal}>
       <View style={styles.verseCardTop}>
@@ -102,7 +126,7 @@ const VerseItem = React.memo(({
         ]}>
           {verse.teks_arab}
         </Text>
-        <Text style={styles.verseTranslationText}>{(verse.terjemahan || "").replace(/<sup[^>]*>.*?<\/sup>/g, '')}</Text>
+        {renderHighlightedTranslation(verse.terjemahan, highlightKeyword)}
       </View>
 
       {isExpanded && (
@@ -289,6 +313,14 @@ const styles = StyleSheet.create({
     color: '#475569',
     lineHeight: 24,
   },
+  highlightText: {
+    backgroundColor: '#fde047',
+    color: '#1e3a8a',
+    fontWeight: 'bold',
+    borderRadius: 4,
+    paddingHorizontal: 2,
+    overflow: 'hidden',
+  }
 });
 
 export default VerseItem;

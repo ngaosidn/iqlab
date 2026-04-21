@@ -140,9 +140,10 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                 fontSize={fontSize}
                 onSend={() => checkAuth(() => handleOpenLobby(selectedSurah?.id, verse.ayat))}
                 onShare={() => checkAuth(() => handleShareVerse(verse))}
+                highlightKeyword={quranHook.searchHighlight}
             />
         );
-    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse]);
+    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse, quranHook.searchHighlight]);
 
 
 
@@ -270,6 +271,8 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     updateFontSize={updateFontSize}
                     targetScrollAyah={targetScrollAyah}
                     setTargetScrollAyah={setTargetScrollAyah}
+                    searchHighlight={quranHook.searchHighlight}
+                    onShare={handleShareVerse}
                 />
 
                 <TeacherLobby

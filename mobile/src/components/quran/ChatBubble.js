@@ -68,6 +68,10 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
             </View>
             <View style={styles.bulletRow}>
               <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
+              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Kata:</Text> Ketik [Kata] (Cth: Sabar, Hati)</Text>
+            </View>
+            <View style={styles.bulletRow}>
+              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
               <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Acak:</Text> Ketik [Nasihat] / [Acak]</Text>
             </View>
           </View>
@@ -124,6 +128,47 @@ const ChatBubble = ({ msg, handleOpenSurah }) => {
               <Text style={styles.readSurahBtnText}>Baca {msg.targetAyah ? (typeof msg.targetAyah === 'object' ? `Ayat ${msg.targetAyah.start}-${msg.targetAyah.end}` : `Ayat ${msg.targetAyah}`) : 'Surah'}</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Word Search Summary Card
+  if (msg.wordSearchSummary) {
+    return (
+      <View style={styles.bubbleWrapper}>
+        <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
+        <View style={styles.tutorialCard}>
+          <View style={styles.tutorialHeader}>
+            <Ionicons name="search" size={20} color="#3b82f6" style={{ marginRight: 8 }} />
+            <Text style={styles.tutorialTitle}>Hasil Pencarian</Text>
+          </View>
+          <Text style={styles.botMessageText}>{msg.content}</Text>
+          
+          <ScrollView style={[styles.surahListScroll, { maxHeight: 350 }]} nestedScrollEnabled={true}>
+            {msg.wordSearchSummary.surahGroups.map((group, idx) => (
+              <View key={idx} style={styles.searchGroupContainer}>
+                <View style={styles.searchGroupHeader}>
+                  <Text style={styles.searchSurahName}>{group.surah.id}. {group.surah.name_simple}</Text>
+                  <View style={styles.searchCountBadge}>
+                    <Text style={styles.searchCountText}>{group.count} Ayat</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.verseChipsContainer}>
+                  {group.verses.map((v, vIdx) => (
+                    <TouchableOpacity 
+                      key={vIdx} 
+                      onPress={() => handleOpenSurah(group.surah, v.ayat)}
+                      style={styles.verseChip}
+                    >
+                      <Text style={styles.verseChipText}>Ayat {v.ayat}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            ))}
+          </ScrollView>
         </View>
       </View>
     );
@@ -197,6 +242,54 @@ const styles = StyleSheet.create({
   surahMeaningText: { fontSize: 13, color: '#64748b', marginTop: 2, fontWeight: '500' },
   surahMetaCol: { alignItems: 'flex-end', justifyContent: 'center' },
   ayahPillText: { fontSize: 11, fontWeight: 'bold', color: '#64748b' },
+  searchGroupContainer: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#f1f5f9'
+  },
+  searchGroupHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10
+  },
+  searchSurahName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#334155'
+  },
+  searchCountBadge: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6
+  },
+  searchCountText: {
+    fontSize: 10,
+    color: '#2563eb',
+    fontWeight: 'bold'
+  },
+  verseChipsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6
+  },
+  verseChip: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10
+  },
+  verseChipText: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500'
+  }
 });
 
 export default ChatBubble;

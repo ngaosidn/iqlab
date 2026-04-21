@@ -85,5 +85,18 @@ export const databaseService = {
     return await database.getFirstAsync(
       `SELECT surah_id, ayat_number as ayat, ${column} as teks_arab, terjemahan FROM quran ORDER BY RANDOM() LIMIT 1`
     );
+  },
+
+  async searchByTranslation(keyword, mushafType = 'uthmani') {
+    const database = await this.init();
+    const column = mushafType === 'indopak' ? 'teks_indopak' : 'teks_uthmani';
+    // Use LIKE for searching in Indonesian translation
+    return await database.getAllAsync(
+      `SELECT surah_id, ayat_number as ayat, ${column} as teks_arab, terjemahan 
+       FROM quran 
+       WHERE terjemahan LIKE ? 
+       LIMIT 50`,
+      [`%${keyword}%`]
+    );
   }
 };
