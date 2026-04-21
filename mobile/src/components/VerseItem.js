@@ -24,7 +24,8 @@ const VerseItem = React.memo(({
   isBookmarked,
   onCheckpoint,
   isCheckpoint,
-  onVerseTouch
+  onVerseTouch,
+  othersCount = 0
 }) => {
   const renderHighlightedTranslation = (text, keyword) => {
     if (!text) return null;
@@ -57,25 +58,36 @@ const VerseItem = React.memo(({
     >
       <View style={styles.verseCardModal}>
         <View style={styles.verseCardTop}>
-          <View style={{flexDirection: 'row', alignItems: 'center'}}>
-            <View style={styles.verseNumberBox}><Text style={styles.verseNumberText}>{verse.ayat}</Text></View>
-            <View style={styles.actionCircleBtnGroup}>
-              <TouchableOpacity onPress={() => onPlay(surahId, verse.ayat)} style={[styles.actionCircleBtn, isPlaying && styles.actionCircleBtnActive]}>
-                <FontAwesome5 name={isPlaying ? 'pause' : 'play'} size={12} color={isPlaying ? '#ffffff' : '#3b82f6'} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => onAuthRestricted(onBookmark)} 
-                style={[styles.actionCircleBtn, isBookmarked && { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]}
-              >
-                <FontAwesome5 name="bookmark" size={11} color={isBookmarked ? '#d97706' : '#64748b'} solid={isBookmarked} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => onAuthRestricted(onCheckpoint)} 
-                style={[styles.actionCircleBtn, isCheckpoint && { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}
-              >
-                <FontAwesome5 name="flag" size={11} color={isCheckpoint ? '#ef4444' : '#64748b'} solid={isCheckpoint} />
-              </TouchableOpacity>
+          <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1}}>
+            <View style={{flexDirection: 'row', alignItems: 'center'}}>
+              <View style={[styles.verseNumberBox, othersCount > 0 && styles.verseNumberBoxActive]}>
+                <Text style={[styles.verseNumberText, othersCount > 0 && styles.verseNumberTextActive]}>{verse.ayat}</Text>
+              </View>
+              <View style={styles.actionCircleBtnGroup}>
+                <TouchableOpacity onPress={() => onPlay(surahId, verse.ayat)} style={[styles.actionCircleBtn, isPlaying && styles.actionCircleBtnActive]}>
+                  <FontAwesome5 name={isPlaying ? 'pause' : 'play'} size={12} color={isPlaying ? '#ffffff' : '#3b82f6'} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => onAuthRestricted(onBookmark)} 
+                  style={[styles.actionCircleBtn, isBookmarked && { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]}
+                >
+                  <FontAwesome5 name="bookmark" size={11} color={isBookmarked ? '#d97706' : '#64748b'} solid={isBookmarked} />
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => onAuthRestricted(onCheckpoint)} 
+                  style={[styles.actionCircleBtn, isCheckpoint && { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}
+                >
+                  <FontAwesome5 name="flag" size={11} color={isCheckpoint ? '#ef4444' : '#64748b'} solid={isCheckpoint} />
+                </TouchableOpacity>
+              </View>
             </View>
+
+            {othersCount > 0 && (
+              <View style={styles.verseOthersBadge}>
+                <FontAwesome5 name="users" size={10} color="#3b82f6" style={{marginRight: 4}} />
+                <Text style={styles.verseOthersText}>{othersCount} Sahabat</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -341,6 +353,32 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     paddingHorizontal: 2,
     overflow: 'hidden',
+  },
+  verseNumberBoxActive: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#3b82f6',
+    borderWidth: 2,
+    shadowColor: '#3b82f6',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  verseNumberTextActive: {
+    color: '#1d4ed8',
+  },
+  verseOthersBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(59, 130, 246, 0.2)',
+  },
+  verseOthersText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#3b82f6',
   }
 });
 

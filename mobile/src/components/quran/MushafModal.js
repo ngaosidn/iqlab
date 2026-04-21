@@ -37,7 +37,9 @@ const MushafModal = ({
   toggleBookmark,
   readingCheckpoint,
   toggleCheckpoint,
-  onAutoHistoryUpdate
+  onAutoHistoryUpdate,
+  activeSurahUsers,
+  versePresenceMap
 }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
@@ -49,6 +51,12 @@ const MushafModal = ({
               <View style={styles.modalHeaderLeft}>
                 <View style={styles.headerSurahIdBox}><Text style={styles.headerSurahIdText}>{selectedSurah?.id}</Text></View>
                 <Text style={styles.headerSurahName}>{selectedSurah?.name_simple}</Text>
+                {activeSurahUsers > 0 && (
+                  <View style={styles.socialPulseBadge}>
+                    <View style={styles.pulseDot} />
+                    <Text style={styles.socialPulseText}>{activeSurahUsers} Online</Text>
+                  </View>
+                )}
                 <View style={styles.searchAyahWrapper}>
                   <TextInput
                     style={styles.searchAyahInput}
@@ -143,7 +151,9 @@ const MushafModal = ({
                   unlockedAyah: userProgress?.unlockedAyah,
                   unlockedSurah: userProgress?.unlockedSurah,
                   bookmarks,
-                  readingCheckpoint
+                  readingCheckpoint,
+                  activeSurahUsers,
+                  versePresenceMap
                 }}
                 estimatedItemSize={280}
                 initialNumToRender={10}
@@ -242,6 +252,29 @@ const styles = StyleSheet.create({
   paginationBtnTextActive: { fontSize: 13, fontWeight: 'bold', color: '#ffffff' },
   paginationCenter: { alignItems: 'center', backgroundColor: '#eff6ff', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 8 },
   paginationCenterValue: { fontSize: 15, fontWeight: 'bold', color: '#0f172a' },
+  socialPulseBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+  },
+  pulseDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#3b82f6',
+    marginRight: 6,
+  },
+  socialPulseText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#3b82f6',
+  },
 });
 
 export default MushafModal;

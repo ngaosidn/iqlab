@@ -57,6 +57,8 @@ export const useInteractiveQuran = (onBack, session) => {
   const [lastActiveAyah, setLastActiveAyah] = useState(null);
   const [isListening, setIsListening] = useState(false);
   const voicePulseAnim = useRef(new Animated.Value(1)).current;
+  const [activeSurahUsers, setActiveSurahUsers] = useState(0);
+  const [versePresenceMap, setVersePresenceMap] = useState({}); // { ayah_number: count }
 
   // Auto-Checkpoint Tracking Refs
   const viewTimerRef = useRef(null);
@@ -182,34 +184,35 @@ export const useInteractiveQuran = (onBack, session) => {
 
         // Proactive AI Suggestion (Two-Track)
         const suggestions = [];
+        const currentCheckpoint = checkpoint;
+        const currentHistory = lastActiveAyah || autoHistory;
         
         // JALUR 1: BENDERA MANUAL 🚩
-        if (checkpoint && checkpoint.surah_id) {
-          const freshSurah = allSurahs.find(s => s.id === Number(checkpoint.surah_id));
+        if (currentCheckpoint && currentCheckpoint.surah_id) {
+          const freshSurah = surahs.find(s => s.id === Number(currentCheckpoint.surah_id));
           suggestions.push({
-            ...checkpoint,
-            surah_name: freshSurah?.name_simple || `Surah ${checkpoint.surah_id}`,
+            ...currentCheckpoint,
+            surah_name: freshSurah?.name_simple || `Surah ${currentCheckpoint.surah_id}`,
             title: "Lanjutkan Penanda 🚩",
             icon: "flag"
           });
         }
         
         // JALUR 2: JEJAK AKTIF 👣
-        const activeHistory = lastActiveAyah || autoHistory;
-        if (activeHistory && activeHistory.surah_id) {
-          const freshSurah = allSurahs.find(s => s.id === Number(activeHistory.surah_id));
+        if (currentHistory && currentHistory.surah_id) {
+          const freshSurah = surahs.find(s => s.id === Number(currentHistory.surah_id));
           suggestions.push({
-            ...activeHistory,
-            surah_name: freshSurah?.name_simple || `Surah ${activeHistory.surah_id}`,
+            ...currentHistory,
+            surah_name: freshSurah?.name_simple || `Surah ${currentHistory.surah_id}`,
             title: "Jejak Terakhir 👣",
             icon: "footsteps"
           });
         }
 
         if (suggestions.length > 0) {
+          // Perkecil timeout agar terasa instan (300ms cukup untuk efek smooth)
           setTimeout(() => {
             setMessages(prev => {
-              // Jika sudah ada pesan saran di sesi ini, jangan dobel-dobel
               if (prev.some(m => m.suggestions)) return prev;
               
               const content = suggestions.length > 1 
@@ -222,7 +225,7 @@ export const useInteractiveQuran = (onBack, session) => {
                 suggestions
               }];
             });
-          }, 1500);
+          }, 300);
         }
 
         if (session?.user?.id) {
@@ -348,9 +351,72 @@ export const useInteractiveQuran = (onBack, session) => {
       };
       await progressService.saveLastActive(session?.user?.id, data);
       setLastActiveAyah(data); // UPDATE LIVE STATE
+      updatePresenceAyah(data.ayah_number); // UPDATE SOCIAL RADAR
       console.log(`Manual-Tap History saved: ${data.surah_name} ayat ${data.ayah_number}`);
     } catch (err) { }
   }, [allSurahs, selectedSurah, session?.user?.id]);
+
+  // SOCIAL PULSE LOGIC (Supabase Presence)
+  useEffect(() => {
+    if (!selectedSurah?.id || !session?.user?.id) return;
+
+    const channelName = `surah_pulse_${selectedSurah.id}`;
+    const channel = supabaseClient.channel(channelName, {
+      config: { presence: { key: session.user.id } }
+    });
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const newState = channel.presenceState();
+        const myId = session.user.id;
+        
+        // 1. Hitung total user LAIN di Surah ini
+        const otherUsers = Object.keys(newState).filter(id => id !== myId);
+        setActiveSurahUsers(otherUsers.length);
+
+        // 2. Petakan distribusi ayat (hanya dari user lain)
+        const distribution = {};
+        otherUsers.forEach(id => {
+          const presences = newState[id];
+          presences.forEach(p => {
+            if (p.ayah_number) {
+              distribution[p.ayah_number] = (distribution[p.ayah_number] || 0) + 1;
+            }
+          });
+        });
+        setVersePresenceMap(distribution);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          // Awal masuk, belum ada ayat terpilih (atau pakai jejak terakhir)
+          await channel.track({
+            online_at: new Date().toISOString(),
+            user_id: session.user.id,
+            ayah_number: lastActiveAyah?.surah_id === selectedSurah.id ? lastActiveAyah.ayah_number : null
+          });
+        }
+      });
+
+    // Cleanup saat ganti surah atau tutup modal
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [selectedSurah?.id, session?.user?.id]);
+
+  // Update presence saat ayat diketuk
+  const updatePresenceAyah = async (ayahNumber) => {
+    const channelName = `surah_pulse_${selectedSurah?.id}`;
+    const channels = supabaseClient.getChannels();
+    const myChannel = channels.find(c => c.topic === `realtime:${channelName}`);
+    
+    if (myChannel && session?.user?.id) {
+       await myChannel.track({
+         online_at: new Date().toISOString(),
+         user_id: session.user.id,
+         ayah_number: ayahNumber
+       });
+    }
+  };
 
   // VOICE RECOGNITION LOGIC
   useSpeechRecognitionEvent("start", () => setIsListening(true));
@@ -952,6 +1018,8 @@ export const useInteractiveQuran = (onBack, session) => {
     onAutoHistoryUpdate,
     isListening,
     toggleListening,
-    voicePulseAnim
+    voicePulseAnim,
+    activeSurahUsers,
+    versePresenceMap
   };
 };

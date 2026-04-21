@@ -25,8 +25,28 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     const screenWidth = Dimensions.get('window').width;
     const isLoggedIn = !!session?.user;
 
-    // Destructure with default values to prevent ReferenceError if hook return is partial
     const quranHook = useInteractiveQuran(onBack, session);
+    
+    // Pulse animation for loading text
+    const loadingPulseAnim = React.useRef(new Animated.Value(0.4)).current;
+    
+    React.useEffect(() => {
+        Animated.loop(
+            Animated.sequence([
+                Animated.timing(loadingPulseAnim, {
+                    toValue: 1,
+                    duration: 1000,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(loadingPulseAnim, {
+                    toValue: 0.4,
+                    duration: 1000,
+                    useNativeDriver: true,
+                })
+            ])
+        ).start();
+    }, []);
+
     const {
         fontsLoaded = false,
         translateX = new Animated.Value(0),
@@ -83,7 +103,9 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         onAutoHistoryUpdate,
         isListening,
         toggleListening,
-        voicePulseAnim
+        voicePulseAnim,
+        activeSurahUsers,
+        versePresenceMap
     } = quranHook;
 
     const [shareModalVisible, setShareModalVisible] = React.useState(false);
@@ -156,6 +178,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                 onCheckpoint={() => toggleCheckpoint(verse)}
                 isCheckpoint={readingCheckpoint?.surah_id === (selectedSurah?.id) && readingCheckpoint?.ayah_number === verse.ayat}
                 onVerseTouch={() => onAutoHistoryUpdate(verse)}
+                othersCount={versePresenceMap[verse.ayat] || 0}
             />
         );
     }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse, quranHook.searchHighlight, toggleBookmark, bookmarks, toggleCheckpoint, readingCheckpoint]);
@@ -211,10 +234,24 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                         keyboardShouldPersistTaps="handled"
                         keyboardDismissMode="on-drag"
                     >
-                        {!fontsLoaded && (
-                            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
-                                <ActivityIndicator size="large" color="#3b82f6" />
-                                <Text style={{ color: '#94a3b8', marginTop: 12, fontSize: 13, fontWeight: '600' }}>Menyiapkan Mushaf... ✨</Text>
+                        {(messages.length === 0 || !fontsLoaded) && (
+                            <View style={{ flex: 1, height: Dimensions.get('window').height * 0.6, justifyContent: 'center', alignItems: 'center' }}>
+                                <LinearGradient
+                                    colors={['rgba(59, 130, 246, 0.1)', 'transparent']}
+                                    style={{ width: 120, height: 120, borderRadius: 60, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}
+                                >
+                                    <ActivityIndicator size="large" color="#3b82f6" />
+                                </LinearGradient>
+                                <Animated.Text style={{ 
+                                    color: '#94a3b8', 
+                                    fontSize: 15, 
+                                    fontWeight: '600',
+                                    opacity: loadingPulseAnim,
+                                    letterSpacing: 0.5
+                                }}>
+                                    Tunggu sebentar... ✨
+                                </Animated.Text>
+                                <Text style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>Menyiapkan pengalaman tadabbur Sahabat</Text>
                             </View>
                         )}
 
@@ -307,6 +344,8 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     readingCheckpoint={readingCheckpoint}
                     toggleCheckpoint={toggleCheckpoint}
                     onAutoHistoryUpdate={onAutoHistoryUpdate}
+                    activeSurahUsers={activeSurahUsers}
+                    versePresenceMap={versePresenceMap}
                 />
 
                 <TeacherLobby
