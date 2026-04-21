@@ -213,7 +213,52 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     );
   }
 
-  // Last Read Suggestion Card
+  // Multi-Track Suggestion Card (Two-Track System)
+  if (msg.suggestions && msg.suggestions.length > 0) {
+    return (
+      <View style={styles.bubbleWrapper}>
+        <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
+        <View style={styles.tutorialCard}>
+          <View style={styles.tutorialHeader}>
+            <Ionicons name="sparkles" size={20} color="#a78bfa" style={{ marginRight: 8 }} />
+            <Text style={styles.tutorialTitle}>Saran AI 🤖</Text>
+          </View>
+          <Text style={styles.botMessageText}>{msg.content}</Text>
+          
+          <View style={{ marginTop: 16, gap: 10 }}>
+            {msg.suggestions.map((item, idx) => (
+              <TouchableOpacity 
+                key={idx}
+                onPress={() => onResume(item)}
+                style={[
+                  styles.readSurahBtn, 
+                  { 
+                    backgroundColor: item.icon === 'flag' ? '#f59e0b' : '#3b82f6',
+                    borderWidth: 0,
+                    marginVertical: 0
+                  }
+                ]}
+              >
+                <Ionicons 
+                  name={item.icon === 'flag' ? 'flag' : 'footsteps'} 
+                  size={18} 
+                  color="white" 
+                />
+                <View style={{ marginLeft: 8 }}>
+                  <Text style={[styles.readSurahBtnText, { fontSize: 13 }]}>{item.title}</Text>
+                  <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 10 }}>
+                    {item.surah_name} : {item.ayah_number}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Fallback for old single suggestion format (Backward compatibility)
   if (msg.lastReadSuggestion) {
     return (
       <View style={styles.bubbleWrapper}>
@@ -230,7 +275,7 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
             style={[styles.readSurahBtn, { marginTop: 16, backgroundColor: '#3b82f6' }]}
           >
             <Ionicons name="play" size={18} color="white" />
-            <Text style={styles.readSurahBtnText}>Lanjutkan Membaca</Text>
+            <Text style={styles.readSurahBtnText}>{msg.suggestionTitle || 'Lanjutkan Membaca'}</Text>
           </TouchableOpacity>
         </View>
       </View>

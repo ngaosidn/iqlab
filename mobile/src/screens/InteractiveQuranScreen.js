@@ -79,7 +79,8 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         handleResumeReading,
         readingCheckpoint,
         toggleCheckpoint,
-        handleClearHistory
+        handleClearHistory,
+        onAutoHistoryUpdate
     } = quranHook;
 
     const [shareModalVisible, setShareModalVisible] = React.useState(false);
@@ -151,6 +152,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                 isBookmarked={bookmarks.some(b => b.surah_id === (selectedSurah?.id) && b.ayah_number === verse.ayat)}
                 onCheckpoint={() => toggleCheckpoint(verse)}
                 isCheckpoint={readingCheckpoint?.surah_id === (selectedSurah?.id) && readingCheckpoint?.ayah_number === verse.ayat}
+                onVerseTouch={() => onAutoHistoryUpdate(verse)}
             />
         );
     }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse, quranHook.searchHighlight, toggleBookmark, bookmarks, toggleCheckpoint, readingCheckpoint]);
@@ -292,6 +294,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     toggleBookmark={toggleBookmark}
                     readingCheckpoint={readingCheckpoint}
                     toggleCheckpoint={toggleCheckpoint}
+                    onAutoHistoryUpdate={onAutoHistoryUpdate}
                 />
 
                 <TeacherLobby

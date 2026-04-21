@@ -53,6 +53,11 @@ export const useInteractiveQuran = (onBack, session) => {
   const [searchHighlight, setSearchHighlight] = useState(null);
   const [bookmarks, setBookmarks] = useState([]);
   const [readingCheckpoint, setReadingCheckpoint] = useState(null);
+  const [lastActiveAyah, setLastActiveAyah] = useState(null);
+
+  // Auto-Checkpoint Tracking Refs
+  const viewTimerRef = useRef(null);
+  const currentViewableAyahRef = useRef(null);
   
   // Load settings
   useEffect(() => {
@@ -142,21 +147,27 @@ export const useInteractiveQuran = (onBack, session) => {
     const chatKey = `@iqlab_chat_history_${session?.user?.id || 'guest'}`;
     const initData = async () => {
       try {
-        const [surahs, bms, checkpoint, savedChat] = await Promise.all([
+        const [surahs, bms, checkpoint, autoHistory, savedChat] = await Promise.all([
           quranService.fetchSurahs(),
           bookmarkService.fetchBookmarks(session?.user?.id),
           progressService.fetchCheckpoint(session?.user?.id),
+          progressService.fetchLastActive(session?.user?.id),
           AsyncStorage.getItem(chatKey)
         ]);
         
         setAllSurahs(surahs);
         if (bms) setBookmarks(bms);
         if (checkpoint) setReadingCheckpoint(checkpoint);
+        if (autoHistory) setLastActiveAyah(autoHistory);
 
         // Restore chat or show guide if empty
         if (savedChat) {
           let chat = JSON.parse(savedChat);
-          chat = chat.filter(m => !m.lastReadSuggestion); 
+          // BERSIHKAN total pesan saran yang mengandung kata 'undefined' atau ID yang rusak
+          chat = chat.filter(m => {
+            const hasBadSuggestion = m.suggestions?.some(s => !s.surah_id || s.surah_name === 'undefined' || s.surah_name?.includes('undefined'));
+            return !m.lastReadSuggestion && !m.suggestions && !hasBadSuggestion;
+          });
           setMessages(chat);
         } else {
           setMessages([{ 
@@ -166,26 +177,46 @@ export const useInteractiveQuran = (onBack, session) => {
           }]);
         }
 
-        // Proactive AI Suggestion (Priority to Checkpoint)
-        const lastReadFallback = await progressService.fetchLastRead(session?.user?.id);
-        const activeSuggestion = checkpoint || lastReadFallback;
+        // Proactive AI Suggestion (Two-Track)
+        const suggestions = [];
+        
+        // JALUR 1: BENDERA MANUAL 🚩
+        if (checkpoint && checkpoint.surah_id) {
+          const freshSurah = allSurahs.find(s => s.id === Number(checkpoint.surah_id));
+          suggestions.push({
+            ...checkpoint,
+            surah_name: freshSurah?.name_simple || `Surah ${checkpoint.surah_id}`,
+            title: "Lanjutkan Penanda 🚩",
+            icon: "flag"
+          });
+        }
+        
+        // JALUR 2: JEJAK AKTIF 👣
+        const activeHistory = lastActiveAyah || autoHistory;
+        if (activeHistory && activeHistory.surah_id) {
+          const freshSurah = allSurahs.find(s => s.id === Number(activeHistory.surah_id));
+          suggestions.push({
+            ...activeHistory,
+            surah_name: freshSurah?.name_simple || `Surah ${activeHistory.surah_id}`,
+            title: "Jejak Terakhir 👣",
+            icon: "footsteps"
+          });
+        }
 
-        if (activeSuggestion) {
+        if (suggestions.length > 0) {
           setTimeout(() => {
             setMessages(prev => {
-              if (prev.some(m => m.lastReadSuggestion)) return prev;
+              // Jika sudah ada pesan saran di sesi ini, jangan dobel-dobel
+              if (prev.some(m => m.suggestions)) return prev;
               
-              const isFromPin = !!checkpoint;
-              const title = isFromPin ? "Lanjutkan Penanda 🚩" : "Terakhir Dibuka ⏳";
-              const content = isFromPin 
-                ? `Assalamu'alaikum! Anda punya penanda di Surah ${checkpoint.surah_name} ayat ${checkpoint.ayah_number}. Lanjut dari sini?`
-                : `Assalamu'alaikum! Terakhir Anda membuka Surah ${lastReadFallback.surah_name} ayat ${lastReadFallback.ayah_number}. Ingin lanjut?`;
-
+              const content = suggestions.length > 1 
+                ? "Assalamu'alaikum Bos! Senang melihat Bos kembali. Mau lanjut dari penanda resmi (🚩) atau dari jejak terakhir (👣)?"
+                : `Assalamu'alaikum Bos! Mau lanjut tadabbur ${suggestions[0].surah_name} ayat ${suggestions[0].ayah_number}?`;
+              
               return [...prev, {
                 type: 'bot',
-                content: content,
-                lastReadSuggestion: activeSuggestion,
-                suggestionTitle: title
+                content,
+                suggestions
               }];
             });
           }, 1500);
@@ -294,6 +325,29 @@ export const useInteractiveQuran = (onBack, session) => {
       console.error('Toggle Checkpoint error:', err);
     }
   };
+
+  const onAutoHistoryUpdate = useCallback(async (verse) => {
+    // SEKARANG INSTAN (Tanpa Timer): Langsung simpan saat diketuk
+    try {
+      const surahId = verse.surah_id || selectedSurah?.id;
+      if (!surahId || isNaN(surahId) || surahId < 1 || surahId > 114) return;
+      if (!allSurahs || allSurahs.length === 0) return;
+
+      const sMatch = allSurahs.find(s => s.id === Number(surahId));
+      const sName = sMatch?.name_simple;
+      
+      if (!sName || sName === 'undefined') return;
+
+      const data = {
+        surah_id: Number(surahId),
+        ayah_number: Number(verse.ayat),
+        surah_name: sName
+      };
+      await progressService.saveLastActive(session?.user?.id, data);
+      setLastActiveAyah(data); // UPDATE LIVE STATE
+      console.log(`Manual-Tap History saved: ${data.surah_name} ayat ${data.ayah_number}`);
+    } catch (err) { }
+  }, [allSurahs, selectedSurah, session?.user?.id]);
 
   const fetchUserProgress = async () => {
     if (!session?.user?.id) return;
@@ -835,6 +889,7 @@ export const useInteractiveQuran = (onBack, session) => {
     handleResumeReading,
     readingCheckpoint,
     toggleCheckpoint,
-    handleClearHistory
+    handleClearHistory,
+    onAutoHistoryUpdate
   };
 };

@@ -36,7 +36,8 @@ const MushafModal = ({
   bookmarks,
   toggleBookmark,
   readingCheckpoint,
-  toggleCheckpoint
+  toggleCheckpoint,
+  onAutoHistoryUpdate
 }) => {
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>

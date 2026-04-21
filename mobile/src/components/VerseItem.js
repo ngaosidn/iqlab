@@ -23,7 +23,8 @@ const VerseItem = React.memo(({
   onBookmark,
   isBookmarked,
   onCheckpoint,
-  isCheckpoint
+  isCheckpoint,
+  onVerseTouch
 }) => {
   const renderHighlightedTranslation = (text, keyword) => {
     if (!text) return null;
@@ -49,107 +50,117 @@ const VerseItem = React.memo(({
   };
 
   return (
-    <View style={styles.verseCardModal}>
-      <View style={styles.verseCardTop}>
-        <View style={{flexDirection: 'row', alignItems: 'center'}}>
-          <View style={styles.verseNumberBox}><Text style={styles.verseNumberText}>{verse.ayat}</Text></View>
-          <View style={styles.actionCircleBtnGroup}>
-            <TouchableOpacity onPress={() => onPlay(surahId, verse.ayat)} style={[styles.actionCircleBtn, isPlaying && styles.actionCircleBtnActive]}>
-              <FontAwesome5 name={isPlaying ? 'pause' : 'play'} size={12} color={isPlaying ? '#ffffff' : '#3b82f6'} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => onAuthRestricted(onBookmark)} 
-              style={[styles.actionCircleBtn, isBookmarked && { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]}
-            >
-              <FontAwesome5 name="bookmark" size={11} color={isBookmarked ? '#d97706' : '#64748b'} solid={isBookmarked} />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => onAuthRestricted(onCheckpoint)} 
-              style={[styles.actionCircleBtn, isCheckpoint && { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}
-            >
-              <FontAwesome5 name="flag" size={11} color={isCheckpoint ? '#ef4444' : '#64748b'} solid={isCheckpoint} />
-            </TouchableOpacity>
+    <TouchableOpacity 
+      activeOpacity={0.85} 
+      onPress={onVerseTouch}
+      style={styles.touchWrapper}
+    >
+      <View style={styles.verseCardModal}>
+        <View style={styles.verseCardTop}>
+          <View style={{flexDirection: 'row', alignItems: 'center'}}>
+            <View style={styles.verseNumberBox}><Text style={styles.verseNumberText}>{verse.ayat}</Text></View>
+            <View style={styles.actionCircleBtnGroup}>
+              <TouchableOpacity onPress={() => onPlay(surahId, verse.ayat)} style={[styles.actionCircleBtn, isPlaying && styles.actionCircleBtnActive]}>
+                <FontAwesome5 name={isPlaying ? 'pause' : 'play'} size={12} color={isPlaying ? '#ffffff' : '#3b82f6'} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => onAuthRestricted(onBookmark)} 
+                style={[styles.actionCircleBtn, isBookmarked && { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]}
+              >
+                <FontAwesome5 name="bookmark" size={11} color={isBookmarked ? '#d97706' : '#64748b'} solid={isBookmarked} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => onAuthRestricted(onCheckpoint)} 
+                style={[styles.actionCircleBtn, isCheckpoint && { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}
+              >
+                <FontAwesome5 name="flag" size={11} color={isCheckpoint ? '#ef4444' : '#64748b'} solid={isCheckpoint} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
-      </View>
 
-      <View style={styles.verseTagsRow}>
-        <TouchableOpacity 
-          style={[styles.tafsirTag, isExpanded && { backgroundColor: '#fef3c7', borderColor: '#d97706' }]} 
-          onPress={() => onToggleTafsir(verse.ayat)}
-          activeOpacity={0.7}
-        >
-          <Feather name="book-open" size={13} color="#d97706" style={{marginRight: 6}} />
-          <Text style={styles.tafsirTagText}>Tafsir</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tagBase, isLoggedIn ? styles.tajwidTagActive : styles.grayTag]} 
-          onPress={() => onAuthRestricted(() => console.log('Tajwid'))}
-        >
-          <Feather name="edit-2" size={13} color={isLoggedIn ? '#9333ea' : '#94a3b8'} style={{marginRight: 6}} />
-          <Text style={[styles.tagTextBase, isLoggedIn ? styles.tajwidTagTextActive : styles.grayTagText]}>Tajwid</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.tagBase, isLoggedIn ? styles.shareTagActive : styles.grayTag]} 
-          onPress={onShare}
-        >
-          <Feather name="share-2" size={13} color={isLoggedIn ? '#2563eb' : '#94a3b8'} style={{marginRight: 6}} />
-          <Text style={[styles.tagTextBase, isLoggedIn ? styles.shareTagTextActive : styles.grayTagText]}>Share</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[
-            styles.tagBase, 
-            (isLoggedIn && isInteractiveActive) ? styles.kirimTagActive : 
-            (isLoggedIn && isPassed) ? styles.passedTag : 
-            styles.grayTag
-          ]} 
-          onPress={() => onAuthRestricted(onSend)}
-          disabled={!isInteractiveActive}
-        >
-          <Feather 
-            name={isPassed ? "check-circle" : isLocked ? "lock" : "send"} 
-            size={13} 
-            color={(isLoggedIn && isInteractiveActive) ? '#059669' : (isLoggedIn && isPassed) ? '#16a34a' : '#94a3b8'} 
-            style={{marginRight: 6}} 
-          />
-          <Text style={[
-            styles.tagTextBase, 
-            (isLoggedIn && isInteractiveActive) ? styles.kirimTagTextActive : 
-            (isLoggedIn && isPassed) ? styles.passedTagText : 
-            styles.grayTagText
-          ]}>
-             {isPassed ? 'Lulus' : isLocked ? 'Terkunci' : 'Kirim'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.verseTextContainer}>
-        <Text style={[
-          styles.verseArabicText, 
-          { 
-            fontFamily: fontFamily || 'Uthmanic-Neo-Color',
-            fontSize: fontSize || 30,
-            lineHeight: (fontSize || 30) * 1.8
-          }
-        ]}>
-          {verse.teks_arab}
-        </Text>
-        {renderHighlightedTranslation(verse.terjemahan, highlightKeyword)}
-      </View>
-
-      {isExpanded && (
-        <View style={styles.tafsirContainer}>
-          <Text style={styles.tafsirTitle}>📖 Tafsir Kemenag - Ayat {verse.ayat}</Text>
-          <Text style={styles.tafsirBody}>{tafsirText || 'Sedang memuat tafsir, mohon tunggu sebentar...'}</Text>
+        <View style={styles.verseTagsRow}>
+          <TouchableOpacity 
+            style={[styles.tafsirTag, isExpanded && { backgroundColor: '#fef3c7', borderColor: '#d97706' }]} 
+            onPress={() => onToggleTafsir(verse.ayat)}
+            activeOpacity={0.7}
+          >
+            <Feather name="book-open" size={13} color="#d97706" style={{marginRight: 6}} />
+            <Text style={styles.tafsirTagText}>Tafsir</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tagBase, isLoggedIn ? styles.tajwidTagActive : styles.grayTag]} 
+            onPress={() => onAuthRestricted(() => console.log('Tajwid'))}
+          >
+            <Feather name="edit-2" size={13} color={isLoggedIn ? '#9333ea' : '#94a3b8'} style={{marginRight: 6}} />
+            <Text style={[styles.tagTextBase, isLoggedIn ? styles.tajwidTagTextActive : styles.grayTagText]}>Tajwid</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.tagBase, isLoggedIn ? styles.shareTagActive : styles.grayTag]} 
+            onPress={onShare}
+          >
+            <Feather name="share-2" size={13} color={isLoggedIn ? '#2563eb' : '#94a3b8'} style={{marginRight: 6}} />
+            <Text style={[styles.tagTextBase, isLoggedIn ? styles.shareTagTextActive : styles.grayTagText]}>Share</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[
+              styles.tagBase, 
+              (isLoggedIn && isInteractiveActive) ? styles.kirimTagActive : 
+              (isLoggedIn && isPassed) ? styles.passedTag : 
+              styles.grayTag
+            ]} 
+            onPress={() => onAuthRestricted(onSend)}
+            disabled={!isInteractiveActive}
+          >
+            <Feather 
+              name={isPassed ? "check-circle" : isLocked ? "lock" : "send"} 
+              size={13} 
+              color={(isLoggedIn && isInteractiveActive) ? '#059669' : (isLoggedIn && isPassed) ? '#16a34a' : '#94a3b8'} 
+              style={{marginRight: 6}} 
+            />
+            <Text style={[
+              styles.tagTextBase, 
+              (isLoggedIn && isInteractiveActive) ? styles.kirimTagTextActive : 
+              (isLoggedIn && isPassed) ? styles.passedTagText : 
+              styles.grayTagText
+            ]}>
+               {isPassed ? 'Lulus' : isLocked ? 'Terkunci' : 'Kirim'}
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
-    </View>
+
+        <View style={styles.verseTextContainer}>
+          <Text style={[
+            styles.verseArabicText, 
+            { 
+              fontFamily: fontFamily || 'Uthmanic-Neo-Color',
+              fontSize: fontSize || 30,
+              lineHeight: (fontSize || 30) * 1.8
+            }
+          ]}>
+            {verse.teks_arab}
+          </Text>
+          {renderHighlightedTranslation(verse.terjemahan, highlightKeyword)}
+        </View>
+
+        {isExpanded && (
+          <View style={styles.tafsirContainer}>
+            <Text style={styles.tafsirTitle}>📖 Tafsir Kemenag - Ayat {verse.ayat}</Text>
+            <Text style={styles.tafsirBody}>{tafsirText || 'Sedang memuat tafsir, mohon tunggu sebentar...'}</Text>
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 });
 
 const styles = StyleSheet.create({
+  touchWrapper: {
+    width: '100%',
+    marginBottom: 12,
+  },
   verseCardModal: {
     backgroundColor: '#ffffff',
     borderRadius: 24,

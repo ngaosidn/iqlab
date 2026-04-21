@@ -126,7 +126,6 @@ export const progressService = {
     try {
       const { default: AsyncStorage } = require('@react-native-async-storage/async-storage');
       
-      // Try cloud first if userId exists
       if (userId) {
         const { data, error } = await supabase
           .from('checkpoints')
@@ -140,6 +139,37 @@ export const progressService = {
         }
       }
 
+      const local = await AsyncStorage.getItem(key);
+      return local ? JSON.parse(local) : null;
+    } catch (err) {
+      return null;
+    }
+  },
+
+  // --- AUTO HISTORY SYSTEM (Passive Footprint 👣) ---
+  async saveLastActive(userId, data) {
+    const { surah_id, ayah_number, surah_name } = data;
+    const key = `@iqlab_last_active_${userId || 'guest'}`;
+    const historyObj = { 
+      surah_id, 
+      ayah_number, 
+      surah_name, 
+      updated_at: new Date().toISOString() 
+    };
+
+    try {
+      const { default: AsyncStorage } = require('@react-native-async-storage/async-storage');
+      await AsyncStorage.setItem(key, JSON.stringify(historyObj));
+      return historyObj;
+    } catch (err) {
+      return historyObj;
+    }
+  },
+
+  async fetchLastActive(userId) {
+    const key = `@iqlab_last_active_${userId || 'guest'}`;
+    try {
+      const { default: AsyncStorage } = require('@react-native-async-storage/async-storage');
       const local = await AsyncStorage.getItem(key);
       return local ? JSON.parse(local) : null;
     } catch (err) {
