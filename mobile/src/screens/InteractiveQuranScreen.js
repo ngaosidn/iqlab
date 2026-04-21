@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { StyleSheet, Text, View, Platform, Animated, Dimensions, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Keyboard, LayoutAnimation, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Platform, Animated, Dimensions, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Keyboard, LayoutAnimation, ActivityIndicator, FlatList } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,10 +26,10 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     const isLoggedIn = !!session?.user;
 
     const quranHook = useInteractiveQuran(onBack, session);
-    
+
     // Pulse animation for loading text
     const loadingPulseAnim = React.useRef(new Animated.Value(0.4)).current;
-    
+
     React.useEffect(() => {
         Animated.loop(
             Animated.sequence([
@@ -225,17 +225,9 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                         }
                     />
 
-                    <ScrollView
-                        ref={scrollViewRef}
-                        onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.scrollContent}
-                        style={{ flex: 1 }}
-                        keyboardShouldPersistTaps="handled"
-                        keyboardDismissMode="on-drag"
-                    >
+                    <View style={{ flex: 1 }}>
                         {(messages.length === 0 || !fontsLoaded) && (
-                            <View style={{ flex: 1, height: Dimensions.get('window').height * 0.6, justifyContent: 'center', alignItems: 'center' }}>
+                            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' }}>
                                 <LinearGradient
                                     colors={['rgba(59, 130, 246, 0.1)', 'transparent']}
                                     style={{ width: 120, height: 120, borderRadius: 60, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}
@@ -254,20 +246,26 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                                 <Text style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>Menyiapkan pengalaman tadabbur Sahabat</Text>
                             </View>
                         )}
-
-                        {fontsLoaded && messages.map((msg, index) => (
-                            <ChatBubble 
-                                key={index} 
-                                msg={msg} 
-                                handleOpenSurah={handleOpenSurah} 
-                                onResume={handleResumeReading}
-                            />
-                        ))}
-
-                        {isLoading && (
-                            <ChatBubble msg={{ type: 'loading' }} />
-                        )}
-                    </ScrollView>
+                        <FlatList
+                            ref={scrollViewRef}
+                            data={messages}
+                            keyExtractor={(item, index) => String(index)}
+                            renderItem={({ item: msg }) => (
+                                <ChatBubble 
+                                    msg={msg} 
+                                    handleOpenSurah={handleOpenSurah} 
+                                    onResume={handleResumeReading}
+                                />
+                            )}
+                            ListFooterComponent={isLoading ? <ChatBubble msg={{ type: 'loading' }} /> : null}
+                            showsVerticalScrollIndicator={false}
+                            contentContainerStyle={styles.scrollContent}
+                            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+                            onLayout={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+                            keyboardShouldPersistTaps="handled"
+                            keyboardDismissMode="on-drag"
+                        />
+                    </View>
 
                     <View style={styles.bottomWrapper}>
                         <View style={[styles.chatInputContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -356,7 +354,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     session={session}
                 />
 
-                <ShareModal 
+                <ShareModal
                     visible={shareModalVisible}
                     onClose={() => setShareModalVisible(false)}
                     verse={sharingVerse}

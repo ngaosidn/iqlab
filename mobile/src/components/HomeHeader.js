@@ -4,10 +4,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import Svg, { Defs, Pattern, Circle, Rect } from 'react-native-svg';
 
-const HomeHeader = ({ 
-  translateX, 
-  onLogoLongPress, 
-  title = "Quran Friendly, Tajwid Easy ✨", 
+const HomeHeader = ({
+  translateX,
+  onLogoLongPress,
+  title = "Quran Friendly, Tajwid Easy ✨",
   subtitle = "BACA, TADABBUR DAN TAJWID INTERACTIVE 🚀",
   rightContent,
   showLogo = true
@@ -48,10 +48,10 @@ const HomeHeader = ({
         ]}>
           <LinearGradient
             colors={[
-              'rgba(255,255,255,0)', 
-              'rgba(255,255,255,0.05)', 
-              'rgba(255,255,255,0.6)', 
-              'rgba(255,255,255,0.05)', 
+              'rgba(255,255,255,0)',
+              'rgba(255,255,255,0.05)',
+              'rgba(255,255,255,0.6)',
+              'rgba(255,255,255,0.05)',
               'rgba(255,255,255,0)'
             ]}
             locations={[0, 0.4, 0.5, 0.6, 1]} // Garis lebih tajam di tengah
@@ -64,8 +64,8 @@ const HomeHeader = ({
         {/* Top Row: Logo & Right Content */}
         <View style={styles.headerTopRow}>
           {showLogo && (
-            <TouchableOpacity 
-              activeOpacity={0.8} 
+            <TouchableOpacity
+              activeOpacity={0.8}
               onLongPress={onLogoLongPress}
               delayLongPress={3000}
             >

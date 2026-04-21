@@ -63,14 +63,14 @@ export const useInteractiveQuran = (onBack, session) => {
   // Auto-Checkpoint Tracking Refs
   const viewTimerRef = useRef(null);
   const currentViewableAyahRef = useRef(null);
-  
+
   // Load settings
   useEffect(() => {
     const loadSettings = async () => {
       try {
         const savedSize = await AsyncStorage.getItem('quran_font_size');
         if (savedSize) setFontSize(parseInt(savedSize));
-      } catch (e) {}
+      } catch (e) { }
     };
     loadSettings();
   }, []);
@@ -80,7 +80,7 @@ export const useInteractiveQuran = (onBack, session) => {
     setFontSize(newSize);
     try {
       await AsyncStorage.setItem('quran_font_size', newSize.toString());
-    } catch (e) {}
+    } catch (e) { }
   };
 
   useEffect(() => {
@@ -159,7 +159,7 @@ export const useInteractiveQuran = (onBack, session) => {
           progressService.fetchLastActive(session?.user?.id),
           AsyncStorage.getItem(chatKey)
         ]);
-        
+
         setAllSurahs(surahs);
         if (bms) setBookmarks(bms);
         if (checkpoint) setReadingCheckpoint(checkpoint);
@@ -175,9 +175,9 @@ export const useInteractiveQuran = (onBack, session) => {
           });
           setMessages(chat);
         } else {
-          setMessages([{ 
-            type: 'bot', 
-            isGuide: true, 
+          setMessages([{
+            type: 'bot',
+            isGuide: true,
             content: `Assalamu'alaikum! Silakan ketik perintah di bawah ini untuk berinteraksi:`
           }]);
         }
@@ -186,7 +186,7 @@ export const useInteractiveQuran = (onBack, session) => {
         const suggestions = [];
         const currentCheckpoint = checkpoint;
         const currentHistory = lastActiveAyah || autoHistory;
-        
+
         // JALUR 1: BENDERA MANUAL 🚩
         if (currentCheckpoint && currentCheckpoint.surah_id) {
           const freshSurah = surahs.find(s => s.id === Number(currentCheckpoint.surah_id));
@@ -197,7 +197,7 @@ export const useInteractiveQuran = (onBack, session) => {
             icon: "flag"
           });
         }
-        
+
         // JALUR 2: JEJAK AKTIF 👣
         if (currentHistory && currentHistory.surah_id) {
           const freshSurah = surahs.find(s => s.id === Number(currentHistory.surah_id));
@@ -214,11 +214,11 @@ export const useInteractiveQuran = (onBack, session) => {
           setTimeout(() => {
             setMessages(prev => {
               if (prev.some(m => m.suggestions)) return prev;
-              
-              const content = suggestions.length > 1 
+
+              const content = suggestions.length > 1
                 ? "Assalamu'alaikum Sahabat! Senang melihatmu kembali. Mau lanjut dari penanda resmi (🚩) atau dari jejak terakhir (👣)?"
                 : `Assalamu'alaikum Sahabat! Mau lanjut tadabbur ${suggestions[0].surah_name} ayat ${suggestions[0].ayah_number}?`;
-              
+
               return [...prev, {
                 type: 'bot',
                 content,
@@ -249,9 +249,9 @@ export const useInteractiveQuran = (onBack, session) => {
 
   const handleClearHistory = async () => {
     const chatKey = `@iqlab_chat_history_${session?.user?.id || 'guest'}`;
-    setMessages([{ 
-      type: 'bot', 
-      isGuide: true, 
+    setMessages([{
+      type: 'bot',
+      isGuide: true,
       content: `Assalamu'alaikum! Riwayat chat dicuci bersih. ✨ Silakan mulai interaksi baru:`
     }]);
     await AsyncStorage.removeItem(chatKey);
@@ -265,10 +265,10 @@ export const useInteractiveQuran = (onBack, session) => {
         ayah_number: verse.ayat,
         surah_name: sName || `Surah ${verse.surah_id || selectedSurah?.id}`
       };
-      
+
       const updated = await bookmarkService.toggleBookmark(session?.user?.id, verseData);
       setBookmarks(updated);
-      
+
       const isAdded = updated.some(b => b.surah_id === verseData.surah_id && b.ayah_number === verseData.ayah_number);
       const { default: Toast } = require('react-native-toast-message');
       Toast.show({
@@ -292,7 +292,7 @@ export const useInteractiveQuran = (onBack, session) => {
         ayah_number: verse.ayat,
         surah_name: sName || `Surah ${verse.surah_id || selectedSurah?.id}`
       };
-      
+
       try {
         const newCheckpoint = await progressService.saveCheckpoint(session?.user?.id, data);
         setReadingCheckpoint(newCheckpoint);
@@ -341,7 +341,7 @@ export const useInteractiveQuran = (onBack, session) => {
 
       const sMatch = allSurahs.find(s => s.id === Number(surahId));
       const sName = sMatch?.name_simple;
-      
+
       if (!sName || sName === 'undefined') return;
 
       const data = {
@@ -369,7 +369,7 @@ export const useInteractiveQuran = (onBack, session) => {
       .on('presence', { event: 'sync' }, () => {
         const newState = channel.presenceState();
         const myId = session.user.id;
-        
+
         // 1. Hitung total user LAIN di Surah ini
         const otherUsers = Object.keys(newState).filter(id => id !== myId);
         setActiveSurahUsers(otherUsers.length);
@@ -408,13 +408,13 @@ export const useInteractiveQuran = (onBack, session) => {
     const channelName = `surah_pulse_${selectedSurah?.id}`;
     const channels = supabaseClient.getChannels();
     const myChannel = channels.find(c => c.topic === `realtime:${channelName}`);
-    
+
     if (myChannel && session?.user?.id) {
-       await myChannel.track({
-         online_at: new Date().toISOString(),
-         user_id: session.user.id,
-         ayah_number: ayahNumber
-       });
+      await myChannel.track({
+        online_at: new Date().toISOString(),
+        user_id: session.user.id,
+        ayah_number: ayahNumber
+      });
     }
   };
 
@@ -463,7 +463,7 @@ export const useInteractiveQuran = (onBack, session) => {
         console.log("Mic Permission Denied");
         return;
       }
-      
+
       setIsListening(true);
       startPulse();
       ExpoSpeechRecognitionModule.start({
@@ -510,10 +510,10 @@ export const useInteractiveQuran = (onBack, session) => {
       // 2. Listen ke perubahan real-time
       const channel = supabaseClient
         .channel('lobby_realtime')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'teacher_schedules' 
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'teacher_schedules'
         }, (payload) => {
           console.log("Realtime Lobby Update:", payload.eventType);
           fetchActiveTeachers();
@@ -619,13 +619,13 @@ export const useInteractiveQuran = (onBack, session) => {
 
       if (isBookmarkCmd) {
         if (bookmarks.length === 0) {
-          setMessages(prev => [...prev, { 
-            type: 'bot', 
-            content: '📭 Belum ada ayat favorit yang disimpan. Klik ikon bookmark di Mushaf untuk menyimpan ayat!' 
+          setMessages(prev => [...prev, {
+            type: 'bot',
+            content: '📭 Belum ada ayat favorit yang disimpan. Klik ikon bookmark di Mushaf untuk menyimpan ayat!'
           }]);
         } else {
-          setMessages(prev => [...prev, { 
-            type: 'bot', 
+          setMessages(prev => [...prev, {
+            type: 'bot',
             content: `📚 Kamu punya ${bookmarks.length} ayat pilihan yang tersimpan:`,
             bookmarks: bookmarks // We'll handle this in ChatBubble
           }]);
@@ -641,16 +641,16 @@ export const useInteractiveQuran = (onBack, session) => {
             setMessages(prev => [...prev, {
               type: 'bot',
               subType: 'surah_card',
-              surah: { 
-                ...surahObj, 
-                id: randomAyah.surah_id, 
-                name_simple: surahObj ? surahObj.name_simple : `Surah ${randomAyah.surah_id}` 
+              surah: {
+                ...surahObj,
+                id: randomAyah.surah_id,
+                name_simple: surahObj ? surahObj.name_simple : `Surah ${randomAyah.surah_id}`
               },
               targetAyah: randomAyah.ayat,
               isRandom: true
             }]);
           } else {
-             setMessages(prev => [...prev, { type: 'bot', content: 'Gagal mengambil ayat nasihat. Coba lagi.' }]);
+            setMessages(prev => [...prev, { type: 'bot', content: 'Gagal mengambil ayat nasihat. Coba lagi.' }]);
           }
           setIsLoading(false);
         }).catch(err => {
@@ -704,7 +704,7 @@ export const useInteractiveQuran = (onBack, session) => {
         // Fallback: Indonesian Translation Search
         const wordSearchMatch = userText.match(/^(?:cari|search)\s+(.+)$/i);
         const searchKeyword = wordSearchMatch ? wordSearchMatch[1].trim() : (userText.length > 3 ? userText : null);
-        
+
         if (searchKeyword) {
           setSearchHighlight(searchKeyword);
           quranService.searchByTranslation(searchKeyword, mushafType).then(results => {
@@ -768,7 +768,7 @@ export const useInteractiveQuran = (onBack, session) => {
         surah_name: surah.name_simple
       });
     }
-    
+
     panY.setValue(0);
     setCurrentPage(1);
     setSelectedSurah(surah);
@@ -844,13 +844,13 @@ export const useInteractiveQuran = (onBack, session) => {
       if (modalVisible && selectedSurah) {
         const data = await quranService.getSurahVerses(selectedSurah.id, mushafType);
         if (targetScrollAyah) {
-            if (typeof targetScrollAyah === 'object') {
-                setVersesData(data.filter(v => v.ayat >= targetScrollAyah.start && v.ayat <= targetScrollAyah.end));
-            } else {
-                setVersesData(data.filter(v => v.ayat === targetScrollAyah));
-            }
+          if (typeof targetScrollAyah === 'object') {
+            setVersesData(data.filter(v => v.ayat >= targetScrollAyah.start && v.ayat <= targetScrollAyah.end));
+          } else {
+            setVersesData(data.filter(v => v.ayat === targetScrollAyah));
+          }
         } else {
-            setVersesData(data);
+          setVersesData(data);
         }
       }
     };
@@ -877,7 +877,7 @@ export const useInteractiveQuran = (onBack, session) => {
           console.log('Audio reset cleanup:', e.message);
         }
         setSound(null);
-        
+
         // Jika klik tombol yang sama (Toggle Off), stop di sini
         if (playingAyah === ayahNumber) return;
       }
@@ -890,8 +890,8 @@ export const useInteractiveQuran = (onBack, session) => {
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: url },
-        { 
-          shouldPlay: true, 
+        {
+          shouldPlay: true,
           progressUpdateIntervalMillis: 1000 // Interval lebih santai
         }
       );
@@ -914,7 +914,7 @@ export const useInteractiveQuran = (onBack, session) => {
           }
         }
       });
-    } catch (e) { 
+    } catch (e) {
       console.error('Initial Load Error:', e.message);
       handleAudioError(surahId, ayahNumber);
     }
@@ -931,7 +931,7 @@ export const useInteractiveQuran = (onBack, session) => {
   const autoPlayNext = (surahId, currentAyah) => {
     const data = versesDataRef.current;
     const currentIndex = data.findIndex(v => v.ayat === currentAyah);
-    
+
     if (currentIndex !== -1 && currentIndex < data.length - 1) {
       const nextAyah = data[currentIndex + 1];
       // Jeda 600ms sebagai "napas" antar ayat
@@ -947,9 +947,9 @@ export const useInteractiveQuran = (onBack, session) => {
   const handleResumeReading = (lastRead) => {
     const surahObj = allSurahs.find(s => s.id === lastRead.surah_id);
     if (surahObj) {
-      handleOpenSurah(surahObj, { 
-        start: lastRead.ayah_number, 
-        end: surahObj.verses_count 
+      handleOpenSurah(surahObj, {
+        start: lastRead.ayah_number,
+        end: surahObj.verses_count
       });
     }
   };

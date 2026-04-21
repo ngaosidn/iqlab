@@ -148,7 +148,7 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
             <Text style={styles.tutorialTitle}>Hasil Pencarian</Text>
           </View>
           <Text style={styles.botMessageText}>{msg.content}</Text>
-          
+
           <ScrollView style={[styles.surahListScroll, { maxHeight: 350 }]} nestedScrollEnabled={true}>
             {msg.wordSearchSummary.surahGroups.map((group, idx) => (
               <View key={idx} style={styles.searchGroupContainer}>
@@ -158,11 +158,11 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
                     <Text style={styles.searchCountText}>{group.count} Ayat</Text>
                   </View>
                 </View>
-                
+
                 <View style={styles.verseChipsContainer}>
                   {group.verses.map((v, vIdx) => (
-                    <TouchableOpacity 
-                      key={vIdx} 
+                    <TouchableOpacity
+                      key={vIdx}
                       onPress={() => handleOpenSurah(group.surah, v.ayat)}
                       style={styles.verseChip}
                     >
@@ -189,11 +189,11 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
             <Text style={styles.tutorialTitle}>Daftar Ayat Favorit</Text>
           </View>
           <Text style={styles.botMessageText}>{msg.content}</Text>
-          
+
           <ScrollView style={[styles.surahListScroll, { maxHeight: 350 }]} nestedScrollEnabled={true}>
             {msg.bookmarks.map((bm, index) => (
-              <TouchableOpacity 
-                key={index} 
+              <TouchableOpacity
+                key={index}
                 onPress={() => handleOpenSurah({ id: bm.surah_id, name_simple: bm.surah_name }, bm.ayah_number)}
                 style={styles.bookmarkItem}
               >
@@ -224,10 +224,10 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
             <Text style={styles.tutorialTitle}>Saran AI 🤖</Text>
           </View>
           <Text style={styles.botMessageText}>{msg.content}</Text>
-          
+
           <View style={{ marginTop: 16, gap: 10 }}>
             {msg.suggestions.map((item, idx) => (
-              <TouchableOpacity 
+              <TouchableOpacity
                 key={idx}
                 onPress={() => onResume(item)}
                 activeOpacity={0.8}
@@ -240,10 +240,10 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
                   style={styles.suggestionGradient}
                 >
                   <View style={styles.suggestionIconContainer}>
-                    <Ionicons 
-                      name={item.icon === 'flag' ? 'flag' : 'footsteps'} 
-                      size={20} 
-                      color="white" 
+                    <Ionicons
+                      name={item.icon === 'flag' ? 'flag' : 'footsteps'}
+                      size={20}
+                      color="white"
                     />
                   </View>
                   <View style={{ flex: 1 }}>
@@ -273,8 +273,8 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
             <Text style={styles.tutorialTitle}>Lanjut Tadabbur?</Text>
           </View>
           <Text style={styles.botMessageText}>{msg.content}</Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             onPress={() => onResume(msg.lastReadSuggestion)}
             style={[styles.readSurahBtn, { marginTop: 16, backgroundColor: '#3b82f6' }]}
           >
