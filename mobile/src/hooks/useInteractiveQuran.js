@@ -709,18 +709,29 @@ export const useInteractiveQuran = (onBack, session) => {
           setSearchHighlight(searchKeyword);
           quranService.searchByTranslation(searchKeyword, mushafType).then(results => {
             if (results && results.length > 0) {
+              
+              const escapedKeyword = searchKeyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              const exactRegex = new RegExp(`\\b${escapedKeyword}\\b`, 'gi');
+              let totalOccurrences = 0;
+
               const surahGroups = results.reduce((acc, result) => {
+                const matches = result.terjemahan.match(exactRegex);
+                const verseOccurrences = matches ? matches.length : 1;
+                totalOccurrences += verseOccurrences;
+
                 const surahId = result.surah_id;
                 if (!acc[surahId]) {
                   const sInfo = allSurahs.find(s => s.id === surahId);
                   acc[surahId] = {
                     surah: sInfo || { id: surahId, name_simple: `Surah ${surahId}` },
                     count: 0,
+                    totalOccurrences: 0,
                     verses: []
                   };
                 }
                 acc[surahId].count++;
-                acc[surahId].verses.push(result);
+                acc[surahId].totalOccurrences += verseOccurrences;
+                acc[surahId].verses.push({ ...result, occurrences: verseOccurrences });
                 return acc;
               }, {});
 
@@ -728,10 +739,11 @@ export const useInteractiveQuran = (onBack, session) => {
 
               setMessages(prev => [...prev, {
                 type: 'bot',
-                content: `🔍 Ditemukan ${results.length} ayat yang mengandung kata "${searchKeyword}":`,
+                content: `🔍 Ditemukan kata "${searchKeyword}" sebanyak ${totalOccurrences} kali di ${results.length} ayat:`,
                 wordSearchSummary: {
                   word: searchKeyword,
                   count: results.length,
+                  totalOccurrences: totalOccurrences,
                   surahGroups: finalGroups
                 }
               }]);

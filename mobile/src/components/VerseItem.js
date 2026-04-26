@@ -35,7 +35,8 @@ const VerseItem = React.memo(({
       return <Text style={styles.verseTranslationText}>{cleanText}</Text>;
     }
     
-    const parts = cleanText.split(new RegExp(`(${keyword})`, 'gi'));
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = cleanText.split(new RegExp(`(\\b${escapedKeyword}\\b)`, 'gi'));
     
     return (
       <Text style={styles.verseTranslationText}>

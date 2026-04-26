@@ -90,13 +90,24 @@ export const databaseService = {
   async searchByTranslation(keyword, mushafType = 'uthmani') {
     const database = await this.init();
     const column = mushafType === 'indopak' ? 'teks_indopak' : 'teks_uthmani';
-    // Use LIKE for searching in Indonesian translation
-    return await database.getAllAsync(
+    
+    // 1. Tarik secara kasar dulu dengan LIKE (sangat cepat di SQLite)
+    const rawMatches = await database.getAllAsync(
       `SELECT surah_id, ayat_number as ayat, ${column} as teks_arab, terjemahan 
        FROM quran 
-       WHERE terjemahan LIKE ? 
-       LIMIT 50`,
+       WHERE terjemahan LIKE ?`,
       [`%${keyword}%`]
     );
+
+    // 2. Saring (filter) menggunakan RegExp JavaScript (Word Boundary \b)
+    // agar pencarian mendapat kata persis. (Contoh "air" tidak memunculkan "cair")
+    // Kita juga escape karakter spesial supaya aman dari crash (Regex Injection).
+    const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const exactRegex = new RegExp(`\\b${escapedKeyword}\\b`, 'i');
+    
+    const exactMatches = rawMatches.filter(item => exactRegex.test(item.terjemahan));
+    
+    // Kembalikan semua hasil tanpa dibatasi 50
+    return exactMatches;
   }
 };

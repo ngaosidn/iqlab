@@ -261,47 +261,47 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
                 >
                   {/* Decorative Abstract Elements */}
                   {renderPattern()}
-                  
+
                   <View style={[
-                      styles.innerCard, 
-                    { 
-                        backgroundColor: cardStylesList[selectedStyle].bg, 
-                        borderColor: cardStylesList[selectedStyle].border 
+                    styles.innerCard,
+                    {
+                      backgroundColor: cardStylesList[selectedStyle].bg,
+                      borderColor: cardStylesList[selectedStyle].border
                     }
-                ]}>
+                  ]}>
 
-                  {showArabic && (
-                    <Text 
-                      style={[styles.previewArabic, { color: selectedTextColor, fontSize: getArabicFontSize(arabicText, isSingleMode), lineHeight: getArabicFontSize(arabicText, isSingleMode) * 1.8 }]} 
-                    >
+                    {showArabic && (
+                      <Text
+                        style={[styles.previewArabic, { color: selectedTextColor, fontSize: getArabicFontSize(arabicText, isSingleMode), lineHeight: getArabicFontSize(arabicText, isSingleMode) * 1.8 }]}
+                      >
                         {arabicText}
-                    </Text>
-                  )}
-                  {showArabic && showTranslation && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 18, opacity: 0.8, width: '60%' }}>
-                      <View style={{ flex: 1, height: 1, backgroundColor: selectedTextColor, opacity: 0.3 }} />
-                      <View style={{ width: 4, height: 4, transform: [{ rotate: '45deg' }], backgroundColor: selectedTextColor, marginHorizontal: 8, opacity: 0.6 }} />
-                      <View style={{ width: 6, height: 6, transform: [{ rotate: '45deg' }], backgroundColor: selectedTextColor, opacity: 0.8 }} />
-                      <View style={{ width: 4, height: 4, transform: [{ rotate: '45deg' }], backgroundColor: selectedTextColor, marginHorizontal: 8, opacity: 0.6 }} />
-                      <View style={{ flex: 1, height: 1, backgroundColor: selectedTextColor, opacity: 0.3 }} />
-                    </View>
-                  )}
+                      </Text>
+                    )}
+                    {showArabic && showTranslation && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 18, opacity: 0.8, width: '60%' }}>
+                        <View style={{ flex: 1, height: 1, backgroundColor: selectedTextColor, opacity: 0.3 }} />
+                        <View style={{ width: 4, height: 4, transform: [{ rotate: '45deg' }], backgroundColor: selectedTextColor, marginHorizontal: 8, opacity: 0.6 }} />
+                        <View style={{ width: 6, height: 6, transform: [{ rotate: '45deg' }], backgroundColor: selectedTextColor, opacity: 0.8 }} />
+                        <View style={{ width: 4, height: 4, transform: [{ rotate: '45deg' }], backgroundColor: selectedTextColor, marginHorizontal: 8, opacity: 0.6 }} />
+                        <View style={{ flex: 1, height: 1, backgroundColor: selectedTextColor, opacity: 0.3 }} />
+                      </View>
+                    )}
 
-                  {showTranslation && (
-                    <Text 
-                      style={[styles.previewTranslation, { color: selectedTextColor, opacity: 0.9, fontSize: getTranslationFontSize(translationText, isSingleMode), lineHeight: getTranslationFontSize(translationText, isSingleMode) * 1.5 }]}
-                    >
+                    {showTranslation && (
+                      <Text
+                        style={[styles.previewTranslation, { color: selectedTextColor, opacity: 0.9, fontSize: getTranslationFontSize(translationText, isSingleMode), lineHeight: getTranslationFontSize(translationText, isSingleMode) * 1.5 }]}
+                      >
                         "{translationText.replace(/<sup[^>]*>.*?<\/sup>/g, '')}"
-                    </Text>
-                  )}
-                  
-                  <View style={[styles.footerPreview, { borderTopColor: selectedTextColor === '#000000' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }]}>
+                      </Text>
+                    )}
+
+                    <View style={[styles.footerPreview, { borderTopColor: selectedTextColor === '#000000' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)' }]}>
                       <View style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <Image 
-                          source={require('../../../assets/logo.svg')} 
-                          style={{ width: 65, height: 22 }} 
+                        <Image
+                          source={require('../../../assets/logo.svg')}
+                          style={{ width: 65, height: 22 }}
                           contentFit="contain"
-                          tintColor={selectedTextColor} 
+                          tintColor={selectedTextColor}
                         />
                         <Text style={[styles.logoText, { color: selectedTextColor, marginTop: 4, marginLeft: 2 }]}>Interactive Quran</Text>
                       </View>
@@ -311,29 +311,29 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
                           QS. {surahName}:{verse.ayat} {slides.length > 1 ? `(${activeSlide + 1}/${slides.length})` : ''}
                         </Text>
                       </View>
+                    </View>
                   </View>
-                </View>
 
-                {/* Carousel Controls Overlay */}
-                {(slides.length > 1 && !isCapturing) && (
-                  <>
-                    <TouchableOpacity 
-                      style={[styles.carouselBtn, styles.carouselBtnLeft, activeSlide === 0 && { opacity: 0 }]} 
-                      disabled={activeSlide === 0} 
-                      onPress={() => setActiveSlide(prev => Math.max(0, prev - 1))}
-                    >
-                      <Feather name="chevron-left" size={18} color="white" />
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={[styles.carouselBtn, styles.carouselBtnRight, activeSlide === slides.length - 1 && { opacity: 0 }]} 
-                      disabled={activeSlide === slides.length - 1} 
-                      onPress={() => setActiveSlide(prev => Math.min(slides.length - 1, prev + 1))}
-                    >
-                      <Feather name="chevron-right" size={18} color="white" />
-                    </TouchableOpacity>
-                  </>
-                )}
-              </LinearGradient>
+                  {/* Carousel Controls Overlay */}
+                  {(slides.length > 1 && !isCapturing) && (
+                    <>
+                      <TouchableOpacity
+                        style={[styles.carouselBtn, styles.carouselBtnLeft, activeSlide === 0 && { opacity: 0 }]}
+                        disabled={activeSlide === 0}
+                        onPress={() => setActiveSlide(prev => Math.max(0, prev - 1))}
+                      >
+                        <Feather name="chevron-left" size={18} color="white" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.carouselBtn, styles.carouselBtnRight, activeSlide === slides.length - 1 && { opacity: 0 }]}
+                        disabled={activeSlide === slides.length - 1}
+                        onPress={() => setActiveSlide(prev => Math.min(slides.length - 1, prev + 1))}
+                      >
+                        <Feather name="chevron-right" size={18} color="white" />
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </LinearGradient>
               </ViewShot>
 
               {/* Pagination Dots */}
@@ -366,84 +366,84 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
 
               <TouchableOpacity style={styles.actionBtnPrimary} onPress={handleDownloadPng} disabled={isCapturing}>
                 {isCapturing ? (
-                  <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={styles.actionTextPrimary}>Memproses...</Text>
                   </View>
                 ) : (
-                  <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center'}}>
-                    <Feather name="download" size={18} color="white" style={{marginRight: 6}} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="download" size={18} color="white" style={{ marginRight: 6 }} />
                     <Text style={styles.actionTextPrimary}>P N G</Text>
                   </View>
                 )}
               </TouchableOpacity>
             </View>
-            
+
             {/* Customizations Controls */}
             <View style={styles.customizationsContainer}>
-               <Text style={styles.bgTitle}>Ganti Background</Text>
-               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bgOptions} nestedScrollEnabled={true}>
-                 {backgroundsList.map((bg, idx) => (
-                   <TouchableOpacity 
-                     key={idx} 
-                     style={[styles.bgOptionWrapper, selectedBg === idx && styles.bgOptionWrapperActive]}
-                     onPress={() => setSelectedBg(idx)}
-                   >
-                     <LinearGradient 
-                       colors={bg.colors} 
-                       style={styles.bgOptionLinear}
-                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                     />
-                   </TouchableOpacity>
-                 ))}
-               </ScrollView>
+              <Text style={styles.bgTitle}>Ganti Background</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bgOptions} nestedScrollEnabled={true}>
+                {backgroundsList.map((bg, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[styles.bgOptionWrapper, selectedBg === idx && styles.bgOptionWrapperActive]}
+                    onPress={() => setSelectedBg(idx)}
+                  >
+                    <LinearGradient
+                      colors={bg.colors}
+                      style={styles.bgOptionLinear}
+                      start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-               <Text style={[styles.bgTitle, { marginTop: 16 }]}>Efek Kartu</Text>
-               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bgOptions} nestedScrollEnabled={true}>
-                 {cardStylesList.map((styleObj, idx) => (
-                   <TouchableOpacity 
-                     key={idx} 
-                     style={[
-                       styles.styleBtn, 
-                       selectedStyle === idx && styles.styleBtnActive
-                     ]}
-                     onPress={() => setSelectedStyle(idx)}
-                   >
-                       <Text style={[styles.styleBtnText, selectedStyle === idx && styles.styleBtnTextActive]}>{styleObj.name}</Text>
-                   </TouchableOpacity>
-                 ))}
-               </ScrollView>
+              <Text style={[styles.bgTitle, { marginTop: 16 }]}>Efek Kartu</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bgOptions} nestedScrollEnabled={true}>
+                {cardStylesList.map((styleObj, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.styleBtn,
+                      selectedStyle === idx && styles.styleBtnActive
+                    ]}
+                    onPress={() => setSelectedStyle(idx)}
+                  >
+                    <Text style={[styles.styleBtnText, selectedStyle === idx && styles.styleBtnTextActive]}>{styleObj.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-               <Text style={[styles.bgTitle, { marginTop: 20 }]}>Pola Abstract</Text>
-               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.bgOptions, { paddingBottom: 10 }]} nestedScrollEnabled={true}>
-                 {patternsList.map((pattern, idx) => (
-                   <TouchableOpacity 
-                     key={idx} 
-                     style={[
-                       styles.styleBtn, 
-                       selectedPattern === pattern.id && styles.styleBtnActive
-                     ]}
-                     onPress={() => setSelectedPattern(pattern.id)}
-                   >
-                       <Text style={[styles.styleBtnText, selectedPattern === pattern.id && styles.styleBtnTextActive]}>{pattern.name}</Text>
-                   </TouchableOpacity>
-                 ))}
-               </ScrollView>
+              <Text style={[styles.bgTitle, { marginTop: 20 }]}>Pola Abstract</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.bgOptions, { paddingBottom: 10 }]} nestedScrollEnabled={true}>
+                {patternsList.map((pattern, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.styleBtn,
+                      selectedPattern === pattern.id && styles.styleBtnActive
+                    ]}
+                    onPress={() => setSelectedPattern(pattern.id)}
+                  >
+                    <Text style={[styles.styleBtnText, selectedPattern === pattern.id && styles.styleBtnTextActive]}>{pattern.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
 
-               <Text style={[styles.bgTitle, { marginTop: 20 }]}>Warna Teks</Text>
-               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.bgOptions, { paddingBottom: 20, paddingTop: 4 }]} nestedScrollEnabled={true}>
-                 {textColorsOptions.map((color, idx) => (
-                   <TouchableOpacity 
-                     key={idx} 
-                     style={[
-                         styles.colorOption, 
-                         { backgroundColor: color },
-                         selectedTextColor === color && styles.colorOptionActive,
-                         color === '#ffffff' && { borderWidth: 1, borderColor: '#e2e8f0' }
-                     ]}
-                     onPress={() => setSelectedTextColor(color)}
-                   />
-                 ))}
-               </ScrollView>
+              <Text style={[styles.bgTitle, { marginTop: 20 }]}>Warna Teks</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.bgOptions, { paddingBottom: 20, paddingTop: 4 }]} nestedScrollEnabled={true}>
+                {textColorsOptions.map((color, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={[
+                      styles.colorOption,
+                      { backgroundColor: color },
+                      selectedTextColor === color && styles.colorOptionActive,
+                      color === '#ffffff' && { borderWidth: 1, borderColor: '#e2e8f0' }
+                    ]}
+                    onPress={() => setSelectedTextColor(color)}
+                  />
+                ))}
+              </ScrollView>
             </View>
           </ScrollView>
         </Animated.View>
@@ -511,8 +511,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   previewCard: {
-    width: width * 0.9, 
-    aspectRatio: 0.8, 
+    width: width * 0.9,
+    aspectRatio: 0.8,
     borderRadius: 24,
     padding: 18,
     justifyContent: 'center',

@@ -4,6 +4,8 @@ import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
+  const [showSearchMore, setShowSearchMore] = React.useState(false);
+
   if (msg.type === 'loading') {
     return (
       <View style={styles.bubbleWrapper}>
@@ -139,6 +141,11 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
 
   // Word Search Summary Card
   if (msg.wordSearchSummary) {
+    const SURAH_LIMIT = 15;
+    const groups = msg.wordSearchSummary.surahGroups;
+    const isExpandable = groups.length > SURAH_LIMIT;
+    const displayedGroups = showSearchMore ? groups : groups.slice(0, SURAH_LIMIT);
+
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
@@ -150,12 +157,12 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
           <Text style={styles.botMessageText}>{msg.content}</Text>
 
           <ScrollView style={[styles.surahListScroll, { maxHeight: 350 }]} nestedScrollEnabled={true}>
-            {msg.wordSearchSummary.surahGroups.map((group, idx) => (
+            {displayedGroups.map((group, idx) => (
               <View key={idx} style={styles.searchGroupContainer}>
                 <View style={styles.searchGroupHeader}>
                   <Text style={styles.searchSurahName}>{group.surah.id}. {group.surah.name_simple}</Text>
                   <View style={styles.searchCountBadge}>
-                    <Text style={styles.searchCountText}>{group.count} Ayat</Text>
+                    <Text style={styles.searchCountText}>{group.count} Ayat{group.totalOccurrences > group.count ? ` (${group.totalOccurrences}x)` : ''}</Text>
                   </View>
                 </View>
 
@@ -166,12 +173,23 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
                       onPress={() => handleOpenSurah(group.surah, v.ayat)}
                       style={styles.verseChip}
                     >
-                      <Text style={styles.verseChipText}>Ayat {v.ayat}</Text>
+                      <Text style={styles.verseChipText}>Ayat {v.ayat}{v.occurrences > 1 ? ` (${v.occurrences}x)` : ''}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
             ))}
+
+            {!showSearchMore && isExpandable && (
+              <TouchableOpacity
+                style={styles.showMoreSearchBtn}
+                onPress={() => setShowSearchMore(true)}
+              >
+                <Text style={styles.showMoreSearchBtnText}>
+                  Lihat {groups.length - SURAH_LIMIT} Surah Lainnya...
+                </Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </View>
       </View>
@@ -401,6 +419,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     fontWeight: '500'
+  },
+  showMoreSearchBtn: {
+    backgroundColor: '#eff6ff',
+    paddingVertical: 12,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#dbeafe',
+    borderStyle: 'dashed',
+  },
+  showMoreSearchBtnText: {
+    color: '#3b82f6',
+    fontWeight: 'bold',
+    fontSize: 13,
   },
   bookmarkItem: {
     flexDirection: 'row',

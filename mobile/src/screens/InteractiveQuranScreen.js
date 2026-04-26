@@ -234,9 +234,9 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                                 >
                                     <ActivityIndicator size="large" color="#3b82f6" />
                                 </LinearGradient>
-                                <Animated.Text style={{ 
-                                    color: '#94a3b8', 
-                                    fontSize: 15, 
+                                <Animated.Text style={{
+                                    color: '#94a3b8',
+                                    fontSize: 15,
                                     fontWeight: '600',
                                     opacity: loadingPulseAnim,
                                     letterSpacing: 0.5
@@ -251,9 +251,9 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                             data={messages}
                             keyExtractor={(item, index) => String(index)}
                             renderItem={({ item: msg }) => (
-                                <ChatBubble 
-                                    msg={msg} 
-                                    handleOpenSurah={handleOpenSurah} 
+                                <ChatBubble
+                                    msg={msg}
+                                    handleOpenSurah={handleOpenSurah}
                                     onResume={handleResumeReading}
                                 />
                             )}
