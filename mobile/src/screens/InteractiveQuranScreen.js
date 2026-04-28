@@ -204,8 +204,8 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a' }}>
-            <StatusBar style="light" backgroundColor="#1e3a8a" translucent={false} />
+        <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+            <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
             <View style={styles.container}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -213,17 +213,22 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     keyboardVerticalOffset={0}
                     enabled={Platform.OS === 'ios'}
                 >
-                    <HomeHeader
-                        translateX={translateX}
-                        title="Ahlan Bikum! 👋"
-                        subtitle="MAU BACA DAN TADABBUR AYAT APA HARI INI? ✨"
-                        rightContent={
-                            <>
-                                <TouchableOpacity style={styles.iconBtn}><Feather name="download" size={18} color="white" /></TouchableOpacity>
-                                <TouchableOpacity style={styles.iconBtn} onPress={onBack}><Feather name="arrow-left" size={20} color="white" /></TouchableOpacity>
-                            </>
-                        }
-                    />
+                    {/* MODERN LIGHT HEADER */}
+                    <View style={styles.modernHeader}>
+                        <TouchableOpacity style={styles.backBtnLight} onPress={onBack}>
+                            <Feather name="arrow-left" size={22} color="#1e293b" />
+                        </TouchableOpacity>
+                        <View style={styles.headerTextContainer}>
+                            <Text style={styles.headerTitleLight}>Ahlan Bikum! 👋</Text>
+                            <View style={styles.statusPill}>
+                                <View style={styles.statusDot} />
+                                <Text style={styles.headerSubtitleLight}>Tadabbur Bersama AI</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity style={styles.iconBtnLight} onPress={handleClearHistory}>
+                            <Feather name="trash-2" size={18} color="#94a3b8" />
+                        </TouchableOpacity>
+                    </View>
 
                     <View style={{ flex: 1 }}>
                         {(messages.length === 0 || !fontsLoaded) && (
@@ -267,44 +272,43 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                         />
                     </View>
 
+                    {/* FLOATING INPUT DOCK */}
                     <View style={styles.bottomWrapper}>
-                        <View style={[styles.chatInputContainer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-                            <View style={styles.inputInnerContainer}>
+                        <View style={[styles.floatingInputDock, { marginBottom: Math.max(insets.bottom, 16) }]}>
+                            <TouchableOpacity
+                                style={styles.attachBtn}
+                                onPress={handleClearHistory}
+                            >
+                                <Feather name="trash-2" size={20} color="#94a3b8" />
+                            </TouchableOpacity>
+
+                            <Animated.View style={{ transform: [{ scale: voicePulseAnim }] }}>
                                 <TouchableOpacity
-                                    style={styles.attachBtn}
-                                    onPress={handleClearHistory}
+                                    style={[styles.voiceBtn, isListening && styles.voiceBtnActive]}
+                                    onPress={toggleListening}
                                 >
-                                    <Feather name="trash-2" size={20} color="#94a3b8" />
+                                    <Feather name={isListening ? "mic" : "mic"} size={20} color={isListening ? "#ef4444" : "#64748b"} />
                                 </TouchableOpacity>
+                            </Animated.View>
 
-                                <Animated.View style={{ transform: [{ scale: voicePulseAnim }] }}>
-                                    <TouchableOpacity
-                                        style={[styles.voiceBtn, isListening && styles.voiceBtnActive]}
-                                        onPress={toggleListening}
-                                    >
-                                        <Feather name={isListening ? "mic" : "mic"} size={20} color={isListening ? "#ef4444" : "#64748b"} />
-                                    </TouchableOpacity>
-                                </Animated.View>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder={isListening ? "Mendengarkan..." : "Tanya apapun tentang Al-Quran..."}
+                                placeholderTextColor={isListening ? "#ef4444" : "#94a3b8"}
+                                value={input}
+                                onChangeText={setInput}
+                                onSubmitEditing={handleSend}
+                                returnKeyType="send"
+                                multiline={true}
+                            />
 
-                                <TextInput
-                                    style={styles.textInput}
-                                    placeholder={isListening ? "Mendengarkan..." : "Tanya apapun tentang Al-Quran..."}
-                                    placeholderTextColor={isListening ? "#ef4444" : "#94a3b8"}
-                                    value={input}
-                                    onChangeText={setInput}
-                                    onSubmitEditing={handleSend}
-                                    returnKeyType="send"
-                                    multiline={true}
-                                />
-
-                                <TouchableOpacity
-                                    style={[styles.newSendBtn, input.trim().length > 0 && styles.newSendBtnActive]}
-                                    onPress={handleSend}
-                                    disabled={input.trim().length === 0}
-                                >
-                                    <Feather name="arrow-up" size={18} color={input.trim().length > 0 ? "white" : "#94a3b8"} />
-                                </TouchableOpacity>
-                            </View>
+                            <TouchableOpacity
+                                style={[styles.newSendBtn, input.trim().length > 0 && styles.newSendBtnActive]}
+                                onPress={handleSend}
+                                disabled={input.trim().length === 0}
+                            >
+                                <Feather name="arrow-up" size={18} color={input.trim().length > 0 ? "white" : "#94a3b8"} />
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </KeyboardAvoidingView>
@@ -368,67 +372,80 @@ export default function InteractiveQuranScreen({ navigation, session }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8fafc' },
-    iconBtn: { width: 40, height: 40, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center' },
-    scrollContent: { padding: 20, paddingBottom: 40 },
-    newSendBtnActive: {
-        backgroundColor: '#3b82f6',
-    },
-    bottomWrapper: { position: 'relative', backgroundColor: 'transparent', zIndex: 20 },
-    chatInputContainer: {
-        backgroundColor: '#ffffff',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderTopWidth: 1,
-        borderTopColor: '#f1f5f9',
-        elevation: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 10,
-    },
-    inputInnerContainer: {
+    
+    // Modern Header Styles
+    modernHeader: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
-        borderRadius: 24,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        backgroundColor: '#ffffff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#f1f5f9',
+        zIndex: 10,
+    },
+    backBtnLight: {
+        width: 40, height: 40, borderRadius: 12, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center'
+    },
+    headerTextContainer: {
+        flex: 1,
+        marginLeft: 16,
+    },
+    headerTitleLight: {
+        fontSize: 18, fontWeight: '800', color: '#0f172a', letterSpacing: -0.3
+    },
+    statusPill: {
+        flexDirection: 'row', alignItems: 'center', marginTop: 2
+    },
+    statusDot: {
+        width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981', marginRight: 6
+    },
+    headerSubtitleLight: {
+        fontSize: 12, fontWeight: '600', color: '#64748b'
+    },
+    iconBtnLight: {
+        width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center'
+    },
+
+    scrollContent: { padding: 20, paddingBottom: 100 },
+    
+    // Floating Input Dock
+    bottomWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, zIndex: 20, backgroundColor: 'transparent' },
+    floatingInputDock: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#ffffff',
+        borderRadius: 30,
+        paddingHorizontal: 8,
+        paddingVertical: 6,
         borderWidth: 1,
         borderColor: '#e2e8f0',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.08,
+        shadowRadius: 15,
+        elevation: 10,
     },
     attachBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', display: 'none' // Hidden to clean up since trash is in header
     },
     voiceBtn: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center', marginRight: 8
     },
     voiceBtnActive: {
         backgroundColor: '#fee2e2',
     },
     textInput: {
         flex: 1,
-        fontSize: 16,
+        fontSize: 15,
         color: '#0f172a',
-        paddingHorizontal: 12,
-        paddingVertical: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 10,
         minHeight: 40,
         maxHeight: 120,
     },
     newSendBtn: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#f1f5f9',
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: 40, height: 40, borderRadius: 20, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center', marginLeft: 8
     },
     newSendBtnActive: {
         backgroundColor: '#3b82f6',
