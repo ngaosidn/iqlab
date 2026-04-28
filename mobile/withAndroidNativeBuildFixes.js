@@ -9,8 +9,9 @@ module.exports = function withNativeBuildFixes(config) {
     // Ensure tools namespace exists
     mainManifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
 
-    // Add tools:replace="android:appComponentFactory"
+    // Add tools:replace="android:appComponentFactory" and provide a value
     application.$['tools:replace'] = 'android:appComponentFactory';
+    application.$['android:appComponentFactory'] = 'androidx.core.app.CoreComponentFactory';
 
     return config;
   });
