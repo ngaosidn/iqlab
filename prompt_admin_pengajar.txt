@@ -1,0 +1,55 @@
+# DOKUMENTASI & PROMPT TEMPLATE: SISTEM ADMIN & PENGAJAR I-QLAB
+
+Berikut adalah dokumentasi dan panduan "prompting" (perintah AI) untuk mereplikasi, membangun ulang, atau mengembangkan sistem Admin dan Pengajar seperti yang ada di aplikasi I-QLab. Anda dapat menggunakan teks ini untuk meminta AI membuatkan sistem yang serupa di proyek masa depan.
+
+---
+
+## 1. SISTEM ADMIN (AdminScreen.js)
+
+### Deskripsi Fitur:
+Laman Admin adalah *Control Panel* utama yang hanya bisa diakses oleh akun dengan *role* 'admin'. Laman ini menggunakan tema *Dark Mode* secara bawaan dengan desain yang futuristik dan elegan.
+
+### Komponen Kunci & Logika:
+- **Autentikasi (Login/Signup):** Admin tidak bisa mendaftar sembarangan. Proses otentikasi menggunakan Supabase. Terdapat peringatan bahwa jika masuk via Google, portal hanya terbuka jika role di SQL Editor sudah diubah menjadi 'admin'.
+- **Dashboard View:** Menampilkan ucapan selamat datang dinamis (mengambil nama dari metadata Supabase) dan statistik dasar seperti Total Murid dan Total Pengajar.
+- **User Management View:**
+  - Fitur menampilkan senarai (*list*) data staf (admin/pengajar) dengan filter berbasis 'role'.
+  - Fitur hapus (Delete) staf.
+  - Fitur Edit staf (termasuk reset/ubah password khusus).
+- **Form Pendaftaran Staff Baru:** 
+  - Admin dapat membuat akun baru untuk 'Pengajar' atau 'Admin' lain.
+  - Form dinamis: Jika role yang dipilih adalah 'Pengajar', akan muncul opsi tambahan "Asal Lembaga/Komunitas" (Tahseena Pusat atau Lembaga Mitra).
+  - Terdapat fitur Search & Filter Dropdown untuk mencari nama lembaga mitra (misal: Pesantren Darunnajah, TPQ At-Taqwa, dll).
+
+### 💡 Contoh Prompt untuk AI:
+> "Buatkan saya halaman React Native khusus untuk Admin bernama `AdminScreen.js` yang menggunakan Supabase Auth. Halaman ini harus memiliki desain *dark mode* bawaan. Buat 3 state tampilan: Login, Dashboard, dan UserManagement. Di Dashboard, tampilkan statistik total guru dan murid. Di UserManagement, buatkan tabel/list data staff dengan filter role, tombol hapus, tombol edit, dan form untuk mendaftarkan akun guru baru. Jika role yang didaftarkan adalah guru, munculkan *dropdown search* untuk memilih asal lembaga/sekolah."
+
+---
+
+## 2. SISTEM PENGAJAR / GURU (PengajarScreen.js)
+
+### Deskripsi Fitur:
+Laman ini berfungsi sebagai "Teacher Hub" tempat para guru mengelola jadwal mengajar, memulai sesi kelas online (*video call*), dan mengedit profil mereka. Temanya dibuat *clean* (terang) dengan aksen hijau tosca (Teal/Emerald).
+
+### Komponen Kunci & Logika:
+- **Dashboard Guru:** Menampilkan sapaan dinamis dan informasi "Tugas Hari Ini" (seperti koreksi setoran, tanya jawab).
+- **Sistem Pengingat Jadwal (Dynamic Reminder):** 
+  - Mengecek waktu saat ini dan mencocokkan dengan jadwal guru.
+  - Jika waktu mengajar tiba, muncul *banner* merah peringatan "Sesi Mengajar Dimulai!".
+  - Terdapat tombol untuk *Generate Link* yang otomatis membuat link Jitsi Meet, lalu berubah menjadi tombol masuk kelas.
+- **Manajemen Jadwal Mengajar:**
+  - Guru dapat menentukan hari (Senin-Minggu) dan jam (Mulai - Selesai) untuk membuka slot mengajar.
+  - **Logika Bisnis Khusus:** Terdapat pengecekan jika guru berasal dari "Tahseena Pusat", mereka bisa membuka *unlimited slot*. Namun jika berasal dari "Lembaga Mitra", dibatasi maksimal 1 jadwal per minggu.
+  - Daftar jadwal ketersediaan guru ditampilkan beserta tombol hapus jadwal.
+- **Integrasi JitsiWebView:** Sesi kelas tidak melempar pengguna ke aplikasi luar, melainkan membuka komponen `JitsiWebView` secara tertanam (*embedded*) di dalam aplikasi.
+- **Pengaturan Akun:** Form untuk mengubah nomor WhatsApp dan mereset kata sandi.
+
+### 💡 Contoh Prompt untuk AI:
+> "Tolong buatkan halaman `PengajarScreen.js` menggunakan React Native. Desainnya terang dan rapi dengan warna tosca. Halaman ini butuh 3 tampilan: Dashboard, Manajemen Jadwal, dan Pengaturan. Di Dashboard, buat sistem notifikasi/pengingat cerdas yang akan muncul (aktif) jika jam saat ini sama dengan jam jadwal mengajar yang sudah didaftarkan. Sediakan tombol 'Mulai Kelas' yang akan membuka komponen JitsiWebView di dalam aplikasi. Di Manajemen Jadwal, buat form agar guru bisa menginput hari dan jam ketersediaan mereka. Tambahkan aturan bisnis: Jika tipe guru adalah 'Pusat', ia bisa *unlimited* tambah jadwal, jika 'Mitra', batasnya hanya 1 jadwal."
+
+---
+
+## CATATAN ARSITEKTUR KODE (Best Practices)
+1. **Pemisahan Hook (Separation of Concerns):** Seluruh logika *state*, Supabase API, manipulasi data (CRUD), dan animasi dipisahkan ke dalam *Custom Hooks* (`useAdmin.js` dan `usePengajar.js`). Jangan tulis fungsi API langsung di file UI (*Screen*).
+2. **Keamanan (Supabase):** Gunakan fungsi `updateUserMetadata` untuk mengubah identitas, dan RLS (Row Level Security) yang mengizinkan *update/delete* ke tabel `staff` hanya jika JWT mengandung klaim role 'admin'.
+3. **UI/UX Polished:** Selalu gunakan `LinearGradient` untuk tombol utama, tambahkan `KeyboardAvoidingView` di setiap form login/pendaftaran, dan sediakan indikator *loading* (`ActivityIndicator`) setiap ada aksi ke *database*.
