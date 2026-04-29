@@ -11,8 +11,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
 
-// Import New Modular Components
-import AdminHubModal from '../components/home/AdminHubModal';
+// Modul Home
+
 
 const SLIDER_DATA = [
   {
@@ -76,15 +76,11 @@ export default function HomeScreen({ navigation, session }) {
 
   const onNavigate = (screen) => {
     if (screen === 'interactive') navigation.navigate('Interactive');
-    else if (screen === 'admin') navigation.navigate('Admin');
-    else if (screen === 'pengajar') navigation.navigate('Pengajar');
     else if (screen === 'profile') navigation.navigate('Profile');
     else navigation.navigate('Home');
   };
 
   const {
-    showAdminHub,
-    setShowAdminHub,
     checkAuth,
     dotOpacity,
   } = useHome(session, onNavigate);
@@ -289,13 +285,6 @@ export default function HomeScreen({ navigation, session }) {
 
         </ScrollView>
 
-
-
-        <AdminHubModal
-          visible={showAdminHub}
-          onClose={() => setShowAdminHub(false)}
-          onNavigate={onNavigate}
-        />
       </View>
     </SafeAreaView>
   );

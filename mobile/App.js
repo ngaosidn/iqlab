@@ -18,8 +18,6 @@ const Tab = createBottomTabNavigator();
 
 import HomeScreen from './src/screens/HomeScreen';
 import InteractiveQuranScreen from './src/screens/InteractiveQuranScreen';
-import AdminScreen from './src/screens/AdminScreen';
-import PengajarScreen from './src/screens/PengajarScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import BookmarkScreen from './src/screens/BookmarkScreen';
 import AnimatedTabBar from './src/components/navigation/AnimatedTabBar';
@@ -151,12 +149,6 @@ export default function App() {
             </Stack.Screen>
             <Stack.Screen name="Interactive">
               {props => <InteractiveQuranScreen {...props} session={session} />}
-            </Stack.Screen>
-            <Stack.Screen name="Admin">
-              {props => <AdminScreen {...props} session={session} />}
-            </Stack.Screen>
-            <Stack.Screen name="Pengajar">
-              {props => <PengajarScreen {...props} session={session} />}
             </Stack.Screen>
           </Stack.Navigator>
         </NavigationContainer>

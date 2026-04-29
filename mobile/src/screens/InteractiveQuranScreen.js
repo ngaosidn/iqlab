@@ -27,26 +27,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     const screenWidth = Dimensions.get('window').width;
     const isLoggedIn = !!session?.user;
 
-    const { isDarkMode } = useTheme();
-    const theme = isDarkMode ? {
-        bgFull: '#0f172a',
-        topBarBg: '#0f172a',
-        textMain: '#f8fafc',
-        textSub: '#94a3b8',
-        cardBg: '#1e293b',
-        border: '#334155',
-        inputBg: '#1e293b',
-        btnBg: '#334155'
-    } : {
-        bgFull: '#f8fafc',
-        topBarBg: '#f1f5f9',
-        textMain: '#0f172a',
-        textSub: '#64748b',
-        cardBg: '#ffffff',
-        border: '#e2e8f0',
-        inputBg: '#ffffff',
-        btnBg: '#f1f5f9'
-    };
+    const { isDarkMode, theme } = useTheme();
 
     const quranHook = useInteractiveQuran(onBack, session);
 
@@ -211,7 +192,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     if (inClassUrl) {
         const currentSchedule = activeTeachers.find(t => t.meeting_link === inClassUrl);
         return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: '#0f172a', paddingBottom: 0 }}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgFull, paddingBottom: 0 }}>
                 <JitsiWebView
                     url={inClassUrl}
                     onLeave={() => {

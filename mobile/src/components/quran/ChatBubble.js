@@ -123,7 +123,7 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-        <View style={[styles.botBubble, styles.surahCardContainer]}>
+        <View style={[styles.botBubble, styles.surahCardContainer, { backgroundColor: theme.cardBg, borderColor: theme.border, borderWidth: 1 }]}>
           <LinearGradient
             colors={['#1d4ed8', '#1e3a8a']}
             start={{ x: 0, y: 0 }}
@@ -145,15 +145,15 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
 
           <View style={{ padding: 16 }}>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              <View style={styles.surahMetaItem}>
-                <Ionicons name="location-outline" size={14} color="#64748b" />
-                <Text style={styles.surahMetaText}>
+              <View style={[styles.surahMetaItem, { backgroundColor: theme.itemBg }]}>
+                <Ionicons name="location-outline" size={14} color={theme.textSub} />
+                <Text style={[styles.surahMetaText, { color: theme.textMain }]}>
                   {msg.surah.revelation_place === 'makkah' || msg.surah.revelation_place === 'meccan' ? 'Makkiyah' : 'Madaniyah'}
                 </Text>
               </View>
-              <View style={styles.surahMetaItem}>
-                <Ionicons name="list-outline" size={14} color="#64748b" />
-                <Text style={styles.surahMetaText}>{msg.surah.verses_count} Ayat</Text>
+              <View style={[styles.surahMetaItem, { backgroundColor: theme.itemBg }]}>
+                <Ionicons name="list-outline" size={14} color={theme.textSub} />
+                <Text style={[styles.surahMetaText, { color: theme.textMain }]}>{msg.surah.verses_count} Ayat</Text>
               </View>
             </View>
 
@@ -317,12 +317,12 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-        <View style={styles.tutorialCard}>
-          <View style={styles.tutorialHeader}>
+        <View style={[styles.tutorialCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <View style={[styles.tutorialHeader, { borderBottomColor: theme.border }]}>
             <Ionicons name="time" size={20} color="#3b82f6" style={{ marginRight: 8 }} />
-            <Text style={styles.tutorialTitle}>Lanjut Tadabbur?</Text>
+            <Text style={[styles.tutorialTitle, { color: theme.textBold }]}>Lanjut Tadabbur?</Text>
           </View>
-          <Text style={styles.botMessageText}>{msg.content}</Text>
+          <Text style={[styles.botMessageText, { color: theme.textMain }]}>{msg.content}</Text>
 
           <TouchableOpacity
             onPress={() => onResume(msg.lastReadSuggestion)}

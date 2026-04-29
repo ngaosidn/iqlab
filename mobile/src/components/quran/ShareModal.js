@@ -10,6 +10,7 @@ import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
 import { toastConfig } from '../../lib/toastConfig';
 import { Image } from 'expo-image';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -58,6 +59,7 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
   const [isCapturing, setIsCapturing] = useState(false);
   const fadeAnim = new Animated.Value(0);
   const viewShotRef = React.useRef();
+  const { theme, isDarkMode } = useTheme();
 
   useEffect(() => {
     if (visible) {
@@ -236,15 +238,15 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
       animationType="slide"
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <Animated.View style={[styles.modalContent, { opacity: fadeAnim }]}>
+      <View style={[styles.modalOverlay, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(15, 23, 42, 0.6)' }]}>
+        <Animated.View style={[styles.modalContent, { opacity: fadeAnim, backgroundColor: theme.cardBg }]}>
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>Bagikan Ayat ✨</Text>
-              <Text style={styles.subtitle}>Desain Premium Iqlab</Text>
+              <Text style={[styles.title, { color: theme.textMain }]}>Bagikan Ayat ✨</Text>
+              <Text style={[styles.subtitle, { color: theme.textSub }]}>Desain Premium Iqlab</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#64748b" />
+            <TouchableOpacity onPress={onClose} style={[styles.closeBtn, { backgroundColor: theme.btnBg }]}>
+              <Ionicons name="close" size={24} color={theme.textSub} />
             </TouchableOpacity>
           </View>
 
@@ -350,18 +352,18 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
 
             {/* Actions Container */}
             <View style={styles.actionContainer}>
-              <TouchableOpacity style={styles.actionBtn} onPress={handleCopy}>
-                <View style={[styles.iconContainer, { backgroundColor: '#f0fdf4' }]}>
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.bgFull, borderColor: theme.border }]} onPress={handleCopy}>
+                <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? 'rgba(22, 163, 74, 0.15)' : '#f0fdf4' }]}>
                   <Feather name="copy" size={20} color="#16a34a" />
                 </View>
-                <Text style={styles.actionText}>Teks</Text>
+                <Text style={[styles.actionText, { color: theme.textMain }]}>Teks</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
-                <View style={[styles.iconContainer, { backgroundColor: '#eff6ff' }]}>
-                  <Feather name="share" size={20} color="#2563eb" />
+              <TouchableOpacity style={[styles.actionBtn, { backgroundColor: theme.bgFull, borderColor: theme.border }]} onPress={handleShare}>
+                <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }]}>
+                  <Feather name="share" size={20} color="#3b82f6" />
                 </View>
-                <Text style={styles.actionText}>Kirim</Text>
+                <Text style={[styles.actionText, { color: theme.textMain }]}>Kirim</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.actionBtnPrimary} onPress={handleDownloadPng} disabled={isCapturing}>
@@ -379,8 +381,8 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
             </View>
 
             {/* Customizations Controls */}
-            <View style={styles.customizationsContainer}>
-              <Text style={styles.bgTitle}>Ganti Background</Text>
+            <View style={[styles.customizationsContainer, { backgroundColor: theme.bgFull, borderColor: theme.border }]}>
+              <Text style={[styles.bgTitle, { color: theme.textSub }]}>Ganti Background</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bgOptions} nestedScrollEnabled={true}>
                 {backgroundsList.map((bg, idx) => (
                   <TouchableOpacity
@@ -397,13 +399,14 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
                 ))}
               </ScrollView>
 
-              <Text style={[styles.bgTitle, { marginTop: 16 }]}>Efek Kartu</Text>
+              <Text style={[styles.bgTitle, { color: theme.textSub, marginTop: 16 }]}>Efek Kartu</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.bgOptions} nestedScrollEnabled={true}>
                 {cardStylesList.map((styleObj, idx) => (
                   <TouchableOpacity
                     key={idx}
                     style={[
                       styles.styleBtn,
+                      { backgroundColor: theme.cardBg, borderColor: theme.border },
                       selectedStyle === idx && styles.styleBtnActive
                     ]}
                     onPress={() => setSelectedStyle(idx)}
@@ -413,13 +416,14 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
                 ))}
               </ScrollView>
 
-              <Text style={[styles.bgTitle, { marginTop: 20 }]}>Pola Abstract</Text>
+              <Text style={[styles.bgTitle, { color: theme.textSub, marginTop: 20 }]}>Pola Abstract</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.bgOptions, { paddingBottom: 10 }]} nestedScrollEnabled={true}>
                 {patternsList.map((pattern, idx) => (
                   <TouchableOpacity
                     key={idx}
                     style={[
                       styles.styleBtn,
+                      { backgroundColor: theme.cardBg, borderColor: theme.border },
                       selectedPattern === pattern.id && styles.styleBtnActive
                     ]}
                     onPress={() => setSelectedPattern(pattern.id)}
@@ -429,7 +433,7 @@ export default function ShareModal({ visible, onClose, verse, surahName }) {
                 ))}
               </ScrollView>
 
-              <Text style={[styles.bgTitle, { marginTop: 20 }]}>Warna Teks</Text>
+              <Text style={[styles.bgTitle, { color: theme.textSub, marginTop: 20 }]}>Warna Teks</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.bgOptions, { paddingBottom: 20, paddingTop: 4 }]} nestedScrollEnabled={true}>
                 {textColorsOptions.map((color, idx) => (
                   <TouchableOpacity
@@ -461,7 +465,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     height: height * 0.88,
-    backgroundColor: '#ffffff',
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingTop: 24,
@@ -496,7 +499,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f1f5f9',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -617,9 +619,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
     padding: 12,
     borderRadius: 20,
     alignItems: 'center',
@@ -662,11 +662,9 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   customizationsContainer: {
-    backgroundColor: '#f8fafc',
     padding: 20,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
     marginTop: 10,
   },
   bgTitle: {
@@ -705,9 +703,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
   styleBtnActive: {
     backgroundColor: '#3b82f6',

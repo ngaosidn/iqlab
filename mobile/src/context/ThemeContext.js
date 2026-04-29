@@ -50,8 +50,28 @@ export const ThemeProvider = ({ children }) => {
     setHasManuallyToggled(true); // Tandai bahwa user merubahnya secara manual
   };
 
+  const theme = isDarkMode ? {
+    bgFull: '#0f172a',
+    topBarBg: '#0f172a',
+    textMain: '#f8fafc',
+    textSub: '#94a3b8',
+    cardBg: '#1e293b',
+    border: '#334155',
+    inputBg: '#1e293b',
+    btnBg: '#334155'
+  } : {
+    bgFull: '#f8fafc',
+    topBarBg: '#f1f5f9',
+    textMain: '#0f172a',
+    textSub: '#64748b',
+    cardBg: '#ffffff',
+    border: '#e2e8f0',
+    inputBg: '#ffffff',
+    btnBg: '#f1f5f9'
+  };
+
   return (
-    <ThemeContext.Provider value={{ isDarkMode, setIsDarkMode: handleSetIsDarkMode }}>
+    <ThemeContext.Provider value={{ isDarkMode, setIsDarkMode: handleSetIsDarkMode, theme }}>
       {children}
     </ThemeContext.Provider>
   );

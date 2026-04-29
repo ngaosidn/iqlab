@@ -9,8 +9,6 @@ export const useHome = (session, onNavigate) => {
   const dotOpacity = useRef(new Animated.Value(1)).current;
   const screenWidth = Dimensions.get('window').width;
 
-  const [showAdminHub, setShowAdminHub] = useState(false);
-
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const paramString = window.location.search || window.location.hash.substring(1).replace('?', '&');
@@ -67,9 +65,6 @@ export const useHome = (session, onNavigate) => {
 
   const checkProfile = (user) => {
     if (user) {
-      if (user.user_metadata?.role === 'admin' || user.user_metadata?.role === 'pengajar') {
-         return;
-      }
       if (!user.user_metadata?.age || !user.user_metadata?.gender) {
         onNavigate('profile');
       }
@@ -120,8 +115,6 @@ export const useHome = (session, onNavigate) => {
   });
 
   return {
-    showAdminHub,
-    setShowAdminHub,
     checkAuth,
     dotOpacity,
     translateX

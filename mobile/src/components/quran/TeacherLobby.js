@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Modal, Dimensions, Animated, Easing } from 'react-native';
 import { Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../context/ThemeContext';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const TeacherLobby = ({ visible, onClose, activeTeachers, joinTeacherClass, session }) => {
   const [showModal, setShowModal] = useState(visible);
   const animValue = useRef(new Animated.Value(0)).current;
+  const { theme, isDarkMode } = useTheme();
 
   useEffect(() => {
     if (visible) {
@@ -58,7 +60,7 @@ const TeacherLobby = ({ visible, onClose, activeTeachers, joinTeacherClass, sess
         <Animated.View
           style={[
             StyleSheet.absoluteFill,
-            { backgroundColor: 'rgba(15, 23, 42, 0.75)', opacity: backdropOpacity }
+            { backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(15, 23, 42, 0.75)', opacity: backdropOpacity }
           ]}
         >
           <TouchableOpacity
@@ -68,10 +70,10 @@ const TeacherLobby = ({ visible, onClose, activeTeachers, joinTeacherClass, sess
           />
         </Animated.View>
 
-        <Animated.View style={[styles.lobbyContainer, { transform: [{ translateY }] }]}>
+        <Animated.View style={[styles.lobbyContainer, { transform: [{ translateY }], backgroundColor: theme.cardBg }]}>
           {/* Bottom Sheet Handle */}
           <View style={styles.handleContainer}>
-            <View style={styles.handle} />
+            <View style={[styles.handle, { backgroundColor: theme.border }]} />
           </View>
 
           <View style={styles.lobbyHeader}>
@@ -80,12 +82,12 @@ const TeacherLobby = ({ visible, onClose, activeTeachers, joinTeacherClass, sess
                 <MaterialCommunityIcons name="account-group" size={24} color="#3b82f6" />
               </View>
               <View>
-                <Text style={styles.lobbyTitle}>Pilih Ustadz/Ustadzah</Text>
-                <Text style={styles.lobbySubtitle}>Sesi Live Setoran Bacaan</Text>
+                <Text style={[styles.lobbyTitle, { color: theme.textMain }]}>Pilih Ustadz/Ustadzah</Text>
+                <Text style={[styles.lobbySubtitle, { color: theme.textSub }]}>Sesi Live Setoran Bacaan</Text>
               </View>
             </View>
-            <TouchableOpacity onPress={handleDismiss} style={styles.closeLobbyBtn}>
-              <Feather name="x" size={20} color="#64748b" />
+            <TouchableOpacity onPress={handleDismiss} style={[styles.closeLobbyBtn, { backgroundColor: theme.btnBg }]}>
+              <Feather name="x" size={20} color={theme.textSub} />
             </TouchableOpacity>
           </View>
 
@@ -114,9 +116,9 @@ const TeacherLobby = ({ visible, onClose, activeTeachers, joinTeacherClass, sess
                 const isPerempuan = session?.user?.user_metadata?.gender === 'Perempuan';
 
                 return (
-                  <View key={teacher.id} style={styles.teacherCard}>
+                  <View key={teacher.id} style={[styles.teacherCard, { backgroundColor: theme.bgFull, borderColor: theme.border }]}>
                     <View style={styles.teacherInfoRow}>
-                      <View style={[styles.avatarContainer, isFull && styles.avatarContainerFull]}>
+                      <View style={[styles.avatarContainer, { backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.15)' : '#eff6ff' }, isFull && { backgroundColor: theme.btnBg }]}>
                         <FontAwesome5
                           name={isPerempuan ? "user-graduate" : "user-tie"}
                           size={20}
@@ -125,7 +127,7 @@ const TeacherLobby = ({ visible, onClose, activeTeachers, joinTeacherClass, sess
                       </View>
 
                       <View style={styles.nameSection}>
-                        <Text style={styles.teacherName}>
+                        <Text style={[styles.teacherName, { color: theme.textMain }]}>
                           {teacher.teacher_name || (isPerempuan ? 'Ustadzah I-Qlab' : 'Ustadz I-Qlab')}
                         </Text>
                         <View style={styles.statusRow}>
@@ -175,7 +177,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   lobbyContainer: {
-    backgroundColor: '#ffffff',
     maxHeight: SCREEN_HEIGHT * 0.85,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
@@ -256,11 +257,9 @@ const styles = StyleSheet.create({
     paddingTop: 16
   },
   teacherCard: {
-    backgroundColor: '#ffffff',
     borderRadius: 20,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
     padding: 16,
     // Soft shadow
     shadowColor: '#64748b',
@@ -277,13 +276,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: '#eff6ff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
-  },
-  avatarContainerFull: {
-    backgroundColor: '#f8fafc',
   },
   nameSection: {
     flex: 1,
