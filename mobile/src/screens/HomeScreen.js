@@ -12,7 +12,29 @@ import { supabase } from '../lib/supabase';
 // Import New Modular Components
 import AdminHubModal from '../components/home/AdminHubModal';
 
-WebBrowser.maybeCompleteAuthSession();
+const SLIDER_DATA = [
+  {
+    id: '1',
+    title: 'Pembaruan I-QLab v2.0',
+    desc: 'Nikmati antarmuka baru yang lebih elegan dan super cepat!',
+    image: 'https://images.unsplash.com/photo-1609599006353-e629aaab31f5?q=80&w=800&auto=format&fit=crop',
+    icon: 'zap'
+  },
+  {
+    id: '2',
+    title: 'Kajian Rutin Mingguan',
+    desc: 'Setiap Jumat Ba\'da Maghrib. Jangan sampai terlewat!',
+    image: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?q=80&w=800&auto=format&fit=crop',
+    icon: 'users'
+  },
+  {
+    id: '3',
+    title: 'Fitur Quran Interaktif',
+    desc: 'Baca, dengar, dan pelajari makna ayat dengan lebih mudah.',
+    image: 'https://images.unsplash.com/photo-1519817650390-64a93db51149?q=80&w=800&auto=format&fit=crop',
+    icon: 'book-open'
+  }
+];
 
 export default function HomeScreen({ navigation, session }) {
   const insets = useSafeAreaInsets();
@@ -62,6 +84,65 @@ export default function HomeScreen({ navigation, session }) {
               <Text style={styles.greetingText}>Ahlan wa Sahlan! 👋</Text>
               <Text style={styles.appNameText}>Mau belajar apa hari ini?</Text>
             </View>
+          </View>
+
+          {/* SLIDER INFORMASI TERBARU */}
+          <View style={styles.sliderContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={Dimensions.get('window').width - 40 + 14} 
+              decelerationRate="fast"
+              contentContainerStyle={styles.sliderContent}
+            >
+              {SLIDER_DATA.map((item, index) => {
+                const isLast = index === SLIDER_DATA.length - 1;
+                return (
+                  <TouchableOpacity 
+                    key={item.id} 
+                    activeOpacity={0.9} 
+                    style={[styles.sliderCard, { marginRight: isLast ? 0 : 14 }]}
+                  >
+                    {/* Gambar Background High-Res */}
+                    <Image 
+                      source={{ uri: item.image }} 
+                      style={StyleSheet.absoluteFill} 
+                      contentFit="cover" 
+                      transition={500} 
+                    />
+                    
+                    {/* Gradient Overlay Gelap agar teks tetap terbaca jelas */}
+                    <LinearGradient 
+                      colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)']} 
+                      style={StyleSheet.absoluteFill} 
+                    />
+                    
+                    <View style={styles.sliderCardContent}>
+                      <View style={[styles.sliderIconBox, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                        <Feather name={item.icon} size={22} color="#ffffff" />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: 16 }}>
+                        <View style={[styles.sliderBadge, { backgroundColor: '#4f46e5' }]}>
+                          <Text style={styles.sliderBadgeText}>Terbaru</Text>
+                        </View>
+                        <Text style={styles.sliderTitle} numberOfLines={1}>{item.title}</Text>
+                        <Text style={styles.sliderDesc} numberOfLines={2}>{item.desc}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+
+          {/* PEMBATAS ELEGAN (Fading Gradient Divider) */}
+          <View style={styles.sectionDividerContainer}>
+            <LinearGradient 
+              colors={['rgba(79, 70, 229, 0)', 'rgba(79, 70, 229, 0.25)', 'rgba(79, 70, 229, 0)']} 
+              start={{ x: 0, y: 0 }} 
+              end={{ x: 1, y: 0 }} 
+              style={styles.sectionDivider} 
+            />
           </View>
 
           {/* MAIN BENTO GRID - COMPACT */}
@@ -225,6 +306,90 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontWeight: '500',
     marginTop: 2,
+  },
+  sliderContainer: {
+    marginHorizontal: -20, // Tarik keluar dari padding container agar bisa swipe off-screen
+    marginBottom: 24,
+  },
+  sliderContent: {
+    paddingHorizontal: 20,
+  },
+  sliderCard: {
+    width: Dimensions.get('window').width - 40,
+    height: 140,
+    borderRadius: 24,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    padding: 20,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+  },
+  sliderCardDeco: {
+    position: 'absolute',
+    right: -20,
+    top: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  sliderCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sliderIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  sliderBadge: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  },
+  sliderBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sliderTitle: {
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    letterSpacing: -0.3,
+  },
+  sliderDesc: {
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  sectionDividerContainer: {
+    marginBottom: 24,
+    marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionDivider: {
+    height: 2,
+    width: '70%',
+    borderRadius: 1,
   },
   bentoGrid: {
     gap: 14,
