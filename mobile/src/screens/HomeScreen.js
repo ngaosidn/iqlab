@@ -10,7 +10,6 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 
 // Import New Modular Components
-import ProfileModal from '../components/home/ProfileModal';
 import AdminHubModal from '../components/home/AdminHubModal';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -22,30 +21,25 @@ export default function HomeScreen({ navigation, session }) {
     if (screen === 'interactive') navigation.navigate('Interactive');
     else if (screen === 'admin') navigation.navigate('Admin');
     else if (screen === 'pengajar') navigation.navigate('Pengajar');
+    else if (screen === 'profile') navigation.navigate('Profile');
     else navigation.navigate('Home');
   };
 
   const {
-    showProfileModal,
-    setShowProfileModal,
     showAdminHub,
     setShowAdminHub,
-    age, setAge,
-    gender, setGender,
     checkAuth,
-    handleAuth,
-    saveProfileData,
     dotOpacity,
   } = useHome(session, onNavigate);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
       <StatusBar style="dark" />
       <View style={styles.container}>
         
         {/* MODERN GEOMETRIC BACKGROUND */}
         <LinearGradient 
-          colors={['#f8fafc', '#ffffff']} 
+          colors={['#ffffff', '#f8fafc']} 
           style={StyleSheet.absoluteFill} 
         />
         
@@ -175,67 +169,12 @@ export default function HomeScreen({ navigation, session }) {
                 <Feather name="chevron-right" size={16} color="#cbd5e1" />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
-
-              <TouchableOpacity style={styles.otherMenuItem} activeOpacity={0.6} onPress={handleAuth}>
-                <View style={[styles.otherIconBox, { backgroundColor: session ? '#fff1f2' : '#f0fdf4' }]}>
-                  <Feather name={session ? "log-out" : "user-plus"} size={18} color={session ? "#e11d48" : "#16a34a"} />
-                </View>
-                <Text style={[styles.otherMenuText, session && { color: '#e11d48' }]}>
-                  {session ? "Keluar Akun" : "Daftar / Masuk Akun"}
-                </Text>
-                <Feather name="chevron-right" size={16} color="#cbd5e1" />
-              </TouchableOpacity>
-
             </View>
           </View>
 
         </ScrollView>
 
-        {/* FLOATING BOTTOM NAVIGATION */}
-        <View style={styles.navWrapper}>
-          <View style={styles.navBarFloating}>
-            
-            <TouchableOpacity style={styles.navItem} activeOpacity={0.7}>
-              <View style={styles.raisedIconContainer}>
-                <LinearGradient 
-                  colors={['#4f46e5', '#3b82f6']} 
-                  style={styles.raisedIcon}
-                >
-                  <Feather name="home" size={22} color="white" />
-                </LinearGradient>
-              </View>
-              <Text style={[styles.navText, { color: '#4f46e5', marginTop: 25 }]}>Beranda</Text>
-            </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.navItem} 
-              activeOpacity={0.7}
-              onPress={() => WebBrowser.openBrowserAsync('https://tahseena.com')}
-            >
-              <Feather name="globe" size={20} color="#94a3b8" />
-              <Text style={styles.navText}>Website</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.navItem} 
-              activeOpacity={0.7}
-              onPress={() => setShowProfileModal(true)}
-            >
-              <Feather name="user" size={20} color="#94a3b8" />
-              <Text style={styles.navText}>Profil</Text>
-            </TouchableOpacity>
-            
-          </View>
-        </View>
-
-        <ProfileModal
-          visible={showProfileModal}
-          session={session}
-          age={age} setAge={setAge}
-          gender={gender} setGender={setGender}
-          saveProfileData={saveProfileData}
-        />
 
         <AdminHubModal
           visible={showAdminHub}
@@ -250,7 +189,7 @@ export default function HomeScreen({ navigation, session }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8fafc',
   },
   gridOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -412,59 +351,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#f1f5f9',
     marginHorizontal: 12,
   },
-  navWrapper: {
-    position: 'absolute',
-    bottom: 30,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  navBarFloating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: '#ffffff',
-    width: '100%',
-    height: 70,
-    borderRadius: 35,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 15 },
-    shadowOpacity: 0.15,
-    shadowRadius: 25,
-    elevation: 25,
-    borderWidth: 1,
-    borderColor: '#f1f5f9',
-  },
-  navItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 80,
-  },
-  raisedIconContainer: {
-    position: 'absolute',
-    top: -35, // Elevate it!
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  raisedIcon: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#3b82f6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 12,
-    borderWidth: 4,
-    borderColor: '#ffffff',
-  },
-  navText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#94a3b8',
-  },
+
 });

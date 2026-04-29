@@ -9,10 +9,7 @@ export const useHome = (session, onNavigate) => {
   const dotOpacity = useRef(new Animated.Value(1)).current;
   const screenWidth = Dimensions.get('window').width;
 
-  const [showProfileModal, setShowProfileModal] = useState(false);
   const [showAdminHub, setShowAdminHub] = useState(false);
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -71,16 +68,11 @@ export const useHome = (session, onNavigate) => {
   const checkProfile = (user) => {
     if (user) {
       if (user.user_metadata?.role === 'admin' || user.user_metadata?.role === 'pengajar') {
-         setShowProfileModal(false);
          return;
       }
       if (!user.user_metadata?.age || !user.user_metadata?.gender) {
-        setShowProfileModal(true);
-      } else {
-        setShowProfileModal(false);
+        onNavigate('profile');
       }
-    } else {
-      setShowProfileModal(false);
     }
   };
 
@@ -98,41 +90,7 @@ export const useHome = (session, onNavigate) => {
     }
   };
 
-  const handleAuth = async () => {
-    try {
-      if (session) {
-        await authService.signOut();
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-          window.history.replaceState(null, '', window.location.pathname);
-        }
-      } else {
-        await authService.signInWithGoogle();
-      }
-    } catch (error) {
-       console.log('Auth Error:', error.message);
-    }
-  };
 
-  const saveProfileData = async () => {
-    if (!age || !gender) {
-      Toast.show({
-        type: 'error',
-        text1: 'Data Belum Lengkap',
-        text2: 'Tolong pilih Usia dan Jenis Kelamin dulu ya.',
-        position: 'bottom',
-        bottomOffset: 90,
-      });
-      return;
-    }
-
-    try {
-      await authService.updateUserMetadata({ age, gender });
-      setShowProfileModal(false);
-      Toast.show({ type: 'success', text1: 'Profil Tersimpan!', text2: 'Terima kasih, data kamu sudah masuk.', position: 'bottom', bottomOffset: 90 });
-    } catch (error) {
-      Toast.show({ type: 'error', text1: 'Gagal Menyimpan', text2: error.message, position: 'bottom', bottomOffset: 90 });
-    }
-  };
 
   useEffect(() => {
     Animated.sequence([
@@ -162,15 +120,9 @@ export const useHome = (session, onNavigate) => {
   });
 
   return {
-    showProfileModal,
-    setShowProfileModal,
     showAdminHub,
     setShowAdminHub,
-    age, setAge,
-    gender, setGender,
     checkAuth,
-    handleAuth,
-    saveProfileData,
     dotOpacity,
     translateX
   };

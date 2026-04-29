@@ -13,13 +13,38 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 SplashScreen.preventAutoHideAsync();
 
 const Stack = createNativeStackNavigator();
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+const Tab = createBottomTabNavigator();
 
 import HomeScreen from './src/screens/HomeScreen';
 import InteractiveQuranScreen from './src/screens/InteractiveQuranScreen';
 import AdminScreen from './src/screens/AdminScreen';
 import PengajarScreen from './src/screens/PengajarScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import BookmarkScreen from './src/screens/BookmarkScreen';
+import AnimatedTabBar from './src/components/navigation/AnimatedTabBar';
 import { supabase } from './src/lib/supabase';
 import { databaseService } from './src/services/databaseService';
+
+function MainTabs({ session }) {
+  return (
+    <Tab.Navigator
+      initialRouteName="Home"
+      tabBar={props => <AnimatedTabBar {...props} />}
+      screenOptions={{ headerShown: false }}
+    >
+      <Tab.Screen name="Bookmark">
+        {props => <BookmarkScreen {...props} session={session} />}
+      </Tab.Screen>
+      <Tab.Screen name="Home">
+        {props => <HomeScreen {...props} session={session} />}
+      </Tab.Screen>
+      <Tab.Screen name="Profile">
+        {props => <ProfileScreen {...props} session={session} />}
+      </Tab.Screen>
+    </Tab.Navigator>
+  );
+}
 
 
 const screenWidth = Dimensions.get('window').width;
@@ -119,8 +144,8 @@ export default function App() {
       ) : (
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
-            <Stack.Screen name="Home">
-              {props => <HomeScreen {...props} session={session} />}
+            <Stack.Screen name="MainTabs">
+              {props => <MainTabs {...props} session={session} />}
             </Stack.Screen>
             <Stack.Screen name="Interactive">
               {props => <InteractiveQuranScreen {...props} session={session} />}
