@@ -6,8 +6,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import Svg, { Path } from 'react-native-svg';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../context/ThemeContext';
 
 // Import New Modular Components
 import AdminHubModal from '../components/home/AdminHubModal';
@@ -38,6 +40,39 @@ const SLIDER_DATA = [
 
 export default function HomeScreen({ navigation, session }) {
   const insets = useSafeAreaInsets();
+  const { isDarkMode, setIsDarkMode } = useTheme(); // Menggunakan Global State
+
+  const theme = isDarkMode ? {
+    bgFull: '#0f172a',
+    bgStart: '#0f172a',
+    bgEnd: '#0f172a',
+    topBarBg: '#0f172a',
+    toggleBg: '#1e293b',
+    toggleBorder: 'transparent',
+    textMain: '#f8fafc',
+    textSub: '#94a3b8',
+    cardBg: '#1e293b',
+    divider: '#334155',
+    iconBgBlue: 'rgba(99, 102, 241, 0.2)',
+    iconBgPink: 'rgba(219, 39, 119, 0.2)',
+    iconColBlue: '#818cf8',
+    iconColPink: '#f472b6',
+  } : {
+    bgFull: '#f1f5f9',
+    bgStart: '#f1f5f9',
+    bgEnd: '#f1f5f9',
+    topBarBg: '#f1f5f9',
+    toggleBg: '#f8fafc',
+    toggleBorder: 'transparent',
+    textMain: '#0f172a',
+    textSub: '#64748b',
+    cardBg: '#ffffff',
+    divider: '#f1f5f9',
+    iconBgBlue: '#eef2ff',
+    iconBgPink: '#fdf2f8',
+    iconColBlue: '#6366f1',
+    iconColPink: '#db2777',
+  };
 
   const onNavigate = (screen) => {
     if (screen === 'interactive') navigation.navigate('Interactive');
@@ -55,36 +90,35 @@ export default function HomeScreen({ navigation, session }) {
   } = useHome(session, onNavigate);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#f8fafc' }}>
-      <StatusBar style="dark" />
-      <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgFull }}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
+      <View style={[styles.container, { backgroundColor: theme.bgFull }]}>
         
         {/* MODERN GEOMETRIC BACKGROUND */}
         <LinearGradient 
-          colors={['#ffffff', '#f8fafc']} 
+          colors={[theme.bgStart, theme.bgEnd]} 
           style={StyleSheet.absoluteFill} 
         />
         
-        {/* Subtle Dotted Pattern Overlay */}
-        <View style={styles.gridOverlay}>
-          {/* Kita simulasikan titik-titik dengan loop kecil atau grid style */}
-          {[...Array(10)].map((_, i) => (
-            <View key={i} style={styles.gridRowLine} />
-          ))}
+        {/* FIXED TOP BAR */}
+        <View style={[styles.fixedTopBar, { backgroundColor: theme.topBarBg }]}>
+          <View>
+            <Text style={[styles.greetingText, { color: theme.textMain }]}>Ahlan wa Sahlan! 👋</Text>
+            <Text style={[styles.appNameText, { color: theme.textSub }]}>Mau belajar apa hari ini?</Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.darkModeToggle, { backgroundColor: theme.toggleBg, borderColor: theme.toggleBorder }]} 
+            onPress={() => setIsDarkMode(!isDarkMode)}
+            activeOpacity={0.7}
+          >
+            <Feather name={isDarkMode ? "sun" : "moon"} size={22} color={isDarkMode ? "#eab308" : "#64748b"} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView 
           showsVerticalScrollIndicator={false} 
-          contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top + 10 }]}
+          contentContainerStyle={styles.scrollContent}
         >
-          
-          {/* HEADER SECTION - CLEAN MINIMALIST */}
-          <View style={styles.topBarSection}>
-            <View>
-              <Text style={styles.greetingText}>Ahlan wa Sahlan! 👋</Text>
-              <Text style={styles.appNameText}>Mau belajar apa hari ini?</Text>
-            </View>
-          </View>
 
           {/* SLIDER INFORMASI TERBARU */}
           <View style={styles.sliderContainer}>
@@ -229,25 +263,25 @@ export default function HomeScreen({ navigation, session }) {
 
           {/* SECONDARY ACTIONS - MODERN LIST STYLE */}
           <View style={styles.otherSection}>
-            <Text style={styles.subSectionTitle}>Pengaturan & Info</Text>
-            <View style={styles.otherMenuContainer}>
+            <Text style={[styles.subSectionTitle, { color: theme.textSub }]}>Pengaturan & Info</Text>
+            <View style={[styles.otherMenuContainer, { backgroundColor: theme.cardBg }]}>
               
               <TouchableOpacity style={styles.otherMenuItem} activeOpacity={0.6}>
-                <View style={[styles.otherIconBox, { backgroundColor: '#eef2ff' }]}>
-                  <Feather name="info" size={18} color="#6366f1" />
+                <View style={[styles.otherIconBox, { backgroundColor: theme.iconBgBlue }]}>
+                  <Feather name="info" size={18} color={theme.iconColBlue} />
                 </View>
-                <Text style={styles.otherMenuText}>Tentang I-QLab</Text>
-                <Feather name="chevron-right" size={16} color="#cbd5e1" />
+                <Text style={[styles.otherMenuText, { color: theme.textMain }]}>Tentang I-QLab</Text>
+                <Feather name="chevron-right" size={16} color={theme.textSub} />
               </TouchableOpacity>
 
-              <View style={styles.divider} />
+              <View style={[styles.divider, { backgroundColor: theme.divider }]} />
 
               <TouchableOpacity style={styles.otherMenuItem} activeOpacity={0.6}>
-                <View style={[styles.otherIconBox, { backgroundColor: '#fdf2f8' }]}>
-                  <FontAwesome5 name="hand-holding-heart" size={16} color="#db2777" />
+                <View style={[styles.otherIconBox, { backgroundColor: theme.iconBgPink }]}>
+                  <FontAwesome5 name="hand-holding-heart" size={16} color={theme.iconColPink} />
                 </View>
-                <Text style={styles.otherMenuText}>Infaq & Dukungan</Text>
-                <Feather name="chevron-right" size={16} color="#cbd5e1" />
+                <Text style={[styles.otherMenuText, { color: theme.textMain }]}>Infaq & Dukungan</Text>
+                <Feather name="chevron-right" size={16} color={theme.textSub} />
               </TouchableOpacity>
 
             </View>
@@ -270,39 +304,42 @@ export default function HomeScreen({ navigation, session }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#f1f5f9',
   },
-  gridOverlay: {
+  backgroundSvg: {
     ...StyleSheet.absoluteFillObject,
-    paddingTop: 50,
   },
-  gridRowLine: {
-    height: 1,
-    width: '150%',
-    backgroundColor: '#3b82f6',
-    opacity: 0.02,
-    marginBottom: 80,
-    transform: [{ rotate: '-15deg' }, { translateX: -50 }],
-  },
-  scrollContent: {
+  fixedTopBar: {
     paddingHorizontal: 20,
-    paddingBottom: 130, 
-  },
-  topBarSection: {
+    paddingTop: 24,
+    paddingBottom: 16,
+    backgroundColor: '#ffffff', // Solid white to cover scrolled content
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
-    marginTop: 10,
+    zIndex: 10, // Ensure it stays above ScrollView
+  },
+  darkModeToggle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 0,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 130, 
   },
   greetingText: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#1e293b',
-    letterSpacing: -1,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: -0.3,
   },
   appNameText: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#64748b',
     fontWeight: '500',
     marginTop: 2,

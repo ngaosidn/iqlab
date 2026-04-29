@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../../lib/toastConfig';
+import { useTheme } from '../../context/ThemeContext';
 
 const AnimatedFlashList = Animated.createAnimatedComponent(FlashList);
 
@@ -41,27 +42,50 @@ const MushafModal = ({
   activeSurahUsers,
   versePresenceMap
 }) => {
+  const { isDarkMode } = useTheme();
+  const theme = isDarkMode ? {
+      modalBg: '#0f172a',
+      headerBg: '#1e293b',
+      border: '#334155',
+      textMain: '#f8fafc',
+      textSub: '#94a3b8',
+      textBold: '#f1f5f9',
+      btnBg: '#334155',
+      blueBg: '#1e3a8a',
+      blueBorder: '#1e40af',
+  } : {
+      modalBg: '#e2e8f0',
+      headerBg: '#f8fafc',
+      border: '#cbd5e1',
+      textMain: '#0f172a',
+      textSub: '#64748b',
+      textBold: '#0f172a',
+      btnBg: '#ffffff',
+      blueBg: '#eff6ff',
+      blueBorder: '#bfdbfe',
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={styles.modalOverlay}>
-        <Animated.View style={[styles.modalContent, { marginTop: Math.max(insets.top, 40), transform: [{ translateY: panY }] }]}>
-          <View style={styles.modalHeader} {...panResponder.panHandlers}>
+        <Animated.View style={[styles.modalContent, { marginTop: Math.max(insets.top, 40), transform: [{ translateY: panY }], backgroundColor: theme.modalBg }]}>
+          <View style={[styles.modalHeader, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]} {...panResponder.panHandlers}>
             <View style={styles.modalDragIndicator}></View>
             <View style={styles.modalHeaderTopRow}>
               <View style={styles.modalHeaderLeft}>
-                <View style={styles.headerSurahIdBox}><Text style={styles.headerSurahIdText}>{selectedSurah?.id}</Text></View>
-                <Text style={styles.headerSurahName}>{selectedSurah?.name_simple}</Text>
+                <View style={[styles.headerSurahIdBox, { backgroundColor: theme.blueBg }]}><Text style={styles.headerSurahIdText}>{selectedSurah?.id}</Text></View>
+                <Text style={[styles.headerSurahName, { color: theme.textMain }]}>{selectedSurah?.name_simple}</Text>
                 {activeSurahUsers > 0 && (
-                  <View style={styles.socialPulseBadge}>
+                  <View style={[styles.socialPulseBadge, { backgroundColor: theme.blueBg, borderColor: theme.blueBorder }]}>
                     <View style={styles.pulseDot} />
                     <Text style={styles.socialPulseText}>{activeSurahUsers} Online</Text>
                   </View>
                 )}
-                <View style={styles.searchAyahWrapper}>
+                <View style={[styles.searchAyahWrapper, { backgroundColor: theme.headerBg, borderColor: theme.border }]}>
                   <TextInput
-                    style={styles.searchAyahInput}
+                    style={[styles.searchAyahInput, { color: theme.textMain }]}
                     placeholder="Ayat ke-"
-                    placeholderTextColor="#94a3b8"
+                    placeholderTextColor={theme.textSub}
                     keyboardType="numeric"
                     maxLength={3}
                     onChangeText={(text) => {
@@ -99,33 +123,33 @@ const MushafModal = ({
             </View>
             <View style={styles.modalHeaderBottomRow}>
               <TouchableOpacity
-                style={[styles.autoBtn, isAutoPlay && styles.autoBtnActive]}
+                style={[styles.autoBtn, { backgroundColor: theme.btnBg, borderColor: theme.border }, isAutoPlay && styles.autoBtnActive]}
                 onPress={() => checkAuth(() => setIsAutoPlay(!isAutoPlay))}
               >
-                <Feather name="refresh-cw" size={12} color={isAutoPlay ? 'white' : '#64748b'} style={{ marginRight: 4 }} />
-                <Text style={[styles.autoBtnText, isAutoPlay && styles.autoBtnTextActive]}>AUTO</Text>
+                <Feather name="refresh-cw" size={12} color={isAutoPlay ? 'white' : theme.textSub} style={{ marginRight: 4 }} />
+                <Text style={[styles.autoBtnText, { color: theme.textSub }, isAutoPlay && styles.autoBtnTextActive]}>AUTO</Text>
               </TouchableOpacity>
-              <View style={styles.mushafSwitcher}>
+              <View style={[styles.mushafSwitcher, { backgroundColor: theme.btnBg, borderColor: theme.border }]}>
                 {['uthmani', 'indopak'].map(type => (
                   <TouchableOpacity
                     key={type}
                     onPress={() => checkAuth(() => setMushafType(type))}
-                    style={[styles.mushafOption, mushafType === type && styles.mushafOptionActive]}
+                    style={[styles.mushafOption, mushafType === type && [styles.mushafOptionActive, { backgroundColor: theme.blueBg, borderColor: theme.blueBorder }]]}
                   >
-                    <Text style={[styles.mushafOptionText, mushafType === type && styles.mushafOptionTextActive]}>
+                    <Text style={[styles.mushafOptionText, { color: theme.textSub }, mushafType === type && styles.mushafOptionTextActive]}>
                       {type === 'uthmani' ? 'Uth' : 'Indp'}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <View style={styles.fontSizeControl}>
-                <TouchableOpacity onPress={() => updateFontSize(false)} style={styles.fontBtn}>
-                  <Text style={styles.fontBtnText}>A-</Text>
+              <View style={[styles.fontSizeControl, { backgroundColor: theme.btnBg, borderColor: theme.border }]}>
+                <TouchableOpacity onPress={() => updateFontSize(false)} style={[styles.fontBtn, { backgroundColor: isDarkMode ? theme.headerBg : '#f1f5f9' }]}>
+                  <Text style={[styles.fontBtnText, { color: theme.textSub }]}>A-</Text>
                 </TouchableOpacity>
                 <View style={styles.fontSizeDisplay}>
-                  <Text style={styles.fontSizeValue}>{fontSize}</Text>
+                  <Text style={[styles.fontSizeValue, { color: theme.textMain }]}>{fontSize}</Text>
                 </View>
-                <TouchableOpacity onPress={() => updateFontSize(true)} style={styles.fontBtn}>
+                <TouchableOpacity onPress={() => updateFontSize(true)} style={[styles.fontBtn, { backgroundColor: isDarkMode ? theme.headerBg : '#f1f5f9' }]}>
                   <Text style={styles.fontBtnText}>A+</Text>
                 </TouchableOpacity>
               </View>
@@ -167,12 +191,12 @@ const MushafModal = ({
               />
             )}
           </View>
-          <View style={[styles.modalFooter, { paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
-            <TouchableOpacity style={styles.paginationBtn} onPress={() => modalScrollRef.current?.scrollToIndex({ index: 0, animated: true })}>
-              <Feather name="chevron-up" size={14} color="#94a3b8" />
-              <Text style={styles.paginationBtnText}>Ke Atas</Text>
+          <View style={[styles.modalFooter, { backgroundColor: theme.headerBg, borderTopColor: theme.border, paddingBottom: Math.max(insets.bottom + 8, 20) }]}>
+            <TouchableOpacity style={[styles.paginationBtn, { backgroundColor: theme.btnBg, borderColor: theme.border }]} onPress={() => modalScrollRef.current?.scrollToIndex({ index: 0, animated: true })}>
+              <Feather name="chevron-up" size={14} color={theme.textSub} />
+              <Text style={[styles.paginationBtnText, { color: theme.textSub }]}>Ke Atas</Text>
             </TouchableOpacity>
-            <View style={styles.paginationCenter}><Text style={styles.paginationCenterValue}>{versesData.length} Ayat</Text></View>
+            <View style={[styles.paginationCenter, { backgroundColor: theme.blueBg }]}><Text style={[styles.paginationCenterValue, { color: theme.textMain }]}>{versesData.length} Ayat</Text></View>
             <TouchableOpacity
               style={[styles.paginationBtn, styles.paginationBtnActive]}
               onPress={() => modalScrollRef.current?.scrollToIndex({ index: versesData.length - 1, animated: true })}

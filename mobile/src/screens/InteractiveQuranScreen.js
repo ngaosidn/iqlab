@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
-import { StyleSheet, Text, View, Platform, Animated, Dimensions, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Keyboard, LayoutAnimation, ActivityIndicator, FlatList } from 'react-native';
+import { StyleSheet, Text, View, Platform, Animated, Dimensions, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Keyboard, LayoutAnimation, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +11,7 @@ import { toastConfig } from '../lib/toastConfig';
 
 // Hooks & Components
 import { useInteractiveQuran } from '../hooks/useInteractiveQuran';
+import { useTheme } from '../context/ThemeContext';
 import VerseItem from '../components/VerseItem';
 import JitsiWebView from '../components/JitsiWebView';
 
@@ -24,6 +26,27 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     const insets = useSafeAreaInsets();
     const screenWidth = Dimensions.get('window').width;
     const isLoggedIn = !!session?.user;
+
+    const { isDarkMode } = useTheme();
+    const theme = isDarkMode ? {
+        bgFull: '#0f172a',
+        topBarBg: '#0f172a',
+        textMain: '#f8fafc',
+        textSub: '#94a3b8',
+        cardBg: '#1e293b',
+        border: '#334155',
+        inputBg: '#1e293b',
+        btnBg: '#334155'
+    } : {
+        bgFull: '#f8fafc',
+        topBarBg: '#f1f5f9',
+        textMain: '#0f172a',
+        textSub: '#64748b',
+        cardBg: '#ffffff',
+        border: '#e2e8f0',
+        inputBg: '#ffffff',
+        btnBg: '#f1f5f9'
+    };
 
     const quranHook = useInteractiveQuran(onBack, session);
 
@@ -204,35 +227,36 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#ffffff' }}>
-            <StatusBar style="dark" backgroundColor="#ffffff" translucent={false} />
-            <View style={styles.container}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: theme.topBarBg }}>
+            <StatusBar style={isDarkMode ? "light" : "dark"} backgroundColor={theme.topBarBg} translucent={false} />
+            <View style={[styles.container, { backgroundColor: theme.bgFull }]}>
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
                     behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     keyboardVerticalOffset={0}
                     enabled={Platform.OS === 'ios'}
                 >
-                    {/* MODERN LIGHT HEADER */}
-                    <View style={styles.modernHeader}>
-                        <TouchableOpacity style={styles.backBtnLight} onPress={onBack}>
-                            <Feather name="arrow-left" size={22} color="#1e293b" />
+                    {/* MODERN HEADER */}
+                    <View style={[styles.modernHeader, { backgroundColor: theme.topBarBg, borderBottomColor: theme.topBarBg }]}>
+                        <TouchableOpacity style={[styles.backBtnLight, { backgroundColor: theme.btnBg }]} onPress={onBack}>
+                            <Feather name="arrow-left" size={22} color={theme.textMain} />
                         </TouchableOpacity>
                         <View style={styles.headerTextContainer}>
-                            <Text style={styles.headerTitleLight}>Ahlan Bikum! 👋</Text>
+                            <Text style={[styles.headerTitleLight, { color: theme.textMain }]}>Ahlan Bikum! 👋</Text>
+
                             <View style={styles.statusPill}>
                                 <View style={styles.statusDot} />
-                                <Text style={styles.headerSubtitleLight}>Tadabbur Bersama AI</Text>
+                                <Text style={[styles.headerSubtitleLight, { color: theme.textSub }]}>Tadabbur Bersama AI</Text>
                             </View>
                         </View>
                         <TouchableOpacity style={styles.iconBtnLight} onPress={handleClearHistory}>
-                            <Feather name="trash-2" size={18} color="#94a3b8" />
+                            <Feather name="trash-2" size={18} color={theme.textSub} />
                         </TouchableOpacity>
                     </View>
 
                     <View style={{ flex: 1 }}>
                         {(messages.length === 0 || !fontsLoaded) && (
-                            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' }}>
+                            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 10, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.bgFull }}>
                                 <LinearGradient
                                     colors={['rgba(59, 130, 246, 0.1)', 'transparent']}
                                     style={{ width: 120, height: 120, borderRadius: 60, justifyContent: 'center', alignItems: 'center', marginBottom: 20 }}
@@ -240,7 +264,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                                     <ActivityIndicator size="large" color="#3b82f6" />
                                 </LinearGradient>
                                 <Animated.Text style={{
-                                    color: '#94a3b8',
+                                    color: theme.textSub,
                                     fontSize: 15,
                                     fontWeight: '600',
                                     opacity: loadingPulseAnim,
@@ -248,13 +272,14 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                                 }}>
                                     Tunggu sebentar... ✨
                                 </Animated.Text>
-                                <Text style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>Menyiapkan pengalaman tadabbur Sahabat</Text>
+                                <Text style={{ color: theme.textSub, fontSize: 12, marginTop: 8 }}>Menyiapkan pengalaman tadabbur Sahabat</Text>
                             </View>
                         )}
-                        <FlatList
+                        <FlashList
                             ref={scrollViewRef}
                             data={messages}
                             keyExtractor={(item, index) => String(index)}
+                            estimatedItemSize={150}
                             renderItem={({ item: msg }) => (
                                 <ChatBubble
                                     msg={msg}
@@ -265,8 +290,16 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                             ListFooterComponent={isLoading ? <ChatBubble msg={{ type: 'loading' }} /> : null}
                             showsVerticalScrollIndicator={false}
                             contentContainerStyle={styles.scrollContent}
-                            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
-                            onLayout={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+                            onContentSizeChange={() => {
+                                if (messages.length > 0) {
+                                    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+                                }
+                            }}
+                            onLayout={() => {
+                                if (messages.length > 0) {
+                                    setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+                                }
+                            }}
                             keyboardShouldPersistTaps="handled"
                             keyboardDismissMode="on-drag"
                         />
@@ -274,27 +307,27 @@ export default function InteractiveQuranScreen({ navigation, session }) {
 
                     {/* FLOATING INPUT DOCK */}
                     <View style={styles.bottomWrapper}>
-                        <View style={[styles.floatingInputDock, { marginBottom: Math.max(insets.bottom, 16) }]}>
+                        <View style={[styles.floatingInputDock, { marginBottom: Math.max(insets.bottom, 16), backgroundColor: theme.inputBg, borderColor: theme.border }]}>
                             <TouchableOpacity
                                 style={styles.attachBtn}
                                 onPress={handleClearHistory}
                             >
-                                <Feather name="trash-2" size={20} color="#94a3b8" />
+                                <Feather name="trash-2" size={20} color={theme.textSub} />
                             </TouchableOpacity>
 
                             <Animated.View style={{ transform: [{ scale: voicePulseAnim }] }}>
                                 <TouchableOpacity
-                                    style={[styles.voiceBtn, isListening && styles.voiceBtnActive]}
+                                    style={[styles.voiceBtn, { backgroundColor: theme.btnBg }, isListening && styles.voiceBtnActive]}
                                     onPress={toggleListening}
                                 >
-                                    <Feather name={isListening ? "mic" : "mic"} size={20} color={isListening ? "#ef4444" : "#64748b"} />
+                                    <Feather name={isListening ? "mic" : "mic"} size={20} color={isListening ? "#ef4444" : theme.textSub} />
                                 </TouchableOpacity>
                             </Animated.View>
 
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, { color: theme.textMain }]}
                                 placeholder={isListening ? "Mendengarkan..." : "Tanya apapun tentang Al-Quran..."}
-                                placeholderTextColor={isListening ? "#ef4444" : "#94a3b8"}
+                                placeholderTextColor={isListening ? "#ef4444" : theme.textSub}
                                 value={input}
                                 onChangeText={setInput}
                                 onSubmitEditing={handleSend}
@@ -303,11 +336,11 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                             />
 
                             <TouchableOpacity
-                                style={[styles.newSendBtn, input.trim().length > 0 && styles.newSendBtnActive]}
+                                style={[styles.newSendBtn, { backgroundColor: theme.btnBg }, input.trim().length > 0 && styles.newSendBtnActive]}
                                 onPress={handleSend}
                                 disabled={input.trim().length === 0}
                             >
-                                <Feather name="arrow-up" size={18} color={input.trim().length > 0 ? "white" : "#94a3b8"} />
+                                <Feather name="arrow-up" size={18} color={input.trim().length > 0 ? "white" : theme.textSub} />
                             </TouchableOpacity>
                         </View>
                     </View>

@@ -2,15 +2,47 @@ import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { Feather, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../context/ThemeContext';
 
 const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
   const [showSearchMore, setShowSearchMore] = React.useState(false);
+  
+  const { isDarkMode } = useTheme();
+  const theme = isDarkMode ? {
+      cardBg: '#1e293b',
+      border: '#334155',
+      textMain: '#f8fafc',
+      textSub: '#94a3b8',
+      textBold: '#f1f5f9',
+      blueBg: '#1e3a8a',
+      blueBorder: '#1e40af',
+      blueIcon: '#3b82f6',
+      greenBg: '#064e3b',
+      greenBorder: '#065f46',
+      greenIcon: '#10b981',
+      itemBg: '#0f172a',
+      itemBorder: '#334155'
+  } : {
+      cardBg: '#ffffff',
+      border: '#f1f5f9',
+      textMain: '#334155',
+      textSub: '#475569',
+      textBold: '#334155',
+      blueBg: '#eff6ff',
+      blueBorder: '#bfdbfe',
+      blueIcon: '#3b82f6',
+      greenBg: '#f0fdf4',
+      greenBorder: '#bbf7d0',
+      greenIcon: '#16a34a',
+      itemBg: '#ffffff',
+      itemBorder: '#f1f5f9'
+  };
 
   if (msg.type === 'loading') {
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-        <View style={[styles.tutorialCard, { padding: 16, width: 80, alignItems: 'center' }]}><ActivityIndicator size="small" color="#3b82f6" /></View>
+        <View style={[styles.tutorialCard, { padding: 16, width: 80, alignItems: 'center', backgroundColor: theme.cardBg, borderColor: theme.border }]}><ActivityIndicator size="small" color="#3b82f6" /></View>
       </View>
     );
   }
@@ -30,55 +62,55 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-        <View style={styles.tutorialCard}>
-          <View style={styles.tutorialHeader}>
+        <View style={[styles.tutorialCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <View style={[styles.tutorialHeader, { borderBottomColor: theme.border }]}>
             <Text style={styles.sparkleIcon}>✨</Text>
-            <Text style={styles.tutorialTitle}>Panduan Interactive Quran</Text>
+            <Text style={[styles.tutorialTitle, { color: theme.textBold }]}>Panduan Interactive Quran</Text>
           </View>
-          <Text style={styles.tutorialDesc}>{msg.content}</Text>
-          <View style={[styles.guideBox, { backgroundColor: '#eff6ff', borderColor: '#bfdbfe' }]}>
+          <Text style={[styles.tutorialDesc, { color: theme.textSub }]}>{msg.content}</Text>
+          <View style={[styles.guideBox, { backgroundColor: theme.blueBg, borderColor: theme.blueBorder }]}>
             <View style={styles.guideBoxHeader}>
-              <View style={[styles.guideIconContainer, { backgroundColor: '#dbeafe' }]}>
-                <Ionicons name="book" size={14} color="#3b82f6" />
+              <View style={[styles.guideIconContainer, { backgroundColor: isDarkMode ? '#1e40af' : '#dbeafe' }]}>
+                <Ionicons name="book" size={14} color={theme.blueIcon} />
               </View>
-              <Text style={[styles.guideBoxTitle, { color: '#2563eb' }]}>TAMPILKAN SURAH</Text>
+              <Text style={[styles.guideBoxTitle, { color: theme.blueIcon }]}>TAMPILKAN SURAH</Text>
             </View>
             <View style={styles.bulletRow}>
-              <View style={[styles.bulletDot, { backgroundColor: '#3b82f6' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Semua Surah:</Text> Ketik [Daftar]</Text>
+              <View style={[styles.bulletDot, { backgroundColor: theme.blueIcon }]} />
+              <Text style={[styles.bulletText, { color: theme.textSub }]}><Text style={[styles.boldText, { color: theme.textBold }]}>Semua Surah:</Text> Ketik [Daftar]</Text>
             </View>
             <View style={styles.bulletRow}>
-              <View style={[styles.bulletDot, { backgroundColor: '#3b82f6' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Surah:</Text> Ketik [Nama/Nomor Surah]</Text>
+              <View style={[styles.bulletDot, { backgroundColor: theme.blueIcon }]} />
+              <Text style={[styles.bulletText, { color: theme.textSub }]}><Text style={[styles.boldText, { color: theme.textBold }]}>Cari Surah:</Text> Ketik [Nama/Nomor Surah]</Text>
             </View>
           </View>
 
-          <View style={[styles.guideBox, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', marginBottom: 0 }]}>
+          <View style={[styles.guideBox, { backgroundColor: theme.greenBg, borderColor: theme.greenBorder, marginBottom: 0 }]}>
             <View style={styles.guideBoxHeader}>
-              <View style={[styles.guideIconContainer, { backgroundColor: '#dcfce7' }]}>
-                <Ionicons name="search" size={14} color="#16a34a" />
+              <View style={[styles.guideIconContainer, { backgroundColor: isDarkMode ? '#065f46' : '#dcfce7' }]}>
+                <Ionicons name="search" size={14} color={theme.greenIcon} />
               </View>
-              <Text style={[styles.guideBoxTitle, { color: '#15803d' }]}>TAMPILKAN AYAT</Text>
+              <Text style={[styles.guideBoxTitle, { color: theme.greenIcon }]}>TAMPILKAN AYAT</Text>
             </View>
             <View style={styles.bulletRow}>
-              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Ayat:</Text> Ketik [Nama] [Ayat] (Cth: Yasin 10)</Text>
+              <View style={[styles.bulletDot, { backgroundColor: theme.greenIcon }]} />
+              <Text style={[styles.bulletText, { color: theme.textSub }]}><Text style={[styles.boldText, { color: theme.textBold }]}>Cari Ayat:</Text> Ketik [Nama] [Ayat] (Cth: Yasin 10)</Text>
             </View>
             <View style={styles.bulletRow}>
-              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Rentang:</Text> Ketik [Nama] [A-B] (Cth: Yasin 1-5)</Text>
+              <View style={[styles.bulletDot, { backgroundColor: theme.greenIcon }]} />
+              <Text style={[styles.bulletText, { color: theme.textSub }]}><Text style={[styles.boldText, { color: theme.textBold }]}>Cari Rentang:</Text> Ketik [Nama] [A-B] (Cth: Yasin 1-5)</Text>
             </View>
             <View style={styles.bulletRow}>
-              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Kata:</Text> Ketik [Kata] (Cth: Sabar, Hati)</Text>
+              <View style={[styles.bulletDot, { backgroundColor: theme.greenIcon }]} />
+              <Text style={[styles.bulletText, { color: theme.textSub }]}><Text style={[styles.boldText, { color: theme.textBold }]}>Cari Kata:</Text> Ketik [Kata] (Cth: Sabar, Hati)</Text>
             </View>
             <View style={styles.bulletRow}>
-              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Acak:</Text> Ketik [Nasihat] / [Acak]</Text>
+              <View style={[styles.bulletDot, { backgroundColor: theme.greenIcon }]} />
+              <Text style={[styles.bulletText, { color: theme.textSub }]}><Text style={[styles.boldText, { color: theme.textBold }]}>Cari Acak:</Text> Ketik [Nasihat] / [Acak]</Text>
             </View>
             <View style={styles.bulletRow}>
-              <View style={[styles.bulletDot, { backgroundColor: '#16a34a' }]} />
-              <Text style={styles.bulletText}><Text style={styles.boldText}>Cari Bookmark:</Text> Ketik [Bookmark] / [Simpanan]</Text>
+              <View style={[styles.bulletDot, { backgroundColor: theme.greenIcon }]} />
+              <Text style={[styles.bulletText, { color: theme.textSub }]}><Text style={[styles.boldText, { color: theme.textBold }]}>Cari Bookmark:</Text> Ketik [Bookmark] / [Simpanan]</Text>
             </View>
           </View>
         </View>
@@ -149,20 +181,20 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-        <View style={styles.tutorialCard}>
-          <View style={styles.tutorialHeader}>
+        <View style={[styles.tutorialCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <View style={[styles.tutorialHeader, { borderBottomColor: theme.border }]}>
             <Ionicons name="search" size={20} color="#3b82f6" style={{ marginRight: 8 }} />
-            <Text style={styles.tutorialTitle}>Hasil Pencarian</Text>
+            <Text style={[styles.tutorialTitle, { color: theme.textBold }]}>Hasil Pencarian</Text>
           </View>
-          <Text style={styles.botMessageText}>{msg.content}</Text>
+          <Text style={[styles.botMessageText, { color: theme.textMain }]}>{msg.content}</Text>
 
           <ScrollView style={[styles.surahListScroll, { maxHeight: 350 }]} nestedScrollEnabled={true}>
             {displayedGroups.map((group, idx) => (
-              <View key={idx} style={styles.searchGroupContainer}>
+              <View key={idx} style={[styles.searchGroupContainer, { backgroundColor: theme.itemBg, borderColor: theme.itemBorder }]}>
                 <View style={styles.searchGroupHeader}>
-                  <Text style={styles.searchSurahName}>{group.surah.id}. {group.surah.name_simple}</Text>
-                  <View style={styles.searchCountBadge}>
-                    <Text style={styles.searchCountText}>{group.count} Ayat{group.totalOccurrences > group.count ? ` (${group.totalOccurrences}x)` : ''}</Text>
+                  <Text style={[styles.searchSurahName, { color: theme.textBold }]}>{group.surah.id}. {group.surah.name_simple}</Text>
+                  <View style={[styles.searchCountBadge, { backgroundColor: theme.blueBg }]}>
+                    <Text style={[styles.searchCountText, { color: theme.blueIcon }]}>{group.count} Ayat{group.totalOccurrences > group.count ? ` (${group.totalOccurrences}x)` : ''}</Text>
                   </View>
                 </View>
 
@@ -171,9 +203,9 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
                     <TouchableOpacity
                       key={vIdx}
                       onPress={() => handleOpenSurah(group.surah, v.ayat)}
-                      style={styles.verseChip}
+                      style={[styles.verseChip, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
                     >
-                      <Text style={styles.verseChipText}>Ayat {v.ayat}{v.occurrences > 1 ? ` (${v.occurrences}x)` : ''}</Text>
+                      <Text style={[styles.verseChipText, { color: theme.textSub }]}>Ayat {v.ayat}{v.occurrences > 1 ? ` (${v.occurrences}x)` : ''}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -201,28 +233,28 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-        <View style={styles.tutorialCard}>
-          <View style={styles.tutorialHeader}>
+        <View style={[styles.tutorialCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <View style={[styles.tutorialHeader, { borderBottomColor: theme.border }]}>
             <Ionicons name="bookmark" size={20} color="#d97706" style={{ marginRight: 8 }} />
-            <Text style={styles.tutorialTitle}>Daftar Ayat Favorit</Text>
+            <Text style={[styles.tutorialTitle, { color: theme.textBold }]}>Daftar Ayat Favorit</Text>
           </View>
-          <Text style={styles.botMessageText}>{msg.content}</Text>
+          <Text style={[styles.botMessageText, { color: theme.textMain }]}>{msg.content}</Text>
 
           <ScrollView style={[styles.surahListScroll, { maxHeight: 350 }]} nestedScrollEnabled={true}>
             {msg.bookmarks.map((bm, index) => (
               <TouchableOpacity
                 key={index}
                 onPress={() => handleOpenSurah({ id: bm.surah_id, name_simple: bm.surah_name }, bm.ayah_number)}
-                style={styles.bookmarkItem}
+                style={[styles.bookmarkItem, { backgroundColor: theme.itemBg, borderColor: theme.itemBorder }]}
               >
-                <View style={styles.bookmarkIconBox}>
+                <View style={[styles.bookmarkIconBox, { backgroundColor: isDarkMode ? '#78350f' : '#fffbeb' }]}>
                   <Ionicons name="bookmark" size={18} color="#d97706" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.bookmarkTitle}>{bm.surah_name}</Text>
-                  <Text style={styles.bookmarkSubtitle}>Ayat ke-{bm.ayah_number}</Text>
+                  <Text style={[styles.bookmarkTitle, { color: theme.textBold }]}>{bm.surah_name}</Text>
+                  <Text style={[styles.bookmarkSubtitle, { color: theme.textSub }]}>Ayat ke-{bm.ayah_number}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={18} color="#cbd5e1" />
+                <Ionicons name="chevron-forward" size={18} color={theme.textSub} />
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -236,12 +268,12 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     return (
       <View style={styles.bubbleWrapper}>
         <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-        <View style={styles.tutorialCard}>
-          <View style={styles.tutorialHeader}>
+        <View style={[styles.tutorialCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <View style={[styles.tutorialHeader, { borderBottomColor: theme.border }]}>
             <Ionicons name="sparkles" size={20} color="#a78bfa" style={{ marginRight: 8 }} />
-            <Text style={styles.tutorialTitle}>Saran AI 🤖</Text>
+            <Text style={[styles.tutorialTitle, { color: theme.textBold }]}>Saran AI 🤖</Text>
           </View>
-          <Text style={styles.botMessageText}>{msg.content}</Text>
+          <Text style={[styles.botMessageText, { color: theme.textMain }]}>{msg.content}</Text>
 
           <View style={{ marginTop: 16, gap: 10 }}>
             {msg.suggestions.map((item, idx) => (
@@ -304,24 +336,23 @@ const ChatBubble = ({ msg, handleOpenSurah, onResume }) => {
     );
   }
 
-  // Generic Bot Message / List of Surahs
   return (
     <View style={styles.bubbleWrapper}>
       <View style={styles.chatAvatar}><FontAwesome5 name="user-alt" size={14} color="white" /></View>
-      <View style={styles.tutorialCard}>
-        <Text style={styles.botMessageText}>{msg.content}</Text>
+      <View style={[styles.tutorialCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Text style={[styles.botMessageText, { color: theme.textMain }]}>{msg.content}</Text>
         {msg.surahs && (
           <ScrollView style={styles.surahListScroll} nestedScrollEnabled={true}>
             {msg.surahs.map((surah) => (
-              <TouchableOpacity onPress={() => handleOpenSurah(surah)} key={surah.id} style={styles.surahListItem}>
-                <View style={styles.surahIdBox}><Text style={styles.surahIdText}>{surah.id}</Text></View>
+              <TouchableOpacity onPress={() => handleOpenSurah(surah)} key={surah.id} style={[styles.surahListItem, { backgroundColor: theme.itemBg, borderColor: theme.itemBorder }]}>
+                <View style={[styles.surahIdBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}><Text style={[styles.surahIdText, { color: theme.textSub }]}>{surah.id}</Text></View>
                 <View style={styles.surahNameCol}>
-                  <Text style={styles.surahLatinName}>{surah.name_simple}</Text>
-                  <Text style={styles.surahMeaningText}>{surah.translated_name?.name || 'Memuat...'}</Text>
+                  <Text style={[styles.surahLatinName, { color: theme.textBold }]}>{surah.name_simple}</Text>
+                  <Text style={[styles.surahMeaningText, { color: theme.textSub }]}>{surah.translated_name?.name || 'Memuat...'}</Text>
                 </View>
                 <View style={styles.surahMetaCol}>
                   <Text style={styles.surahArabicNameStatic}>{surah.name_arabic}</Text>
-                  <Text style={styles.ayahPillText}>{surah.revelation_place?.toLowerCase() === 'makkah' ? 'Makkiyah' : 'Madaniyah'} • {surah.verses_count} AYAT</Text>
+                  <Text style={[styles.ayahPillText, { color: theme.textSub }]}>{surah.revelation_place?.toLowerCase() === 'makkah' ? 'Makkiyah' : 'Madaniyah'} • {surah.verses_count} AYAT</Text>
                 </View>
               </TouchableOpacity>
             ))}

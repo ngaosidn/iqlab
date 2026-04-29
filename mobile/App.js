@@ -25,6 +25,7 @@ import BookmarkScreen from './src/screens/BookmarkScreen';
 import AnimatedTabBar from './src/components/navigation/AnimatedTabBar';
 import { supabase } from './src/lib/supabase';
 import { databaseService } from './src/services/databaseService';
+import { ThemeProvider } from './src/context/ThemeContext';
 
 function MainTabs({ session }) {
   return (
@@ -109,8 +110,9 @@ export default function App() {
 
   // --- RENDER CLUSTER ---
   return (
-    <SafeAreaProvider style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
-      <StatusBar style="light" backgroundColor="#1e3a8a" translucent={false} />
+    <ThemeProvider>
+      <SafeAreaProvider style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
+        <StatusBar style="light" backgroundColor="#1e3a8a" translucent={false} />
       {isShowSplash ? (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
           <Animated.View style={styles.splashContainer}>
@@ -162,7 +164,8 @@ export default function App() {
 
       {/* Global Toast Component */}
       <Toast config={toastConfig} />
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
 

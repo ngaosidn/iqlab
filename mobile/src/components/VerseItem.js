@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
+import { useTheme } from '../context/ThemeContext';
 
 const VerseItem = React.memo(({ 
   verse, 
@@ -27,6 +28,23 @@ const VerseItem = React.memo(({
   onVerseTouch,
   othersCount = 0
 }) => {
+  const { isDarkMode } = useTheme();
+  const theme = isDarkMode ? {
+    cardBg: '#1e293b',
+    border: '#334155',
+    textMain: '#f8fafc',
+    textSub: '#94a3b8',
+    itemBg: '#0f172a',
+    btnBg: '#334155'
+  } : {
+    cardBg: '#ffffff',
+    border: '#f1f5f9',
+    textMain: '#0f172a',
+    textSub: '#64748b',
+    itemBg: '#ffffff',
+    btnBg: '#f8fafc'
+  };
+
   const renderHighlightedTranslation = (text, keyword) => {
     if (!text) return null;
     const cleanText = text.replace(/<sup[^>]*>.*?<\/sup>/g, '');
@@ -57,28 +75,28 @@ const VerseItem = React.memo(({
       onPress={onVerseTouch}
       style={styles.touchWrapper}
     >
-      <View style={styles.verseCardModal}>
+      <View style={[styles.verseCardModal, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
         <View style={styles.verseCardTop}>
           <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1}}>
             <View style={{flexDirection: 'row', alignItems: 'center'}}>
-              <View style={[styles.verseNumberBox, othersCount > 0 && styles.verseNumberBoxActive]}>
+              <View style={[styles.verseNumberBox, { backgroundColor: theme.itemBg, borderColor: theme.border }, othersCount > 0 && styles.verseNumberBoxActive]}>
                 <Text style={[styles.verseNumberText, othersCount > 0 && styles.verseNumberTextActive]}>{verse.ayat}</Text>
               </View>
-              <View style={styles.actionCircleBtnGroup}>
-                <TouchableOpacity onPress={() => onPlay(surahId, verse.ayat)} style={[styles.actionCircleBtn, isPlaying && styles.actionCircleBtnActive]}>
+              <View style={[styles.actionCircleBtnGroup, { backgroundColor: theme.btnBg, borderColor: theme.border }]}>
+                <TouchableOpacity onPress={() => onPlay(surahId, verse.ayat)} style={[styles.actionCircleBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }, isPlaying && styles.actionCircleBtnActive]}>
                   <FontAwesome5 name={isPlaying ? 'pause' : 'play'} size={12} color={isPlaying ? '#ffffff' : '#3b82f6'} />
                 </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => onAuthRestricted(onBookmark)} 
-                  style={[styles.actionCircleBtn, isBookmarked && { backgroundColor: '#fffbeb', borderColor: '#fef3c7' }]}
+                  style={[styles.actionCircleBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }, isBookmarked && { backgroundColor: isDarkMode ? '#78350f' : '#fffbeb', borderColor: isDarkMode ? '#92400e' : '#fef3c7' }]}
                 >
-                  <FontAwesome5 name="bookmark" size={11} color={isBookmarked ? '#d97706' : '#64748b'} solid={isBookmarked} />
+                  <FontAwesome5 name="bookmark" size={11} color={isBookmarked ? '#d97706' : theme.textSub} solid={isBookmarked} />
                 </TouchableOpacity>
                 <TouchableOpacity 
                   onPress={() => onAuthRestricted(onCheckpoint)} 
-                  style={[styles.actionCircleBtn, isCheckpoint && { backgroundColor: '#fef2f2', borderColor: '#fecaca' }]}
+                  style={[styles.actionCircleBtn, { backgroundColor: theme.cardBg, borderColor: theme.border }, isCheckpoint && { backgroundColor: isDarkMode ? '#7f1d1d' : '#fef2f2', borderColor: isDarkMode ? '#991b1b' : '#fecaca' }]}
                 >
-                  <FontAwesome5 name="flag" size={11} color={isCheckpoint ? '#ef4444' : '#64748b'} solid={isCheckpoint} />
+                  <FontAwesome5 name="flag" size={11} color={isCheckpoint ? '#ef4444' : theme.textSub} solid={isCheckpoint} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -94,35 +112,35 @@ const VerseItem = React.memo(({
 
         <View style={styles.verseTagsRow}>
           <TouchableOpacity 
-            style={[styles.tafsirTag, isExpanded && { backgroundColor: '#fef3c7', borderColor: '#d97706' }]} 
+            style={[styles.tafsirTag, isDarkMode && { backgroundColor: '#78350f', borderColor: '#92400e' }, isExpanded && { backgroundColor: isDarkMode ? '#92400e' : '#fef3c7', borderColor: '#d97706' }]} 
             onPress={() => onToggleTafsir(verse.ayat)}
             activeOpacity={0.7}
           >
-            <Feather name="book-open" size={13} color="#d97706" style={{marginRight: 6}} />
-            <Text style={styles.tafsirTagText}>Tafsir</Text>
+            <Feather name="book-open" size={13} color={isDarkMode ? '#fcd34d' : '#d97706'} style={{marginRight: 6}} />
+            <Text style={[styles.tafsirTagText, isDarkMode && { color: '#fcd34d' }]}>Tafsir</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.tagBase, isLoggedIn ? styles.tajwidTagActive : styles.grayTag]} 
+            style={[styles.tagBase, isLoggedIn ? (isDarkMode ? { backgroundColor: '#4c1d95', borderColor: '#5b21b6' } : styles.tajwidTagActive) : [styles.grayTag, { backgroundColor: theme.btnBg, borderColor: theme.border }]]} 
             onPress={() => onAuthRestricted(() => console.log('Tajwid'))}
           >
-            <Feather name="edit-2" size={13} color={isLoggedIn ? '#9333ea' : '#94a3b8'} style={{marginRight: 6}} />
-            <Text style={[styles.tagTextBase, isLoggedIn ? styles.tajwidTagTextActive : styles.grayTagText]}>Tajwid</Text>
+            <Feather name="edit-2" size={13} color={isLoggedIn ? (isDarkMode ? '#d8b4fe' : '#9333ea') : theme.textSub} style={{marginRight: 6}} />
+            <Text style={[styles.tagTextBase, isLoggedIn ? (isDarkMode ? { color: '#d8b4fe' } : styles.tajwidTagTextActive) : { color: theme.textSub }]}>Tajwid</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={[styles.tagBase, isLoggedIn ? styles.shareTagActive : styles.grayTag]} 
+            style={[styles.tagBase, isLoggedIn ? (isDarkMode ? { backgroundColor: '#1e3a8a', borderColor: '#1e40af' } : styles.shareTagActive) : [styles.grayTag, { backgroundColor: theme.btnBg, borderColor: theme.border }]]} 
             onPress={onShare}
           >
-            <Feather name="share-2" size={13} color={isLoggedIn ? '#2563eb' : '#94a3b8'} style={{marginRight: 6}} />
-            <Text style={[styles.tagTextBase, isLoggedIn ? styles.shareTagTextActive : styles.grayTagText]}>Share</Text>
+            <Feather name="share-2" size={13} color={isLoggedIn ? (isDarkMode ? '#93c5fd' : '#2563eb') : theme.textSub} style={{marginRight: 6}} />
+            <Text style={[styles.tagTextBase, isLoggedIn ? (isDarkMode ? { color: '#93c5fd' } : styles.shareTagTextActive) : { color: theme.textSub }]}>Share</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={[
               styles.tagBase, 
-              (isLoggedIn && isInteractiveActive) ? styles.kirimTagActive : 
-              (isLoggedIn && isPassed) ? styles.passedTag : 
-              styles.grayTag
+              (isLoggedIn && isInteractiveActive) ? (isDarkMode ? { backgroundColor: '#064e3b', borderColor: '#065f46' } : styles.kirimTagActive) : 
+              (isLoggedIn && isPassed) ? (isDarkMode ? { backgroundColor: '#14532d', borderColor: '#166534' } : styles.passedTag) : 
+              [styles.grayTag, { backgroundColor: theme.btnBg, borderColor: theme.border }]
             ]} 
             onPress={() => onAuthRestricted(onSend)}
             disabled={!isInteractiveActive}
@@ -130,27 +148,28 @@ const VerseItem = React.memo(({
             <Feather 
               name={isPassed ? "check-circle" : isLocked ? "lock" : "send"} 
               size={13} 
-              color={(isLoggedIn && isInteractiveActive) ? '#059669' : (isLoggedIn && isPassed) ? '#16a34a' : '#94a3b8'} 
+              color={(isLoggedIn && isInteractiveActive) ? (isDarkMode ? '#34d399' : '#059669') : (isLoggedIn && isPassed) ? (isDarkMode ? '#4ade80' : '#16a34a') : theme.textSub} 
               style={{marginRight: 6}} 
             />
             <Text style={[
               styles.tagTextBase, 
-              (isLoggedIn && isInteractiveActive) ? styles.kirimTagTextActive : 
-              (isLoggedIn && isPassed) ? styles.passedTagText : 
-              styles.grayTagText
+              (isLoggedIn && isInteractiveActive) ? (isDarkMode ? { color: '#34d399' } : styles.kirimTagTextActive) : 
+              (isLoggedIn && isPassed) ? (isDarkMode ? { color: '#4ade80' } : styles.passedTagText) : 
+              { color: theme.textSub }
             ]}>
                {isPassed ? 'Lulus' : isLocked ? 'Terkunci' : 'Kirim'}
             </Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.verseTextContainer}>
+        <View style={[styles.verseTextContainer, { borderBottomColor: theme.border }]}>
           <Text style={[
             styles.verseArabicText, 
             { 
               fontFamily: fontFamily || 'Uthmanic-Neo-Color',
               fontSize: fontSize || 30,
-              lineHeight: (fontSize || 30) * 1.8
+              lineHeight: (fontSize || 30) * 1.8,
+              color: theme.textMain
             }
           ]}>
             {verse.teks_arab}
@@ -159,9 +178,9 @@ const VerseItem = React.memo(({
         </View>
 
         {isExpanded && (
-          <View style={styles.tafsirContainer}>
-            <Text style={styles.tafsirTitle}>📖 Tafsir Kemenag - Ayat {verse.ayat}</Text>
-            <Text style={styles.tafsirBody}>{tafsirText || 'Sedang memuat tafsir, mohon tunggu sebentar...'}</Text>
+          <View style={[styles.tafsirContainer, { backgroundColor: theme.btnBg, borderColor: theme.border }]}>
+            <Text style={[styles.tafsirTitle, { color: theme.textMain }]}>📖 Tafsir Kemenag - Ayat {verse.ayat}</Text>
+            <Text style={[styles.tafsirBody, { color: theme.textSub }]}>{tafsirText || 'Sedang memuat tafsir, mohon tunggu sebentar...'}</Text>
           </View>
         )}
       </View>

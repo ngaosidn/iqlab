@@ -2,30 +2,50 @@ import React, { useEffect, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../../context/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
-const TabIcon = ({ isFocused, iconName }) => {
-  const animatedY = useRef(new Animated.Value(0)).current;
+const TabIcon = ({ isFocused, iconName, label }) => {
+  const { isDarkMode } = useTheme();
+  const animatedY = useRef(new Animated.Value(isFocused ? -26 : 0)).current;
+  const textOpacity = useRef(new Animated.Value(isFocused ? 0 : 1)).current;
 
   useEffect(() => {
-    Animated.spring(animatedY, {
-      toValue: isFocused ? -31 : 0, 
-      useNativeDriver: true,
-      bounciness: 12,
-    }).start();
+    Animated.parallel([
+      Animated.spring(animatedY, {
+        toValue: isFocused ? -26 : 0, 
+        useNativeDriver: true,
+        bounciness: 12,
+      }),
+      Animated.timing(textOpacity, {
+        toValue: isFocused ? 0 : 1,
+        duration: 150,
+        useNativeDriver: true,
+      })
+    ]).start();
   }, [isFocused]);
 
   return (
-    <Animated.View style={[styles.iconContainer, { transform: [{ translateY: animatedY }] }]}>
-      <Feather name={iconName} size={24} color={isFocused ? "white" : "#94a3b8"} />
-    </Animated.View>
+    <View style={styles.navItemInner}>
+      <Animated.View style={[styles.iconContainer, { transform: [{ translateY: animatedY }] }]}>
+        <Feather name={iconName} size={22} color={isFocused ? "white" : (isDarkMode ? "#94a3b8" : "#64748b")} />
+      </Animated.View>
+      <Animated.Text style={[styles.navText, { opacity: textOpacity, color: isDarkMode ? '#94a3b8' : '#64748b' }]}>
+        {label}
+      </Animated.Text>
+    </View>
   );
 };
 
 const AnimatedTabBar = ({ state, descriptors, navigation }) => {
+  const insets = useSafeAreaInsets();
+  const { isDarkMode } = useTheme();
+  const safeBottom = insets.bottom > 0 ? insets.bottom : 10;
+  
   // Inisialisasi posisi awal agar tidak ada glitch
-  const tabWidth = (width - 40) / 3;
+  const tabWidth = width / 3; // Karena sekarang full width (docked ke edge layar)
   const initialCenter = state.index * tabWidth + (tabWidth / 2);
   const activeTabCenter = useRef(new Animated.Value(initialCenter)).current;
 
@@ -38,9 +58,22 @@ const AnimatedTabBar = ({ state, descriptors, navigation }) => {
     }).start();
   }, [state.index, tabWidth]);
 
-  // Lebar SVG cekungan adalah 140
-  // Posisi tengah SVG adalah 70. 
-  // Agar tengah SVG sejajar dengan activeTabCenter, geser sebesar: activeTabCenter - (width + 70)
+  // Ukuran untuk SVG tunggal tanpa jahitan
+  const svgWidth = width * 2 + 140; 
+  const dipCenter = width + 70;
+
+  // Path tunggal untuk keseluruhan bar navigasi (sisi kiri rata, cekungan tengah, sisi kanan rata)
+  const pathData = `
+    M 0 0 
+    L ${dipCenter - 70} 0 
+    C ${dipCenter - 50} 0, ${dipCenter - 30} 40, ${dipCenter} 40 
+    C ${dipCenter + 30} 40, ${dipCenter + 50} 0, ${dipCenter + 70} 0 
+    L ${svgWidth} 0 
+    L ${svgWidth} 200 
+    L 0 200 Z
+  `;
+
+  // Agar tengah SVG sejajar dengan activeTabCenter
   const bgTranslateX = activeTabCenter.interpolate({
     inputRange: [0, 1000],
     outputRange: [-(width + 70), -(width + 70) + 1000]
@@ -55,22 +88,20 @@ const AnimatedTabBar = ({ state, descriptors, navigation }) => {
   });
 
   return (
-    <View style={styles.navWrapper}>
+    <View style={[styles.navWrapper, { height: 70 + safeBottom }]}>
       
-      {/* 1. LAYER BACKGROUND (Dibatasi oleh border-radius agar menyerupai pill) */}
+      {/* 1. LAYER BACKGROUND SOLID (Satu Path Mulus) */}
       <View style={styles.navBarClipped}>
         <Animated.View style={[styles.slidingBg, { transform: [{ translateX: bgTranslateX }] }]}>
-          <View style={[styles.bgFlat, { marginRight: -1 }]} />
-          
-          {/* Cekungan Mulus (Organic Bézier Curve Dip) yang sangat presisi dengan gambar */}
-          <Svg width={140} height={70}>
+          <Svg width={svgWidth} height={70 + safeBottom}>
+            {/* Solid Shape dengan garis tepi biru bercahaya */}
             <Path 
-              d="M 0 0 C 20 0, 40 40, 70 40 C 100 40, 120 0, 140 0 L 140 70 L 0 70 Z" 
-              fill="#ffffff" 
+              d={pathData} 
+              fill={isDarkMode ? "#1e293b" : "#ffffff"} 
+              stroke={isDarkMode ? "rgba(99, 102, 241, 0.3)" : "rgba(79, 70, 229, 0.4)"} 
+              strokeWidth={1.5} 
             />
           </Svg>
-          
-          <View style={[styles.bgFlat, { marginLeft: -1 }]} />
         </Animated.View>
       </View>
 
@@ -93,12 +124,13 @@ const AnimatedTabBar = ({ state, descriptors, navigation }) => {
             };
 
             let iconName = 'home';
-            if (route.name === 'Bookmark') iconName = 'bookmark';
-            if (route.name === 'Profile') iconName = 'user';
+            let label = 'Beranda';
+            if (route.name === 'Bookmark') { iconName = 'bookmark'; label = 'Tersimpan'; }
+            if (route.name === 'Profile') { iconName = 'user'; label = 'Profil'; }
 
             return (
               <TouchableOpacity key={index} activeOpacity={1} onPress={onPress} style={styles.navItem}>
-                <TabIcon isFocused={isFocused} iconName={iconName} />
+                <TabIcon isFocused={isFocused} iconName={iconName} label={label} />
               </TouchableOpacity>
             );
           })}
@@ -112,31 +144,21 @@ const AnimatedTabBar = ({ state, descriptors, navigation }) => {
 const styles = StyleSheet.create({
   navWrapper: {
     position: 'absolute',
-    bottom: 24,
-    left: 20,
-    right: 20,
-    height: 70,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 15,
-    elevation: 10,
-    backgroundColor: 'transparent', // Penting agar shadow tidak kotak
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent', 
   },
   navBarClipped: {
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 35,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     overflow: 'hidden',
   },
   slidingBg: {
     flexDirection: 'row',
     position: 'absolute',
     height: 70,
-  },
-  bgFlat: {
-    width: width, 
-    height: 70,
-    backgroundColor: '#ffffff',
   },
   navBarOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -154,6 +176,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#4f46e5', // Warna Indigo sesuai Light Theme saat ini
     position: 'absolute',
     top: -24, // Melayang tinggi, dengan jarak gap transparan yang elegan ke bawah cekungan
+    shadowColor: '#4f46e5',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8, // Berfungsi sempurna karena memiliki warna background solid
   },
   bottomDot: {
     width: 6,
@@ -169,15 +196,26 @@ const styles = StyleSheet.create({
   },
   navItem: {
     flex: 1,
+    height: '100%',
+  },
+  navItemInner: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 50,
-    height: 50,
+    height: 32,
+    marginTop: -12, // Angkat sedikit saat inactive agar ada ruang untuk teks di bawah
+  },
+  navText: {
+    position: 'absolute',
+    bottom: 12,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748b',
   }
 });
 
