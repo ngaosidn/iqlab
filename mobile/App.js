@@ -19,7 +19,7 @@ const Tab = createBottomTabNavigator();
 import HomeScreen from './src/screens/HomeScreen';
 import InteractiveQuranScreen from './src/screens/InteractiveQuranScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
-import BookmarkScreen from './src/screens/BookmarkScreen';
+import ContentScreen from './src/screens/ContentScreen';
 import AnimatedTabBar from './src/components/navigation/AnimatedTabBar';
 import { supabase } from './src/lib/supabase';
 import { databaseService } from './src/services/databaseService';
@@ -32,8 +32,8 @@ function MainTabs({ session }) {
       tabBar={props => <AnimatedTabBar {...props} />}
       screenOptions={{ headerShown: false }}
     >
-      <Tab.Screen name="Bookmark">
-        {props => <BookmarkScreen {...props} session={session} />}
+      <Tab.Screen name="Content">
+        {props => <ContentScreen {...props} session={session} />}
       </Tab.Screen>
       <Tab.Screen name="Home">
         {props => <HomeScreen {...props} session={session} />}

@@ -124,7 +124,7 @@ const AnimatedTabBar = ({ state, descriptors, navigation }) => {
 
             let iconName = 'home';
             let label = 'Beranda';
-            if (route.name === 'Bookmark') { iconName = 'bookmark'; label = 'Tersimpan'; }
+            if (route.name === 'Content') { iconName = 'play-circle'; label = 'Konten'; }
             if (route.name === 'Profile') { iconName = 'user'; label = 'Profil'; }
 
             return (
