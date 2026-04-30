@@ -4,7 +4,7 @@
     "slug": "quranchat-mobile",
     "scheme": "iqlab",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/adaptive-icon.png",
     "userInterfaceStyle": "light",
     "backgroundColor": "#ffffff",

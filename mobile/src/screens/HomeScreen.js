@@ -202,37 +202,77 @@ export default function HomeScreen({ navigation, session }) {
               </View>
             </TouchableOpacity>
 
-            <View style={styles.gridRow}>
-              {/* 2. Al Ma'tsurat */}
-              <TouchableOpacity 
-                style={styles.cardHalf} 
-                activeOpacity={0.9}
-                onPress={() => checkAuth(() => console.log('Al Matsurat'))}
-              >
-                <LinearGradient colors={['#ea580c', '#fb923c']} style={StyleSheet.absoluteFill} />
-                <View style={styles.iconBoxSmall}>
-                  <Feather name="sun" size={20} color="white" />
-                </View>
-                <Text style={styles.cardTitleMedium}>Al Ma'tsurat</Text>
-                <Text style={styles.cardDescSmall}>Zikir Pagi & Petang</Text>
-              </TouchableOpacity>
-
-              {/* 3. Hadist Harian */}
-              <TouchableOpacity 
-                style={styles.cardHalf} 
-                activeOpacity={0.9}
-                onPress={() => checkAuth(() => console.log('Hadist'))}
-              >
-                <LinearGradient colors={['#059669', '#34d399']} style={StyleSheet.absoluteFill} />
-                <View style={styles.iconBoxSmall}>
+            {/* 2. Hadist Harian - WIDE CARD */}
+            <TouchableOpacity 
+              style={styles.cardWide} 
+              activeOpacity={0.9}
+              onPress={() => checkAuth(() => console.log('Hadist'))}
+            >
+              <LinearGradient 
+                colors={['#059669', '#34d399']} 
+                style={StyleSheet.absoluteFill} 
+                start={{ x: 0, y: 0 }} 
+                end={{ x: 1, y: 0 }} 
+              />
+              <View style={styles.cardRowContent}>
+                <View style={styles.iconBoxMain}>
                   <Feather name="feather" size={20} color="white" />
                 </View>
-                <Text style={styles.cardTitleMedium}>Hadist</Text>
-                <Text style={styles.cardDescSmall}>Inspirasi setiap hari</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.cardTitleLarge}>Hadist Harian</Text>
+                  <Text style={styles.cardDescLight}>Inspirasi dari sabda Rasulullah</Text>
+                </View>
+                <Feather name="chevron-right" size={20} color="white" />
+              </View>
+            </TouchableOpacity>
+
+            <View style={styles.gridRow}>
+              {/* 3. Zikir Pagi */}
+              <TouchableOpacity 
+                style={styles.cardHalf} 
+                activeOpacity={0.9}
+                onPress={() => checkAuth(() => console.log('Zikir Pagi'))}
+              >
+                <Image 
+                  source={require('../../assets/zikirpagi.png')} 
+                  style={StyleSheet.absoluteFill} 
+                  contentFit="cover" 
+                />
+                <LinearGradient 
+                  colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)']} 
+                  style={StyleSheet.absoluteFill} 
+                />
+                <View style={[styles.iconBoxSmall, { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                  <Feather name="sunrise" size={20} color="white" />
+                </View>
+                <Text style={styles.cardTitleMedium}>Zikir Pagi</Text>
+                <Text style={styles.cardDescSmall}>Al Ma'tsurat</Text>
+              </TouchableOpacity>
+
+              {/* 4. Zikir Petang */}
+              <TouchableOpacity 
+                style={styles.cardHalf} 
+                activeOpacity={0.9}
+                onPress={() => checkAuth(() => console.log('Zikir Petang'))}
+              >
+                <Image 
+                  source={require('../../assets/zikirpetang.png')} 
+                  style={StyleSheet.absoluteFill} 
+                  contentFit="cover" 
+                />
+                <LinearGradient 
+                  colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.7)']} 
+                  style={StyleSheet.absoluteFill} 
+                />
+                <View style={[styles.iconBoxSmall, { backgroundColor: 'rgba(255,255,255,0.3)' }]}>
+                  <Feather name="sunset" size={20} color="white" />
+                </View>
+                <Text style={styles.cardTitleMedium}>Zikir Petang</Text>
+                <Text style={styles.cardDescSmall}>Al Ma'tsurat</Text>
               </TouchableOpacity>
             </View>
 
-            {/* 4. Doa-doa Pilihan */}
+            {/* 5. Doa-doa Pilihan */}
             <TouchableOpacity 
               style={styles.cardWide} 
               activeOpacity={0.9}

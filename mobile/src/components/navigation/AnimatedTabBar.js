@@ -1,11 +1,9 @@
 import React, { useEffect, useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
-
-const { width } = Dimensions.get('window');
 
 const TabIcon = ({ isFocused, iconName, label }) => {
   const { isDarkMode } = useTheme();
@@ -40,6 +38,7 @@ const TabIcon = ({ isFocused, iconName, label }) => {
 };
 
 const AnimatedTabBar = ({ state, descriptors, navigation }) => {
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useTheme();
   const safeBottom = insets.bottom > 0 ? insets.bottom : 10;
