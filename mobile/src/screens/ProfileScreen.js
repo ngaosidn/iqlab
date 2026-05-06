@@ -1,16 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import * as WebBrowser from 'expo-web-browser';
 import { StatusBar } from 'expo-status-bar';
 
-import { authService } from '../services/authService';
+import { profileService } from '../services/profileService';
 import { useTheme } from '../context/ThemeContext';
+import { authService } from '../services/authService';
 
 const ProfileScreen = ({ navigation, session }) => {
   const { isDarkMode, setIsDarkMode } = useTheme();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    fullName: '',
+    whatsappNumber: '',
+    age: '',
+    gender: '',
+    address: ''
+  });
 
   const theme = isDarkMode ? {
     bgFull: '#0f172a',
@@ -26,6 +37,8 @@ const ProfileScreen = ({ navigation, session }) => {
     actionIconBgGreen: 'rgba(22, 163, 74, 0.2)',
     toggleBg: '#1e293b',
     toggleBorder: 'transparent',
+    accent: '#38bdf8',
+    inputInner: '#0f172a',
   } : {
     bgFull: '#f1f5f9',
     topBarBg: '#f1f5f9',
@@ -40,18 +53,51 @@ const ProfileScreen = ({ navigation, session }) => {
     actionIconBgGreen: '#f0fdf4',
     toggleBg: '#f8fafc',
     toggleBorder: 'transparent',
+    accent: '#0284c7',
+    inputInner: '#f1f5f9',
   };
 
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-
-  // Load existing data if available
+  // Load profile from database
   useEffect(() => {
-    if (session?.user?.user_metadata) {
-      if (session.user.user_metadata.age) setAge(session.user.user_metadata.age.toString());
-      if (session.user.user_metadata.gender) setGender(session.user.user_metadata.gender);
+    if (session?.user) {
+      loadProfile();
     }
   }, [session]);
+
+  const loadProfile = async () => {
+    setLoading(true);
+    try {
+      const data = await profileService.getProfile(session.user.id);
+      setProfile(data);
+      if (data) {
+        setEditData({
+          fullName: data.full_name,
+          whatsappNumber: data.whatsapp_number,
+          age: data.age?.toString(),
+          gender: data.gender,
+          address: data.address
+        });
+      }
+    } catch (error) {
+      console.error('Load Profile Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    setLoading(true);
+    try {
+      await profileService.updateProfile(session.user.id, editData);
+      Toast.show({ type: 'success', text1: 'Berhasil!', text2: 'Profil Anda telah diperbarui.' });
+      setIsEditing(false);
+      loadProfile();
+    } catch (error) {
+      Alert.alert('Error', 'Gagal memperbarui profil.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleAuth = async () => {
     try {
@@ -66,98 +112,98 @@ const ProfileScreen = ({ navigation, session }) => {
     }
   };
 
-  const saveProfileData = async () => {
-    if (!age || !gender) {
-      Toast.show({
-        type: 'error',
-        text1: 'Data Belum Lengkap',
-        text2: 'Tolong pilih Usia dan Jenis Kelamin dulu ya.',
-        position: 'bottom',
-      });
-      return;
-    }
-
-    try {
-      await authService.updateUserMetadata({ age, gender });
-      Toast.show({ type: 'success', text1: 'Profil Tersimpan!', text2: 'Terima kasih, data kamu sudah masuk.', position: 'bottom' });
-      navigation.goBack();
-    } catch (error) {
-      Toast.show({ type: 'error', text1: 'Gagal Menyimpan', text2: error.message, position: 'bottom' });
-    }
-  };
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.bgFull }]}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       {/* Top Header */}
       <View style={[styles.header, { backgroundColor: theme.topBarBg }]}>
-        <Text style={[styles.headerTitle, { color: theme.textMain }]}>Profil Pengguna</Text>
-        <TouchableOpacity 
-          style={[styles.darkModeToggle, { backgroundColor: theme.toggleBg, borderColor: theme.toggleBorder }]} 
-          onPress={() => setIsDarkMode(!isDarkMode)}
-          activeOpacity={0.7}
-        >
-          <Feather name={isDarkMode ? "sun" : "moon"} size={22} color={isDarkMode ? "#eab308" : "#64748b"} />
-        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.textMain }]}>Profil Saya</Text>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {session && (
+            <TouchableOpacity 
+              style={[styles.editToggleButton, { backgroundColor: isEditing ? '#ef4444' : theme.accent }]} 
+              onPress={() => setIsEditing(!isEditing)}
+            >
+              <Feather name={isEditing ? "x" : "edit-2"} size={18} color="#FFF" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity 
+            style={[styles.darkModeToggle, { backgroundColor: theme.toggleBg, borderColor: theme.toggleBorder }]} 
+            onPress={() => setIsDarkMode(!isDarkMode)}
+            activeOpacity={0.7}
+          >
+            <Feather name={isDarkMode ? "sun" : "moon"} size={22} color={isDarkMode ? "#eab308" : "#64748b"} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
         {session ? (
           <View>
-            <Text style={[styles.modalDesc, { color: theme.textSub }]}>Sesuaikan data profilmu agar pengalaman belajar lebih maksimal!</Text>
-
-            {/* Informasi Akun Terhubung */}
-            {session?.user && (
-              <View style={[styles.googleInfoContainer, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
-                <View style={styles.infoRow}>
-                  <Feather name="user" size={16} color={theme.textSub} />
-                  <Text style={[styles.infoText, { color: theme.textMain }]}>{session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Nama Tidak Tersedia'}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Feather name="mail" size={16} color={theme.textSub} />
-                  <Text style={[styles.infoText, { color: theme.textMain }]}>{session.user.email || 'Email Tidak Tersedia'}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Feather name="phone" size={16} color={theme.textSub} />
-                  <Text style={[styles.infoText, { color: theme.textMain }]}>{session.user.phone || session.user.user_metadata?.phone || 'No. HP Tidak Terdaftar'}</Text>
-                </View>
+            {/* Header Profile Card */}
+            <View style={[styles.mainProfileCard, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.accent }]}>
+                <Text style={styles.avatarText}>
+                  {profile?.full_name?.charAt(0).toUpperCase() || 'U'}
+                </Text>
               </View>
-            )}
-
-            <Text style={[styles.label, { color: theme.textMain }]}>Berapa Usia Kamu?</Text>
-            <TextInput
-              style={[styles.input, { backgroundColor: theme.inputBg, color: theme.textMain }]}
-              placeholderTextColor={theme.textSub}
-              placeholder="Contoh: 25"
-              keyboardType="number-pad"
-              value={age}
-              onChangeText={setAge}
-            />
-
-            <Text style={[styles.label, { color: theme.textMain }]}>Jenis Kelamin</Text>
-            <View style={styles.genderRow}>
-              <TouchableOpacity
-                style={[styles.genderBtn, { backgroundColor: theme.inputBg }, gender === 'Laki-laki' && styles.genderBtnActive]}
-                onPress={() => setGender('Laki-laki')}
-              >
-                <FontAwesome5 name="male" size={24} color={gender === 'Laki-laki' ? 'white' : theme.textSub} />
-                <Text style={[styles.genderText, { color: theme.textSub }, gender === 'Laki-laki' && styles.genderTextActive]}>Laki-laki</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.genderBtn, { backgroundColor: theme.inputBg }, gender === 'Perempuan' && styles.genderBtnActive]}
-                onPress={() => setGender('Perempuan')}
-              >
-                <FontAwesome5 name="female" size={24} color={gender === 'Perempuan' ? 'white' : theme.textSub} />
-                <Text style={[styles.genderText, { color: theme.textSub }, gender === 'Perempuan' && styles.genderTextActive]}>Perempuan</Text>
-              </TouchableOpacity>
+              <Text style={[styles.profileName, { color: theme.textMain }]}>{profile?.full_name || 'Memuat...'}</Text>
+              <View style={styles.roleBadge}>
+                <Text style={styles.roleText}>{profile?.role || 'user_iqlab'}</Text>
+              </View>
             </View>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={saveProfileData}>
-              <Text style={styles.saveBtnText}>Simpan Data</Text>
-            </TouchableOpacity>
+            {/* Info Details Section */}
+            <View style={styles.infoSection}>
+               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                 <Text style={[styles.sectionTitle, { color: theme.textMain, marginBottom: 0 }]}>
+                   {isEditing ? 'Edit Data Profil' : 'Informasi Detail'}
+                 </Text>
+                 {isEditing && (
+                   <TouchableOpacity style={styles.smallSaveBtn} onPress={handleUpdate} disabled={loading}>
+                     {loading ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={styles.smallSaveBtnText}>Simpan</Text>}
+                   </TouchableOpacity>
+                 )}
+               </View>
+               
+               <View style={[styles.detailCard, { backgroundColor: theme.cardBg, borderColor: theme.cardBorder }]}>
+                 {isEditing ? (
+                   <View style={{ padding: 16, gap: 16 }}>
+                      <EditInput label="Nama Lengkap" value={editData.fullName} onChange={(t) => setEditData({...editData, fullName: t})} theme={theme} icon="user" />
+                      <EditInput label="WhatsApp" value={editData.whatsappNumber} onChange={(t) => setEditData({...editData, whatsappNumber: t})} theme={theme} icon="phone" keyboardType="phone-pad" />
+                      <EditInput label="Usia" value={editData.age} onChange={(t) => setEditData({...editData, age: t})} theme={theme} icon="calendar" keyboardType="numeric" />
+                      
+                      <View>
+                        <Text style={[styles.editLabel, { color: theme.textSub }]}>Jenis Kelamin</Text>
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                          {['Ikhwan', 'Akhwat'].map(g => (
+                            <TouchableOpacity 
+                              key={g} 
+                              onPress={() => setEditData({...editData, gender: g})}
+                              style={[styles.miniGenderBtn, { backgroundColor: theme.inputInner, borderColor: theme.border }, editData.gender === g && { borderColor: theme.accent, backgroundColor: theme.accent + '20' }]}
+                            >
+                              <Text style={{ color: editData.gender === g ? theme.accent : theme.textSub, fontWeight: '700' }}>{g}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+
+                      <EditInput label="Alamat" value={editData.address} onChange={(t) => setEditData({...editData, address: t})} theme={theme} icon="map-pin" multiline />
+                   </View>
+                 ) : (
+                   <>
+                     <DetailItem icon="mail" label="Email" value={session.user.email} theme={theme} />
+                     <DetailItem icon="phone" label="WhatsApp" value={profile?.whatsapp_number || '-'} theme={theme} />
+                     <DetailItem icon="user" label="Jenis Kelamin" value={profile?.gender || '-'} theme={theme} />
+                     <DetailItem icon="calendar" label="Usia" value={profile?.age ? `${profile.age} Tahun` : '-'} theme={theme} />
+                     <DetailItem icon="map-pin" label="Alamat" value={profile?.address || '-'} theme={theme} last />
+                   </>
+                 )}
+               </View>
+            </View>
+
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -194,10 +240,40 @@ const ProfileScreen = ({ navigation, session }) => {
   );
 };
 
+// Komponen Input untuk Mode Edit
+const EditInput = ({ label, value, onChange, theme, icon, keyboardType = 'default', multiline = false }) => (
+  <View>
+    <Text style={[styles.editLabel, { color: theme.textSub }]}>{label}</Text>
+    <View style={[styles.editInputWrapper, { backgroundColor: theme.inputInner, borderColor: theme.border }]}>
+      <Feather name={icon} size={16} color={theme.accent} style={{ marginRight: 12 }} />
+      <TextInput
+        style={[styles.editInput, { color: theme.textMain }]}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboardType}
+        multiline={multiline}
+        placeholderTextColor={theme.textSub}
+      />
+    </View>
+  </View>
+);
+
+// Komponen Bantuan untuk Item Detail
+const DetailItem = ({ icon, label, value, theme, last }) => (
+  <View style={[styles.detailItem, !last && { borderBottomWidth: 1, borderBottomColor: theme.border }]}>
+    <View style={[styles.detailIconBox, { backgroundColor: theme.bgFull }]}>
+      <Feather name={icon} size={18} color={theme.accent} />
+    </View>
+    <View style={styles.detailContent}>
+      <Text style={[styles.detailLabel, { color: theme.textSub }]}>{label}</Text>
+      <Text style={[styles.detailValue, { color: theme.textMain }]}>{value}</Text>
+    </View>
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
   },
   header: {
     flexDirection: 'row',
@@ -207,15 +283,17 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 16,
   },
-  backBtn: {
-    padding: 8,
-    marginLeft: -8,
-  },
   headerTitle: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#1e293b',
     letterSpacing: -0.3,
+  },
+  editToggleButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   darkModeToggle: {
     width: 44,
@@ -223,141 +301,170 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingTop: 10,
+    paddingBottom: 80,
   },
-  modalDesc: {
-    fontSize: 15,
-    color: '#64748b',
-    marginBottom: 20,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
-  googleInfoContainer: {
-    backgroundColor: '#f8fafc',
-    padding: 16,
-    borderRadius: 20,
+  mainProfileCard: {
+    padding: 30,
+    borderRadius: 28,
+    alignItems: 'center',
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
   },
-  infoRow: {
-    flexDirection: 'row',
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     alignItems: 'center',
-    marginBottom: 10,
-  },
-  infoText: {
-    marginLeft: 12,
-    fontSize: 15,
-    color: '#334155',
-    fontWeight: '600',
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#334155',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  input: {
-    backgroundColor: '#f1f5f9',
-    padding: 16,
-    borderRadius: 16,
-    fontSize: 16,
-    color: '#0f172a',
-    fontWeight: '600',
+    justifyContent: 'center',
     marginBottom: 16,
-  },
-  genderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  genderBtn: {
-    flex: 1,
-    backgroundColor: '#f1f5f9',
-    padding: 18,
-    borderRadius: 20,
-    alignItems: 'center',
-    marginHorizontal: 4,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  genderBtnActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#2563eb',
-  },
-  genderText: {
-    marginTop: 10,
-    fontWeight: 'bold',
-    color: '#64748b',
-  },
-  genderTextActive: {
-    color: 'white',
-  },
-  saveBtn: {
-    backgroundColor: '#10b981',
-    padding: 18,
-    borderRadius: 20,
-    alignItems: 'center',
-    marginTop: 32,
-    shadowColor: '#10b981',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
-  saveBtnText: {
-    color: 'white',
+  avatarText: {
+    fontSize: 32,
     fontWeight: 'bold',
+    color: '#FFF',
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  roleBadge: {
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.3)',
+  },
+  roleText: {
+    color: '#38bdf8',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  infoSection: {
+    marginTop: 10,
+  },
+  sectionTitle: {
     fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 16,
+    marginLeft: 4,
+  },
+  smallSaveBtn: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  smallSaveBtnText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  detailCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  detailIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  detailContent: {
+    flex: 1,
+  },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  detailValue: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  editLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    marginBottom: 6,
+    letterSpacing: 1,
+  },
+  editInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 2,
+  },
+  editInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  miniGenderBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 60,
   },
   guestIconBox: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   guestTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '800',
-    color: '#0f172a',
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  modalDesc: {
+    fontSize: 15,
+    lineHeight: 24,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
   actionMenuContainer: {
-    marginTop: 32,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#334155',
-    marginBottom: 12,
+    marginTop: 40,
+    marginBottom: 20,
   },
   actionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
     padding: 16,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    marginBottom: 16,
   },
   actionIconBox: {
     width: 44,
@@ -371,7 +478,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e293b',
   },
 });
 

@@ -10,6 +10,7 @@ import Svg, { Path } from 'react-native-svg';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
+import Toast from 'react-native-toast-message';
 
 // Modul Home
 
@@ -206,7 +207,7 @@ export default function HomeScreen({ navigation, session }) {
             <TouchableOpacity 
               style={styles.cardWide} 
               activeOpacity={0.9}
-              onPress={() => checkAuth(() => console.log('Hadist'))}
+              onPress={() => Toast.show({ type: 'info', text1: 'Segera Hadir!', text2: 'Fitur Hadist Harian sedang kami siapkan.', position: 'bottom' })}
             >
               <LinearGradient 
                 colors={['#059669', '#34d399']} 
@@ -231,7 +232,7 @@ export default function HomeScreen({ navigation, session }) {
               <TouchableOpacity 
                 style={styles.cardHalf} 
                 activeOpacity={0.9}
-                onPress={() => checkAuth(() => console.log('Zikir Pagi'))}
+                onPress={() => Toast.show({ type: 'info', text1: 'Segera Hadir!', text2: 'Fitur Zikir Pagi sedang kami siapkan.', position: 'bottom' })}
               >
                 <Image 
                   source={require('../../assets/zikirpagi.png')} 
@@ -253,7 +254,7 @@ export default function HomeScreen({ navigation, session }) {
               <TouchableOpacity 
                 style={styles.cardHalf} 
                 activeOpacity={0.9}
-                onPress={() => checkAuth(() => console.log('Zikir Petang'))}
+                onPress={() => Toast.show({ type: 'info', text1: 'Segera Hadir!', text2: 'Fitur Zikir Petang sedang kami siapkan.', position: 'bottom' })}
               >
                 <Image 
                   source={require('../../assets/zikirpetang.png')} 
@@ -276,7 +277,7 @@ export default function HomeScreen({ navigation, session }) {
             <TouchableOpacity 
               style={styles.cardWide} 
               activeOpacity={0.9}
-              onPress={() => checkAuth(() => console.log('Doa'))}
+              onPress={() => Toast.show({ type: 'info', text1: 'Segera Hadir!', text2: 'Kumpulan doa pilihan sedang kami siapkan.', position: 'bottom' })}
             >
               <LinearGradient 
                 colors={['#7c3aed', '#a78bfa']} 

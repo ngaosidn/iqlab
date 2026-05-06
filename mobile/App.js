@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Animated, Platform, Dimensions } from 'react-native';
+import { StyleSheet, Text, View, Animated, Platform, Dimensions, ActivityIndicator } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
@@ -51,19 +51,49 @@ const screenWidth = Dimensions.get('window').width;
 import { toastConfig } from './src/lib/toastConfig';
 
 
+import { profileService } from './src/services/profileService';
+import ProfileSetupScreen from './src/screens/ProfileSetupScreen';
+
 export default function App() {
   const [isShowSplash, setIsShowSplash] = useState(true);
   const [session, setSession] = useState(null);
+  const [isProfileChecking, setIsProfileChecking] = useState(true);
+  const [hasProfile, setHasProfile] = useState(false);
+
+  // Fungsi pengecekan profil
+  const checkUserProfile = async (userId) => {
+    setIsProfileChecking(true);
+    try {
+      const profile = await profileService.getProfile(userId);
+      setHasProfile(!!profile);
+    } catch (error) {
+      console.error('Check Profile Error:', error);
+      setHasProfile(false);
+    } finally {
+      setIsProfileChecking(false);
+    }
+  };
 
   useEffect(() => {
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
+      if (session?.user) {
+        checkUserProfile(session.user.id);
+      } else {
+        setIsProfileChecking(false);
+      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      if (session?.user) {
+        checkUserProfile(session.user.id);
+      } else {
+        setHasProfile(false);
+        setIsProfileChecking(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -78,7 +108,7 @@ export default function App() {
 
 
   useEffect(() => {
-    // Sembunyikan Splash Native dengan sedikit jeda agar transisi benar-benar mulus
+    // Sembunyikan Splash Native dengan sedikit jeda
     const timer = setTimeout(() => {
       SplashScreen.hideAsync();
     }, 200);
@@ -88,16 +118,14 @@ export default function App() {
   useEffect(() => {
     let returning = false;
 
-    // Cek apakah web me-redirect balik dengan token login (URL Hash dari Google OAuth)
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       if (window.location.hash.includes('access_token')) {
         returning = true;
-        setIsShowSplash(false); // Langsung masuk tanpa loading screen tambahan
+        setIsShowSplash(false);
       }
     }
 
     if (!returning) {
-      // Tunggu 3 detik, lalu langsung potong (cut) ke Halaman Utama tanpa efek fade/putih
       const timer = setTimeout(() => {
         setIsShowSplash(false);
       }, 3000);
@@ -107,23 +135,19 @@ export default function App() {
   }, []);
 
   // --- RENDER CLUSTER ---
-  return (
-    <ThemeProvider>
-      <SafeAreaProvider style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
-        <StatusBar style="light" backgroundColor="#1e3a8a" translucent={false} />
-      {isShowSplash ? (
+  
+  // Tampilan Loading saat cek profil
+  const renderContent = () => {
+    if (isShowSplash || isProfileChecking) {
+      return (
         <SafeAreaView style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
           <Animated.View style={styles.splashContainer}>
-
-            {/* Background Biru Modern */}
             <LinearGradient
               colors={['#1e3a8a', '#1e3a8a', '#3b82f6']}
               style={StyleSheet.absoluteFillObject}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
             />
-
-            {/* Konten Tengah */}
             <View style={styles.centerContent}>
               <Image
                 source={require('./assets/logo.svg')}
@@ -131,31 +155,45 @@ export default function App() {
                 contentFit="contain"
                 transition={1000}
               />
-            </View>
-
-            {/* Footer Copyright */}
-            <View style={styles.footer}>
-              <Text style={styles.copyrightText}>
-                © {new Date().getFullYear()} - Powered by Tahseena
-              </Text>
+              {isProfileChecking && (
+                <ActivityIndicator size="large" color="#FFFFFF" style={{ marginTop: 20 }} />
+              )}
             </View>
           </Animated.View>
         </SafeAreaView>
-      ) : (
-        <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
-            <Stack.Screen name="MainTabs">
-              {props => <MainTabs {...props} session={session} />}
-            </Stack.Screen>
-            <Stack.Screen name="Interactive">
-              {props => <InteractiveQuranScreen {...props} session={session} />}
-            </Stack.Screen>
-          </Stack.Navigator>
-        </NavigationContainer>
-      )}
+      );
+    }
 
-      {/* Global Toast Component */}
-      <Toast config={toastConfig} />
+    // Jika sudah login tapi BELUM punya profil
+    if (session && !hasProfile) {
+      return (
+        <ProfileSetupScreen 
+          onProfileComplete={() => setHasProfile(true)} 
+        />
+      );
+    }
+
+    // Alur Normal (Home / Tabs)
+    return (
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
+          <Stack.Screen name="MainTabs">
+            {props => <MainTabs {...props} session={session} />}
+          </Stack.Screen>
+          <Stack.Screen name="Interactive">
+            {props => <InteractiveQuranScreen {...props} session={session} />}
+          </Stack.Screen>
+        </Stack.Navigator>
+      </NavigationContainer>
+    );
+  };
+
+  return (
+    <ThemeProvider>
+      <SafeAreaProvider style={{ flex: 1, backgroundColor: '#1e3a8a' }}>
+        <StatusBar style="light" backgroundColor="#1e3a8a" translucent={false} />
+        {renderContent()}
+        <Toast config={toastConfig} />
       </SafeAreaProvider>
     </ThemeProvider>
   );

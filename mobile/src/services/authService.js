@@ -1,53 +1,81 @@
 import { Platform, Alert } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { supabase } from '../lib/supabase';
 
 export const authService = {
   /**
    * Google OAuth Sign In
-   * Logic moved from useHome.js
+   * Mendukung Native (GoogleSignin) dan Fallback (Browser)
    */
   async signInWithGoogle() {
-    const redirectUrl = makeRedirectUri({
-      preferLocalhost: false,
-    });
+    try {
+      const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUrl,
-        skipBrowserRedirect: Platform.OS !== 'web',
+      GoogleSignin.configure({
+        webClientId: webClientId,
+        offlineAccess: true,
+        forceCodeForRefreshToken: true,
+      });
+
+      if (Platform.OS !== 'web') {
+        try {
+          await GoogleSignin.hasPlayServices();
+          const userInfo = await GoogleSignin.signIn();
+          
+          if (userInfo.idToken) {
+            const { data, error } = await supabase.auth.signInWithIdToken({
+              provider: 'google',
+              token: userInfo.idToken,
+            });
+            if (error) throw error;
+            return data;
+          }
+        } catch (nativeError) {
+          // Jika gagal (misal: di Expo Go), lanjut ke Browser Flow di bawah
+        }
       }
-    });
 
-    if (error) {
-      if (Platform.OS === 'web') alert(error.message);
-      throw error;
-    }
+      // 2. BROWSER FLOW (Fallback untuk Web atau jika Native gagal)
+      const redirectUrl = makeRedirectUri({
+        preferLocalhost: false,
+      });
 
-    if (Platform.OS !== 'web' && data?.url) {
-      const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: Platform.OS !== 'web',
+        }
+      });
 
-      if (res.type === 'success' && res.url) {
-        const match = res.url.match(/(?:#|\?)(.*)/);
-        if (match && match[1]) {
-          const urlParams = new URLSearchParams(match[1].replace('?', '&'));
-          const access_token = urlParams.get('access_token');
-          const refresh_token = urlParams.get('refresh_token');
+      if (error) throw error;
 
-          if (access_token && refresh_token) {
-            return await supabase.auth.setSession({ access_token, refresh_token });
-          } else if (urlParams.get('error_description')) {
-            const errorMsg = decodeURIComponent(urlParams.get('error_description').replace(/\+/g, ' '));
-            Alert.alert('Gagal', errorMsg);
-            throw new Error(errorMsg);
+      if (Platform.OS !== 'web' && data?.url) {
+        const res = await WebBrowser.openAuthSessionAsync(data.url, redirectUrl);
+
+        if (res.type === 'success' && res.url) {
+          const match = res.url.match(/(?:#|\?)(.*)/);
+          if (match && match[1]) {
+            const urlParams = new URLSearchParams(match[1].replace('?', '&'));
+            const access_token = urlParams.get('access_token');
+            const refresh_token = urlParams.get('refresh_token');
+
+            if (access_token && refresh_token) {
+              return await supabase.auth.setSession({ access_token, refresh_token });
+            }
           }
         }
       }
+      return data;
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
+      Alert.alert('Gagal Login', error.message || 'Terjadi kesalahan saat menyambungkan ke Google.');
+      throw error;
     }
-    return data;
   },
+
 
   async signInWithEmail(email, password) {
     const { data, error } = await supabase.auth.signInWithPassword({

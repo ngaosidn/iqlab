@@ -15,7 +15,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.iqlab.app"
     },
     "plugins": [
       "react-native-video",
@@ -37,15 +38,18 @@
           "microphonePermission": "I-QLab membutuhkan akses microphone untuk mendengar perintah suara Bos.",
           "speechRecognitionPermission": "I-QLab membutuhkan izin Speech Recognition untuk mengubah suara Bos menjadi teks."
         }
-      ]
+      ],
+      "expo-secure-store",
+      "@react-native-google-signin/google-signin"
     ],
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1e3a8a"
       },
       "edgeToEdgeEnabled": false,
-      "package": "com.didimdim.quranchatmobile",
+      "package": "com.iqlab.app",
       "permissions": [
         "CAMERA",
         "RECORD_AUDIO",

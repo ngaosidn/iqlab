@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "518766136904",
+    "project_id": "iqlab-1fbcc",
+    "storage_bucket": "iqlab-1fbcc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518766136904:android:810a016b244849b7dad27d",
+        "android_client_info": {
+          "package_name": "com.iqlab.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "518766136904-ncibdtbr1d4qemqhufrsmskklndij152.apps.googleusercontent.com",
+          "client_type": 3
+        },
+        {
+          "client_id": "518766136904-810a016b244849b7dad27d.apps.googleusercontent.com",
+          "client_type": 1
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFKmSidsGU9MQYOyUACBk1FdvIpKkDsMg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
