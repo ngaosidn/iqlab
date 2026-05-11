@@ -42,6 +42,38 @@ serve(async (req: Request) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // GUARD ATOMIC: Set notification_sent=true DULU, cegah race condition
+    // Hanya lanjut jika update berhasil (artinya kita yang pertama)
+    if (record.id) {
+      const { data: updated, error: guardError } = await supabaseAdmin
+        .from('announcements')
+        .update({ notification_sent: true })
+        .eq('id', record.id)
+        .or('notification_sent.is.null,notification_sent.eq.false')
+        .select('id');
+      
+      if (guardError || !updated || updated.length === 0) {
+        console.log("⚠️ Notifikasi sudah diklaim oleh panggilan lain — SKIP!", guardError?.message);
+        return new Response(JSON.stringify({ message: "Already claimed", skipped: true }), { 
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+      console.log("✅ Guard passed — kita yang pertama, lanjut kirim notif");
+    }
+
+    // GUARD: Cek apakah published_at sudah lewat
+    if (record.published_at) {
+      const publishTime = new Date(record.published_at);
+      if (publishTime > new Date()) {
+        console.log("⏰ Pengumuman dijadwalkan untuk:", record.published_at, "— SKIP, belum waktunya!");
+        // Rollback notification_sent agar bisa dikirim nanti oleh cron
+        await supabaseAdmin.from('announcements').update({ notification_sent: false }).eq('id', record.id);
+        return new Response(JSON.stringify({ message: "Scheduled for future", scheduled: true }), { 
+          status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+    }
+
     // 1. Ambil token dari profiles
     console.log("Mencari token untuk audience:", record.target_audience);
     
@@ -131,15 +163,7 @@ serve(async (req: Request) => {
       }
     }
 
-    // 4. Update notification_sent
-    const { error: updateError } = await supabaseAdmin
-      .from('announcements')
-      .update({ notification_sent: true })
-      .eq('id', record.id);
-
-    if (updateError) {
-      console.error("Gagal update notification_sent:", updateError);
-    }
+    // notification_sent sudah di-update di guard atomic di atas
 
     return new Response(JSON.stringify({ 
       sendResult, 

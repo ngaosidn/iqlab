@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
+import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, Animated, Platform, Dimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Animated, Platform, Dimensions, ActivityIndicator, LogBox } from 'react-native';
+
+// Suppress warning dari react-native-render-html (library issue, bukan bug kita)
+LogBox.ignoreLogs([
+  'Support for defaultProps will be removed',
+]);
 import { LinearGradient } from 'expo-linear-gradient';
 import { Image } from 'expo-image';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
@@ -64,6 +70,33 @@ export default function App() {
   const [isProfileChecking, setIsProfileChecking] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
 
+  // Helper: Navigasi ke detail pengumuman dari data notifikasi
+  const navigateToAnnouncement = async (announcementId) => {
+    if (!announcementId) return;
+    console.log('[App] Navigasi ke pengumuman:', announcementId);
+    try {
+      const { data: announcement } = await supabase
+        .from('announcements')
+        .select('*')
+        .eq('id', announcementId)
+        .single();
+      
+      if (announcement) {
+        // Tunggu sampai navigation ready
+        const waitForNav = () => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('AnnouncementDetail', { announcement });
+          } else {
+            setTimeout(waitForNav, 300);
+          }
+        };
+        waitForNav();
+      }
+    } catch (err) {
+      console.error('[App] Gagal ambil data pengumuman:', err);
+    }
+  };
+
   // --- PUSH NOTIFICATION EFFECT ---
   useEffect(() => {
     if (session?.user && hasProfile) {
@@ -81,30 +114,32 @@ export default function App() {
         }
       });
 
-      // 2. Handle Pesan Masuk saat Aplikasi Terbuka (Foreground) — tidak perlu Toast
+      // 2. Foreground — tidak perlu tampilkan apa-apa
       const foregroundListener = notificationService.addNotificationReceivedListener(notification => {
-        console.log('[App] Foreground Notification Received (tidak ditampilkan Toast):', notification.request.content.title);
+        console.log('[App] Foreground Notification (silent):', notification.request.content.title);
       });
 
-      // 3. Handle Klik Notifikasi (Saat diklik dari tray)
+      // 3. Handle Klik Notifikasi (background/foreground)
       const responseListener = notificationService.addNotificationResponseReceivedListener(response => {
-        console.log('[App] Notification Response Received:', response);
+        console.log('[App] Notification diklik!');
         const data = response.notification.request.content.data;
         if (data?.announcementId) {
-          supabase.from('announcements')
-            .select('*')
-            .eq('id', data.announcementId)
-            .single()
-            .then(({ data: announcement }) => {
-              if (announcement && navigationRef.isReady()) {
-                navigationRef.navigate('AnnouncementDetail', { announcement });
-              }
-            });
+          navigateToAnnouncement(data.announcementId);
+        }
+      });
+
+      // 4. Cold Start — cek apakah app dibuka dari notifikasi
+      Notifications.getLastNotificationResponseAsync().then(response => {
+        if (response) {
+          console.log('[App] Cold Start — app dibuka dari notifikasi!');
+          const data = response.notification.request.content.data;
+          if (data?.announcementId) {
+            navigateToAnnouncement(data.announcementId);
+          }
         }
       });
 
       return () => {
-        console.log('[App] Cleaning up Notification listeners');
         notificationService.removeNotificationSubscription(foregroundListener);
         notificationService.removeNotificationSubscription(responseListener);
       };

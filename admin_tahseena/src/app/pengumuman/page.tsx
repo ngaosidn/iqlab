@@ -190,9 +190,15 @@ export default function PengumumanPage() {
           },
         });
 
-        // 2. KIRIM PUSH NOTIFICATION via Edge Function
+        // 2. KIRIM PUSH NOTIFICATION — hanya jika published_at sudah lewat/sekarang
         const createdRecord = (createResult as any)?.data;
-        if (createdRecord) {
+        const publishTime = new Date(published_at);
+        const isScheduledForFuture = publishTime > new Date();
+
+        if (isScheduledForFuture) {
+          console.log("[Admin] Pengumuman dijadwalkan untuk:", published_at, "— notifikasi TIDAK dikirim sekarang.");
+          toast.success(`Pengumuman dijadwalkan untuk ${publishTime.toLocaleString('id-ID')}. Notifikasi akan dikirim saat waktunya tiba.`);
+        } else if (createdRecord) {
           console.log("[Admin] Memanggil Edge Function notify-announcement...");
           try {
             const { data: fnData, error: fnError } = await supabaseClient.functions.invoke(
