@@ -13,7 +13,8 @@ import {
   LogOut,
   ChevronRight,
   FlaskConical,
-  Megaphone
+  Megaphone,
+  Globe
 } from "lucide-react";
 
 const menuItems = [
@@ -46,6 +47,11 @@ const menuItems = [
     title: "Pengumuman",
     href: "/pengumuman",
     icon: Megaphone,
+  },
+  {
+    title: "Landing Page",
+    href: "/landing-page",
+    icon: Globe,
   },
   {
     title: "Pengaturan",
