@@ -81,16 +81,9 @@ export default function App() {
         }
       });
 
-      // 2. Handle Pesan Masuk saat Aplikasi Terbuka (Foreground)
+      // 2. Handle Pesan Masuk saat Aplikasi Terbuka (Foreground) — tidak perlu Toast
       const foregroundListener = notificationService.addNotificationReceivedListener(notification => {
-        console.log('[App] Foreground Notification Received:', notification);
-        const { title, body } = notification.request.content;
-        Toast.show({
-          type: 'success',
-          text1: title || 'Pesan Masuk!',
-          text2: body || 'Ada pengumuman baru.',
-          visibilityTime: 5000,
-        });
+        console.log('[App] Foreground Notification Received (tidak ditampilkan Toast):', notification.request.content.title);
       });
 
       // 3. Handle Klik Notifikasi (Saat diklik dari tray)

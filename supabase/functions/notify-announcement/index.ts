@@ -4,6 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send";
+const EXPO_RECEIPT_URL = "https://exp.host/--/api/v2/push/getReceipts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,6 @@ const corsHeaders = {
 };
 
 serve(async (req: Request) => {
-  // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -23,116 +23,137 @@ serve(async (req: Request) => {
     
     const { record } = payload;
     if (!record) {
-      console.error("Error: Record tidak ditemukan dalam payload");
       return new Response(JSON.stringify({ error: "No record found" }), { 
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // 1. Inisialisasi Supabase Admin (Gunakan Service Role Key agar aman)
     // @ts-ignore
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     // @ts-ignore
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-    
-    console.log("Inisialisasi Client untuk URL:", supabaseUrl);
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Error: SUPABASE_URL atau SERVICE_ROLE_KEY belum diset di Secrets!");
+      console.error("FATAL: Missing SUPABASE_URL atau SUPABASE_SERVICE_ROLE_KEY!");
       return new Response(JSON.stringify({ error: "Missing env vars" }), { 
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 2. Ambil semua token yang ada di tabel profiles
+    // 1. Ambil token dari profiles
     console.log("Mencari token untuk audience:", record.target_audience);
     
     let query = supabaseAdmin
       .from('profiles')
-      .select('expo_push_token')
+      .select('expo_push_token, full_name')
       .not('expo_push_token', 'is', null);
 
     if (record.target_audience === 'iqlab') {
       query = query.eq('role', 'user_iqlab');
     }
+    // NOTE: 'tahseena' juga bisa ditambahkan filter role-nya di sini
 
     const { data: profiles, error: dbError } = await query;
 
     if (dbError) {
-      console.error("Database Error:", dbError);
+      console.error("Database Error:", JSON.stringify(dbError));
       return new Response(JSON.stringify({ error: dbError.message }), { 
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const tokens = profiles?.map((p: any) => p.expo_push_token).filter((t: any) => t) || [];
-    console.log(`Ditemukan ${tokens.length} token untuk dikirim.`);
-    console.log("Token list:", JSON.stringify(tokens));
+    console.log("Profiles ditemukan:", JSON.stringify(profiles));
+    
+    const tokens = profiles
+      ?.map((p: any) => p.expo_push_token)
+      .filter((t: any) => t && t.startsWith('ExponentPushToken')) || [];
+    
+    console.log(`Token valid: ${tokens.length} buah → ${JSON.stringify(tokens)}`);
 
     if (tokens.length === 0) {
-      console.log("Pengiriman dibatalkan karena tidak ada token.");
-      return new Response(JSON.stringify({ message: "No tokens found", tokens_count: 0 }), { 
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      return new Response(JSON.stringify({ message: "No valid tokens found", profiles_count: profiles?.length || 0 }), { 
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    // 3. Siapkan Pesan Notifikasi
+    // 2. Kirim ke Expo
     const messages = tokens.map((token: string) => ({
       to: token,
       sound: 'default',
       title: record.title || "Pengumuman Baru! 📣",
-      body: record.summary || "Ada informasi baru untuk Anda. Klik untuk melihat detail.",
+      body: record.summary || "Ada informasi baru untuk Anda.",
       data: { announcementId: record.id },
       priority: 'high',
       channelId: 'default',
       experienceId: '@didimdim/iqlab-mobile',
-      projectId: '6e32387f-eeeb-47f4-8134-60f1de798b3d',
     }));
 
-    console.log("Mengirim pesan ke Expo:", JSON.stringify(messages, null, 2));
+    console.log("Mengirim ke Expo Push API:", JSON.stringify(messages));
 
-    // 4. Kirim ke Expo API
-    console.log("Mengirim ke Expo Push API...");
-    const response = await fetch(EXPO_PUSH_URL, {
+    const sendResponse = await fetch(EXPO_PUSH_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-      },
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify(messages),
     });
 
-    const result = await response.json();
-    console.log("Hasil dari Expo:", JSON.stringify(result, null, 2));
+    const sendResult = await sendResponse.json();
+    console.log("Hasil SEND dari Expo:", JSON.stringify(sendResult));
 
-    // 5. Update status di database agar tidak dikirim ulang
+    // 3. Cek Receipts setelah 3 detik (untuk verifikasi FCM delivery)
+    const receiptIds = sendResult?.data
+      ?.filter((r: any) => r.status === 'ok' && r.id)
+      ?.map((r: any) => r.id) || [];
+    
+    if (receiptIds.length > 0) {
+      console.log("Menunggu 3 detik lalu cek receipts...");
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      const receiptResponse = await fetch(EXPO_RECEIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ ids: receiptIds }),
+      });
+      
+      const receiptResult = await receiptResponse.json();
+      console.log("📬 RECEIPT CHECK (status FCM delivery):", JSON.stringify(receiptResult, null, 2));
+      
+      // Log jika ada error di receipt
+      const receiptData = receiptResult?.data || {};
+      for (const [id, receipt] of Object.entries(receiptData)) {
+        const r = receipt as any;
+        if (r.status === 'error') {
+          console.error(`❌ Receipt ERROR untuk ${id}:`, r.message, r.details);
+        } else {
+          console.log(`✅ Receipt OK untuk ${id}: delivered`);
+        }
+      }
+    }
+
+    // 4. Update notification_sent
     const { error: updateError } = await supabaseAdmin
       .from('announcements')
       .update({ notification_sent: true })
       .eq('id', record.id);
 
     if (updateError) {
-      console.error("Gagal update status notification_sent:", updateError);
-    } else {
-      console.log("Status notification_sent berhasil diupdate ke TRUE.");
+      console.error("Gagal update notification_sent:", updateError);
     }
 
-    return new Response(JSON.stringify({ result, tokens_count: tokens.length }), { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(JSON.stringify({ 
+      sendResult, 
+      tokens_count: tokens.length,
+      receipt_ids: receiptIds
+    }), { 
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, 
       status: 200 
     });
 
   } catch (error: any) {
     console.error("CATASTROPHIC ERROR:", error);
     return new Response(JSON.stringify({ error: error?.message || "Unknown error" }), { 
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500 
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 
     });
   }
 })
