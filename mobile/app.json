@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "I-QLab",
-    "slug": "quranchat-mobile",
+    "slug": "iqlab-mobile",
     "scheme": "iqlab",
     "version": "1.0.0",
     "orientation": "default",
@@ -16,7 +16,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.iqlab.app"
+      "bundleIdentifier": "com.iqlab.app",
+      "infoPlist": {
+        "NSSpeechRecognitionUsageDescription": "I-QLab membutuhkan izin Speech Recognition untuk mengubah suara Bos menjadi teks.",
+        "NSMicrophoneUsageDescription": "I-QLab membutuhkan akses microphone untuk mendengar perintah suara Bos."
+      }
     },
     "plugins": [
       "react-native-video",
@@ -40,6 +44,16 @@
         }
       ],
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#1e3a8a",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "I-QLab"
+        }
+      ],
       "@react-native-google-signin/google-signin"
     ],
     "android": {
@@ -57,7 +71,9 @@
         "FOREGROUND_SERVICE_MEDIA_PROJECTION",
         "MODIFY_AUDIO_SETTINGS",
         "ACCESS_WIFI_STATE",
-        "ACCESS_NETWORK_STATE"
+        "ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO",
+        "POST_NOTIFICATIONS"
       ]
     },
     "androidStatusBar": {
@@ -70,8 +86,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "e5b1eb2c-d62e-4312-9316-14fcd65ae136"
+        "projectId": "6e32387f-eeeb-47f4-8134-60f1de798b3d"
       }
-    }
+    },
+    "owner": "didimdim"
   }
 }

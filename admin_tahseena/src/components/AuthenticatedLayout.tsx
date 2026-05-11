@@ -10,11 +10,9 @@ export const AuthenticatedLayout = ({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { data: authData, isLoading: authLoading } = useIsAuthenticated();
   
-  useEffect(() => {
-    if (!authLoading && !authData?.authenticated && pathname !== "/login") {
-      router.push("/login");
-    }
-  }, [authData, authLoading, pathname, router]);
+  // Kita hapus useEffect yang melakukan router.push karena bisa menyebabkan loop 
+  // Jika authLoading atau tidak ter-auth, biarkan komponen Authenticated di bawah yang menangani
+  // atau biarkan pengecekan pathname di bawah.
 
   if (pathname === "/login") {
     return <>{children}</>;

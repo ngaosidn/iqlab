@@ -61,5 +61,21 @@ export const profileService = {
 
     if (error) throw error;
     return data;
+  },
+
+  /**
+   * Menyimpan token push notification ke profil
+   */
+  async updatePushToken(userId, token) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        expo_push_token: token,
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return true;
   }
 };

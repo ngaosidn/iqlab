@@ -11,7 +11,9 @@ import {
   BookOpen, 
   Settings,
   LogOut,
-  ChevronRight
+  ChevronRight,
+  FlaskConical,
+  Megaphone
 } from "lucide-react";
 
 const menuItems = [
@@ -34,6 +36,16 @@ const menuItems = [
     title: "Konten Belajar",
     href: "/content",
     icon: BookOpen,
+  },
+  {
+    title: "I-QLab",
+    href: "/iqlab",
+    icon: FlaskConical,
+  },
+  {
+    title: "Pengumuman",
+    href: "/pengumuman",
+    icon: Megaphone,
   },
   {
     title: "Pengaturan",

@@ -84,6 +84,9 @@ export default function HomeScreen({ navigation, session }) {
   const {
     checkAuth,
     dotOpacity,
+    announcements,
+    isLoadingAnnouncements,
+    translateX
   } = useHome(session, onNavigate);
 
   return (
@@ -119,51 +122,85 @@ export default function HomeScreen({ navigation, session }) {
 
           {/* SLIDER INFORMASI TERBARU */}
           <View style={styles.sliderContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              snapToInterval={Dimensions.get('window').width - 40 + 14} 
-              decelerationRate="fast"
-              contentContainerStyle={styles.sliderContent}
-            >
-              {SLIDER_DATA.map((item, index) => {
-                const isLast = index === SLIDER_DATA.length - 1;
-                return (
-                  <TouchableOpacity 
-                    key={item.id} 
-                    activeOpacity={0.9} 
-                    style={[styles.sliderCard, { marginRight: isLast ? 0 : 14 }]}
-                  >
-                    {/* Gambar Background High-Res */}
-                    <Image 
-                      source={{ uri: item.image }} 
-                      style={StyleSheet.absoluteFill} 
-                      contentFit="cover" 
-                      transition={500} 
+            {isLoadingAnnouncements ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sliderContent}>
+                {[1, 2].map((i) => (
+                  <View key={i} style={[styles.sliderCard, { backgroundColor: theme.cardBg, marginRight: 14, overflow: 'hidden' }]}>
+                     <Animated.View 
+                      style={[
+                        StyleSheet.absoluteFill,
+                        {
+                          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                          transform: [{ translateX }]
+                        }
+                      ]}
                     />
-                    
-                    {/* Gradient Overlay Gelap agar teks tetap terbaca jelas */}
-                    <LinearGradient 
-                      colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)']} 
-                      style={StyleSheet.absoluteFill} 
-                    />
-                    
-                    <View style={styles.sliderCardContent}>
-                      <View style={[styles.sliderIconBox, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                        <Feather name={item.icon} size={22} color="#ffffff" />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 16 }}>
-                        <View style={[styles.sliderBadge, { backgroundColor: '#4f46e5' }]}>
-                          <Text style={styles.sliderBadgeText}>Terbaru</Text>
+                    <LinearGradient colors={['transparent', 'rgba(0,0,0,0.2)']} style={StyleSheet.absoluteFill} />
+                  </View>
+                ))}
+              </ScrollView>
+            ) : announcements.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={Dimensions.get('window').width - 40 + 14} 
+                decelerationRate="fast"
+                contentContainerStyle={styles.sliderContent}
+              >
+                {announcements.map((item, index) => {
+                  const isLast = index === announcements.length - 1;
+                  return (
+                    <TouchableOpacity 
+                      key={item.id} 
+                      activeOpacity={0.9} 
+                      style={[styles.sliderCard, { marginRight: isLast ? 0 : 14 }]}
+                      onPress={() => navigation.navigate('AnnouncementDetail', { announcement: item })}
+                    >
+                      {/* Gambar Background dari Supabase */}
+                      <Image 
+                        source={{ uri: item.image_url }} 
+                        style={StyleSheet.absoluteFill} 
+                        contentFit="cover" 
+                        transition={500} 
+                      />
+                      
+                      {/* Gradient Overlay Gelap agar teks tetap terbaca jelas */}
+                      <LinearGradient 
+                        colors={['rgba(0,0,0,0.1)', 'rgba(0,0,0,0.8)']} 
+                        style={StyleSheet.absoluteFill} 
+                      />
+                      
+                      <View style={styles.sliderCardContent}>
+                        <View style={[styles.sliderIconBox, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                          <Feather name={item.icon || 'megaphone'} size={22} color="#ffffff" />
                         </View>
-                        <Text style={styles.sliderTitle} numberOfLines={1}>{item.title}</Text>
-                        <Text style={styles.sliderDesc} numberOfLines={2}>{item.desc}</Text>
+                        <View style={{ flex: 1, marginLeft: 16 }}>
+                          <View style={[styles.sliderBadge, { backgroundColor: '#4f46e5' }]}>
+                            <Text style={styles.sliderBadgeText}>Terbaru</Text>
+                          </View>
+                          <Text style={styles.sliderTitle} numberOfLines={1}>{item.title}</Text>
+                          <Text style={styles.sliderDesc} numberOfLines={2}>{item.summary}</Text>
+                        </View>
                       </View>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              /* EMPTY STATE PREMIUM */
+              <View style={styles.sliderContent}>
+                <LinearGradient 
+                  colors={[isDarkMode ? '#1e293b' : '#ffffff', isDarkMode ? '#0f172a' : '#f8fafc']}
+                  style={[styles.sliderCard, { borderWidth: 1, borderColor: theme.divider, justifyContent: 'center', alignItems: 'center' }]}
+                >
+                  <View style={[styles.sliderIconBox, { backgroundColor: theme.iconBgBlue, marginBottom: 12 }]}>
+                    <Feather name="smile" size={24} color={theme.iconColBlue} />
+                  </View>
+                  <Text style={[styles.sliderTitle, { color: theme.textMain, fontSize: 16 }]}>Belum ada pengumuman baru</Text>
+                  <Text style={[styles.sliderDesc, { color: theme.textSub, textAlign: 'center' }]}>Tetap semangat belajar Al-Quran hari ini ya! ✨</Text>
+                </LinearGradient>
+              </View>
+            )}
           </View>
 
           {/* PEMBATAS ELEGAN (Fading Gradient Divider) */}

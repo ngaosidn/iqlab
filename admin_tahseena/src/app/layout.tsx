@@ -1,17 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { RefineContext } from "@/providers/RefineContext";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthenticatedLayout } from "@/components/AuthenticatedLayout";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
 });
 
@@ -37,7 +32,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="h-full">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-full`}>
+      <body className={`${plusJakartaSans.variable} font-sans antialiased h-full`}>
         <RefineContext>
           <AuthenticatedLayout>
             {children}

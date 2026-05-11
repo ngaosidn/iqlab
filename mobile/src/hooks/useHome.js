@@ -109,6 +109,65 @@ export const useHome = (session, onNavigate) => {
     ).start();
   }, []);
 
+  const [announcements, setAnnouncements] = useState([]);
+  const [isLoadingAnnouncements, setIsLoadingAnnouncements] = useState(true);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Heartbeat: Update jam internal setiap 10 detik
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchAnnouncements = async () => {
+    try {
+      console.log('Fetching announcements (with 5m buffer)...');
+      setIsLoadingAnnouncements(true);
+      
+      // Ambil yang sudah terbit DAN yang akan terbit dalam 5 menit ke depan
+      // (Agar sudah ada di memori HP sebelum waktunya tiba)
+      const futureBuffer = new Date(Date.now() + 5 * 60000).toISOString();
+
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .or('target_audience.eq.semua,target_audience.eq.iqlab')
+        .lte('published_at', futureBuffer)
+        .order('published_at', { ascending: false })
+        .limit(5);
+
+      if (error) throw error;
+      setAnnouncements(data || []);
+    } catch (error) {
+      console.error('Error fetching announcements:', error);
+    } finally {
+      setIsLoadingAnnouncements(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnnouncements();
+    
+    const channel = supabase
+      .channel('announcements_realtime')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'announcements' }, 
+        () => fetchAnnouncements()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Filter pengumuman yang BENAR-BENAR sudah waktunya tayang (berdasarkan jam HP)
+  const visibleAnnouncements = announcements.filter(item => {
+    return new Date(item.published_at) <= currentTime;
+  });
+
   const translateX = shimmerValue.interpolate({
     inputRange: [-1, 2],
     outputRange: [-screenWidth, screenWidth * 1.5]
@@ -117,6 +176,9 @@ export const useHome = (session, onNavigate) => {
   return {
     checkAuth,
     dotOpacity,
-    translateX
+    translateX,
+    announcements: visibleAnnouncements, // Kirim yang sudah difilter
+    isLoadingAnnouncements,
+    refreshAnnouncements: fetchAnnouncements
   };
 };

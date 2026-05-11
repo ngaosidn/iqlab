@@ -7,8 +7,10 @@ import { Image } from 'expo-image';
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
 import { Feather, FontAwesome5 } from '@expo/vector-icons';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const navigationRef = createNavigationContainerRef();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,10 +22,12 @@ import HomeScreen from './src/screens/HomeScreen';
 import InteractiveQuranScreen from './src/screens/InteractiveQuranScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ContentScreen from './src/screens/ContentScreen';
+import AnnouncementDetailScreen from './src/screens/AnnouncementDetailScreen';
 import AnimatedTabBar from './src/components/navigation/AnimatedTabBar';
 import { supabase } from './src/lib/supabase';
 import { databaseService } from './src/services/databaseService';
 import { ThemeProvider } from './src/context/ThemeContext';
+import { notificationService } from './src/services/notificationService';
 
 function MainTabs({ session }) {
   return (
@@ -59,6 +63,60 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [isProfileChecking, setIsProfileChecking] = useState(true);
   const [hasProfile, setHasProfile] = useState(false);
+
+  // --- PUSH NOTIFICATION EFFECT ---
+  useEffect(() => {
+    if (session?.user && hasProfile) {
+      console.log('[App] Initializing Notifications for user:', session.user.id);
+      
+      // 1. Daftar Token
+      notificationService.registerForPushNotificationsAsync().then(token => {
+        if (token) {
+          console.log('[App] Push Token current:', token);
+          profileService.updatePushToken(session.user.id, token)
+            .then(() => console.log('[App] Token updated in DB ✅'))
+            .catch(err => console.error('[App] Error saving push token:', err));
+        } else {
+          console.log('[App] No token generated ❌');
+        }
+      });
+
+      // 2. Handle Pesan Masuk saat Aplikasi Terbuka (Foreground)
+      const foregroundListener = notificationService.addNotificationReceivedListener(notification => {
+        console.log('[App] Foreground Notification Received:', notification);
+        const { title, body } = notification.request.content;
+        Toast.show({
+          type: 'success',
+          text1: title || 'Pesan Masuk!',
+          text2: body || 'Ada pengumuman baru.',
+          visibilityTime: 5000,
+        });
+      });
+
+      // 3. Handle Klik Notifikasi (Saat diklik dari tray)
+      const responseListener = notificationService.addNotificationResponseReceivedListener(response => {
+        console.log('[App] Notification Response Received:', response);
+        const data = response.notification.request.content.data;
+        if (data?.announcementId) {
+          supabase.from('announcements')
+            .select('*')
+            .eq('id', data.announcementId)
+            .single()
+            .then(({ data: announcement }) => {
+              if (announcement && navigationRef.isReady()) {
+                navigationRef.navigate('AnnouncementDetail', { announcement });
+              }
+            });
+        }
+      });
+
+      return () => {
+        console.log('[App] Cleaning up Notification listeners');
+        notificationService.removeNotificationSubscription(foregroundListener);
+        notificationService.removeNotificationSubscription(responseListener);
+      };
+    }
+  }, [session, hasProfile]);
 
   // Fungsi pengecekan profil
   const checkUserProfile = async (userId) => {
@@ -175,13 +233,16 @@ export default function App() {
 
     // Alur Normal (Home / Tabs)
     return (
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <Stack.Navigator screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
           <Stack.Screen name="MainTabs">
             {props => <MainTabs {...props} session={session} />}
           </Stack.Screen>
           <Stack.Screen name="Interactive">
             {props => <InteractiveQuranScreen {...props} session={session} />}
+          </Stack.Screen>
+          <Stack.Screen name="AnnouncementDetail">
+            {props => <AnnouncementDetailScreen {...props} />}
           </Stack.Screen>
         </Stack.Navigator>
       </NavigationContainer>
