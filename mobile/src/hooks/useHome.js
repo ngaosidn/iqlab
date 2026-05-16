@@ -30,11 +30,10 @@ export const useHome = (session, onNavigate) => {
       }
     }
 
-    checkProfile(session?.user);
+    // Pengecekan profil sudah ditangani di App.js menggunakan tabel 'profiles'
+    // Jadi kita tidak perlu lagi mengecek metadata di sini agar tidak terjadi tab-jump.
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      checkProfile(newSession?.user);
-
       if (event === 'SIGNED_IN') {
         if (Platform.OS === 'web' && typeof window !== 'undefined') {
           window.history.replaceState(null, '', window.location.pathname);
@@ -63,13 +62,6 @@ export const useHome = (session, onNavigate) => {
     return () => subscription.unsubscribe();
   }, [session]);
 
-  const checkProfile = (user) => {
-    if (user) {
-      if (!user.user_metadata?.age || !user.user_metadata?.gender) {
-        onNavigate('profile');
-      }
-    }
-  };
 
   const checkAuth = (onSuccess) => {
     if (session?.user) {
