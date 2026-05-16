@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Amiri:wght@400;700&family=Noto+Sans+Arabic:wght@300;400;500;700&display=swap');
+
+@font-face {
+  font-family: 'UthmanicNeo';
+  src: url('/Uthmanic_NeoCOLOR-Regular copy.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Palet Warna Persis Logo */
+  --primary-teal: #14917C;
+  --primary-cyan: #26C6DA;
+  --primary-blue: #2876B4;
+  --accent-blue: #0288D1;
+
+  /* Universal Theme Variables (Light Mode Default) */
+  --bg-body: #FFFFFF;
+  --bg-gradient: linear-gradient(135deg, #FFFFFF 0%, #F0F9FF 50%, #E0F2FE 100%);
+  --text-main: #1E293B;
+  --text-light: #64748B;
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(255, 255, 255, 0.4);
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.03);
+  --header-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.4);
+
+  --font-main: 'Outfit', sans-serif;
+  --font-arabic: 'UthmanicNeo', serif;
+
+  --divider-color: linear-gradient(90deg, var(--primary-teal), var(--primary-blue), var(--primary-cyan));
+  --divider-opacity: 0.2;
+  --divider-glow: none;
+}
+
+[data-theme='dark'] {
+  --bg-body: #0F172A;
+  --bg-gradient: linear-gradient(135deg, #0F172A 0%, #1E293B 30%, #020617 100%);
+  --text-main: #F8FAFC;
+  --text-light: #94A3B8;
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-border: rgba(255, 255, 255, 0.05);
+  --shadow-soft: 0 10px 40px rgba(0, 0, 0, 0.2);
+  --header-bg: rgba(15, 23, 42, 0.9);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --divider-opacity: 0.8;
+  --divider-glow: 0 0 15px rgba(38, 198, 218, 0.6);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body,
+button,
+a,
+input,
+select,
+textarea {
+  font-family: var(--font-main);
+}
+
+body {
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-main);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* FONT ARABIC RESET */
+.arabic {
+  font-family: var(--font-arabic) !important;
+  direction: rtl;
+}
+
+.arabic * {
+  font-family: var(--font-arabic) !important;
+}
+
+/* NAVBAR PRIORITY */
+.navbar {
+  position: fixed !important;
+  z-index: 9999 !important;
+}
+
+/* SECTION STRUCTURE */
+section {
+  position: relative;
+  z-index: 1;
+}
+
+/* BUTTONS & LINKS INTERACTIVITY */
+button,
+a {
+  cursor: pointer;
+  position: relative;
+  z-index: 5;
+}
+
+/* DIVIDERS */
+.section-divider {
+  height: 2px;
+  width: 180px;
+  margin: 60px auto;
+  background: var(--divider-color);
+  opacity: var(--divider-opacity);
+  box-shadow: var(--divider-glow);
+  border-radius: 10px;
+  position: relative;
+  z-index: 1;
+}
+
+.section-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 10px;
+  height: 10px;
+  background: var(--bg-body);
+  border: 2px solid var(--primary-cyan);
+  box-shadow: var(--divider-glow);
+}
+
+/* UTILS */
+.shiny-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-soft);
+  border-radius: 20px;
+}
+
+.pointer-none {
+  pointer-events: none;
+}
+
+.z-minus {
+  z-index: -1;
+}

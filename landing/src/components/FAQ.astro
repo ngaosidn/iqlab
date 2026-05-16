@@ -1,0 +1,308 @@
+---
+---
+<section class="faq-section" id="faq">
+  <div class="container">
+    <div class="section-header">
+      <span class="subtitle">Pusat Bantuan</span>
+      <h2>Pertanyaan <span class="text-gradient">Umum (FAQ)</span></h2>
+      <p class="description">Temukan jawaban untuk pertanyaan yang paling sering diajukan seputar program bimbingan Tahseena.</p>
+    </div>
+
+    <div class="faq-wrapper">
+      <!-- FAQ Item 1 -->
+      <div class="faq-item">
+        <button class="faq-question">
+          <h3>Apakah program ini cocok untuk pemula yang belum bisa baca Al-Qur'an sama sekali?</h3>
+          <span class="faq-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        </button>
+        <div class="faq-answer">
+          <div class="answer-content">
+            <p>Tentu saja! Kami memiliki program <strong>Basic Tahsin</strong> yang dirancang khusus untuk pemula (Nol). Anda akan dibimbing dari pengenalan huruf hijaiyah hingga bisa membaca Al-Qur'an dengan lancar dan sesuai tajwid dasar.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Item 2 -->
+      <div class="faq-item">
+        <button class="faq-question">
+          <h3>Bagaimana sistem belajarnya, online atau offline?</h3>
+          <span class="faq-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        </button>
+        <div class="faq-answer">
+          <div class="answer-content">
+            <p>Saat ini Tahseena menyediakan sistem pembelajaran <strong>100% Online Interaktif</strong> (Live via Zoom/Google Meet) dan juga mode E-Learning untuk Professional Class. Anda bisa belajar dari mana saja dengan jadwal yang fleksibel.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Item 3 -->
+      <div class="faq-item">
+        <button class="faq-question">
+          <h3>Siapa pengajarnya? Apakah bersertifikat?</h3>
+          <span class="faq-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        </button>
+        <div class="faq-answer">
+          <div class="answer-content">
+            <p>Iya, seluruh Asatidz/Ustadzah di Tahseena adalah pengajar profesional yang memiliki sanad hafalan dan tersertifikasi secara resmi di bidang ilmu Tajwid dan Tahsin Al-Qur'an.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Item 4 -->
+      <div class="faq-item">
+        <button class="faq-question">
+          <h3>Berapa biaya pendaftarannya?</h3>
+          <span class="faq-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        </button>
+        <div class="faq-answer">
+          <div class="answer-content">
+            <p>Biaya pendaftaran bervariasi bergantung pada program yang diambil (Kids, Basic, atau Professional). Silakan hubungi Admin kami via WhatsApp untuk mendapatkan detail paket harga promo bulan ini.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FAQ Item 5 -->
+      <div class="faq-item">
+        <button class="faq-question">
+          <h3>Apakah ada jaminan bisa baca Al-Qur'an lancar setelah lulus?</h3>
+          <span class="faq-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </span>
+        </button>
+        <div class="faq-answer">
+          <div class="answer-content">
+            <p>Insya Allah. Kami menggunakan kurikulum modern yang terstruktur. Selama peserta rajin mengikuti kelas, mengerjakan tugas, dan banyak mengulang, target kefasihan bacaan dapat tercapai sesuai waktu program.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  (function() {
+    function initFAQ() {
+      const faqItems = document.querySelectorAll('.faq-item');
+      
+      faqItems.forEach(item => {
+        const questionBtn = item.querySelector('.faq-question');
+        
+        questionBtn?.addEventListener('click', () => {
+          // Tutup akordion yang lain jika mau mode "Satu Buka Saja"
+          // const currentlyActive = document.querySelector('.faq-item.active');
+          // if(currentlyActive && currentlyActive !== item) {
+          //   currentlyActive.classList.remove('active');
+          //   currentlyActive.querySelector('.faq-answer').style.maxHeight = 0;
+          // }
+
+          item.classList.toggle('active');
+          const answer = item.querySelector('.faq-answer');
+          
+          if (item.classList.contains('active')) {
+            answer.style.maxHeight = answer.scrollHeight + "px";
+          } else {
+            answer.style.maxHeight = "0px";
+          }
+        });
+      });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initFAQ);
+    } else {
+      initFAQ();
+    }
+  })();
+</script>
+
+<style>
+  .faq-section {
+    padding: 100px 0;
+    background: transparent; 
+    position: relative;
+    font-family: var(--font-main);
+    transition: background 0.3s;
+  }
+
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .subtitle {
+    color: #2876B4;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 15px 0;
+  }
+
+  .text-gradient {
+    background: linear-gradient(90deg, #2876B4, #26C6DA);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .description {
+    color: var(--text-light);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .faq-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .faq-item {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+
+  .faq-item:hover {
+    border-color: rgba(40, 118, 180, 0.2);
+    box-shadow: 0 15px 40px rgba(40, 118, 180, 0.05);
+  }
+
+  .faq-item.active {
+    border-color: rgba(40, 118, 180, 0.3);
+    box-shadow: 0 20px 40px rgba(40, 118, 180, 0.08);
+  }
+
+  .faq-question {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 25px 30px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    outline: none;
+  }
+
+  .faq-question h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+    padding-right: 20px;
+    line-height: 1.5;
+    transition: color 0.3s;
+  }
+
+  .faq-item:hover .faq-question h3 {
+    color: #2876B4;
+  }
+  
+  .faq-item.active .faq-question h3 {
+    color: #2876B4;
+  }
+
+  .faq-icon {
+    min-width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(40, 118, 180, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-blue);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .faq-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .faq-item.active .faq-icon {
+    background: #2876B4;
+    color: white;
+    transform: rotate(180deg);
+  }
+
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s cubic-bezier(0, 1, 0, 1);
+  }
+
+  .answer-content {
+    padding: 0 30px 30px 30px;
+    color: var(--text-light);
+    font-size: 1.05rem;
+    line-height: 1.8;
+  }
+
+  .answer-content strong {
+    color: var(--text-main);
+    font-weight: 700;
+  }
+
+  @media (max-width: 768px) {
+    .faq-section {
+      padding: 80px 0;
+    }
+    h2 {
+      font-size: 2.22rem;
+    }
+    .section-header {
+      margin-bottom: 40px;
+    }
+    .faq-wrapper {
+      gap: 15px;
+    }
+    .faq-question {
+      padding: 20px 25px;
+    }
+    .faq-question h3 {
+      font-size: 1rem;
+    }
+    .answer-content {
+      padding: 0 25px 25px 25px;
+      font-size: 0.95rem;
+    }
+    .faq-icon {
+      min-width: 35px;
+      height: 35px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    h2 { font-size: 1.8rem; }
+    .description { font-size: 0.95rem; }
+  }
+</style>

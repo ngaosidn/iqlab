@@ -1,0 +1,287 @@
+---
+---
+<nav class="navbar">
+  <div class="container nav-container">
+    <div class="logo-area">
+      <img src="/logo.png" alt="Tahseena Logo" class="logo-img" />
+    </div>
+    
+    <!-- Menu Desktop -->
+    <ul class="nav-links">
+      <li><a href="#home">Beranda</a></li>
+      <li><a href="#program">Program</a></li>
+      <li><a href="#testimoni">Testimoni</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#tentang">Tentang Kami</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <!-- Theme Toggle -->
+      <button id="theme-toggle" class="theme-btn" aria-label="Toggle Theme">
+        <svg id="sun-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+        <svg id="moon-icon" class="theme-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      </button>
+
+      <!-- Hamburger (Mobile) -->
+      <button id="menu-toggle" class="hamburger" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Sidebar Drawer (Mobile) - Diluar Nav agar Solid -->
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <div class="logo-area">
+      <img src="/logo.png" alt="Tahseena Logo" class="logo-img" />
+    </div>
+    <button id="close-menu" class="close-btn">&times;</button>
+  </div>
+  
+  <ul class="sidebar-links">
+    <li><a href="#home">Beranda</a></li>
+    <li><a href="#program">Program</a></li>
+    <li><a href="#testimoni">Testimoni</a></li>
+    <li><a href="#faq">FAQ</a></li>
+    <li><a href="#tentang">Tentang Kami</a></li>
+  </ul>
+</div>
+
+<script>
+  const menuToggle = document.getElementById('menu-toggle');
+  const closeMenu = document.getElementById('close-menu');
+  const sidebar = document.getElementById('sidebar');
+  const themeToggle = document.getElementById('theme-toggle');
+
+  // --- Theme Logic ---
+  function getAutoTheme() {
+    // 1. Cek pilihan manual tersimpan
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved;
+
+    // 2. Cek waktu (18:00 - 06:00 = Dark)
+    const hour = new Date().getHours();
+    if (hour >= 18 || hour < 6) return 'dark';
+
+    // 3. Fallback ke preferensi sistem
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) return 'dark';
+    
+    return 'light';
+  }
+
+  const currentTheme = getAutoTheme();
+  document.documentElement.setAttribute('data-theme', currentTheme);
+
+  themeToggle?.addEventListener('click', () => {
+    const theme = document.documentElement.getAttribute('data-theme');
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+  });
+
+  // --- Sidebar Logic ---
+  const sidebarLinks = document.querySelectorAll('.sidebar-links a');
+
+  menuToggle?.addEventListener('click', () => {
+    sidebar?.classList.add('active');
+  });
+
+  closeMenu?.addEventListener('click', () => {
+    sidebar?.classList.remove('active');
+  });
+
+  sidebarLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      sidebar?.classList.remove('active');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (sidebar?.classList.contains('active')) {
+      if (!sidebar.contains(e.target as Node) && !menuToggle?.contains(e.target as Node)) {
+        sidebar.classList.remove('active');
+      }
+    }
+  });
+</script>
+
+<style>
+  .navbar {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 1100px;
+    z-index: 1000;
+    background: var(--header-bg);
+    backdrop-filter: blur(15px) saturate(180%);
+    -webkit-backdrop-filter: blur(15px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    border-radius: 100px;
+    padding: 12px 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+    transition: background 0.3s, border 0.3s;
+  }
+
+  .nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .theme-btn {
+    background: rgba(40, 118, 180, 0.05);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  .theme-btn:hover {
+    background: rgba(40, 118, 180, 0.15);
+    transform: scale(1.05);
+  }
+
+  .theme-icon { transition: 0.3s; }
+  #sun-icon { display: none; }
+  #moon-icon { display: block; }
+
+  :global([data-theme='dark']) #sun-icon { display: block; }
+  :global([data-theme='dark']) #moon-icon { display: none; }
+
+  .logo-img {
+    height: 40px;
+    width: auto;
+    transition: 0.3s;
+  }
+
+  :global([data-theme='dark']) .logo-img,
+  :global([data-theme='dark']) .floating-logo {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  .nav-links {
+    display: flex;
+    list-style: none;
+    gap: 40px;
+  }
+
+  .nav-links a {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+    opacity: 0.7;
+    text-decoration: none;
+    position: relative;
+    padding: 4px 0;
+    transition: 0.3s ease;
+  }
+
+  .nav-links a:hover {
+    opacity: 1;
+    color: var(--primary-blue);
+  }
+
+  /* Hamburger Styles */
+  .hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 100;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 25px;
+    height: 2px;
+    background: var(--primary-blue);
+    border-radius: 10px;
+  }
+
+  /* Sidebar Styles - HIDE ON DESKTOP */
+  .sidebar {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: -100%;
+    bottom: 0;
+    width: 100%;
+    background: var(--bg-body) !important;
+    backdrop-filter: blur(20px);
+    z-index: 99999 !important; /* Ditinggikan agar melewati Navbar (z-index: 9999) */
+    padding: 60px 40px;
+    transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    flex-direction: column;
+    font-family: var(--font-main);
+  }
+
+  .sidebar.active {
+    right: 0;
+  }
+
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 60px;
+  }
+
+  .close-btn {
+    font-size: 2.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-light);
+  }
+
+  .sidebar-links {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    align-items: center; /* Centered links for full screen */
+  }
+
+  .sidebar-links a {
+    text-decoration: none;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+    padding: 10px 15px;
+    border-radius: 10px;
+    transition: 0.3s;
+  }
+
+  .sidebar-links a:hover {
+    color: var(--primary-blue);
+    transform: scale(1.1);
+  }
+
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .sidebar { display: flex; } /* Hanya muncul di Mobile */
+    .navbar { width: 95%; top: 16px; padding: 10px 20px; }
+  }
+</style>

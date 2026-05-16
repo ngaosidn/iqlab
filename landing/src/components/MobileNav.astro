@@ -1,0 +1,86 @@
+---
+---
+<div class="mobile-nav">
+  <a href="/" class="nav-item active">
+    <span class="icon">🏠</span>
+    <span>Beranda</span>
+  </a>
+  <a href="#program" class="nav-item">
+    <span class="icon">📖</span>
+    <span>Program</span>
+  </a>
+  <a href="#daftar" class="nav-item action">
+    <div class="plus-icon">+</div>
+  </a>
+  <a href="#testimoni" class="nav-item">
+    <span class="icon">💬</span>
+    <span>Testimoni</span>
+  </a>
+  <a href="#kontak" class="nav-item">
+    <span class="icon">📞</span>
+    <span>Kontak</span>
+  </a>
+</div>
+
+<style>
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    height: 65px;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 20px;
+    z-index: 1000;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  }
+
+  @media (max-width: 768px) {
+    .mobile-nav {
+      display: flex;
+    }
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-light);
+    font-size: 0.65rem;
+    font-weight: 600;
+    gap: 4px;
+    transition: 0.3s;
+  }
+
+  .nav-item .icon {
+    font-size: 1.2rem;
+  }
+
+  .nav-item.active {
+    color: var(--primary-teal);
+  }
+
+  .nav-item.action {
+    transform: translateY(-25px);
+  }
+
+  .plus-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--primary-teal), var(--primary-blue));
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    box-shadow: 0 8px 20px rgba(20, 145, 124, 0.3);
+    border: 4px solid white;
+  }
+</style>

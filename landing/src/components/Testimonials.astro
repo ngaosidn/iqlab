@@ -1,0 +1,285 @@
+---
+---
+<section class="testimoni-section" id="testimoni">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+  
+  <div class="container">
+    <div class="section-header fade-up">
+      <span class="subtitle">Testimoni Sahabat</span>
+      <h2>Apa Kata <span class="text-gradient">Mereka?</span></h2>
+      <p class="description">Pengalaman nyata dari mereka yang telah bertumbuh dan belajar bersama Tahseena.</p>
+    </div>
+
+    <div class="ts-slider-wrapper">
+      <div class="swiper ts-swiper-final">
+        <div class="swiper-wrapper">
+          <!-- Slide 1 -->
+          <div class="swiper-slide">
+            <div class="testi-card">
+              <div class="stars">★★★★★</div>
+              <p class="testi-text">"Metode pembelajaran di Tahseena sangat interaktif. Saya yang tadinya terbata-bata, sekarang jauh lebih lancar membaca Al-Qur'an dengan tajwid yang benar."</p>
+              <div class="user-info">
+                <img src="/img/testimonials/user1.png" alt="Ahmad" class="user-img" loading="lazy" />
+                <div class="user-meta">
+                  <h4>Ahmad Fauzi</h4>
+                  <span>Karyawan Swasta</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Slide 2 -->
+          <div class="swiper-slide">
+            <div class="testi-card">
+              <div class="stars">★★★★★</div>
+              <p class="testi-text">"Tahseena Kids beneran ngebantu anak saya jadi semangat ngaji. Interface-nya keren dan ustadzah-nya sabar banget ngajarin anak sampai bisa."</p>
+              <div class="user-info">
+                <img src="/img/testimonials/user2.png" alt="Siti" class="user-img" loading="lazy" />
+                <div class="user-meta">
+                  <h4>Siti Aminah</h4>
+                  <span>Ibu Rumah Tangga</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Slide 3 -->
+          <div class="swiper-slide">
+            <div class="testi-card">
+              <div class="stars">★★★★★</div>
+              <p class="testi-text">"Waktu fleksibel sangat membantu saya yang sibuk. Kualitas pengajarannya tetap premium dan sangat profesional bagi kami para pekerja."</p>
+              <div class="user-info">
+                <img src="/img/testimonials/user3.png" alt="Budi" class="user-img" loading="lazy" />
+                <div class="user-meta">
+                  <h4>Budi Santoso</h4>
+                  <span>Manager IT</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Pagination -->
+        <div class="swiper-pagination ts-pag"></div>
+      </div>
+
+      <!-- Navigation -->
+      <button class="ts-nav-btn ts-go-prev" aria-label="Previous slide">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
+      <button class="ts-nav-btn ts-go-next" aria-label="Next slide">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+      </button>
+    </div>
+  </div>
+
+  <script is:inline src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+  <script is:inline>
+    (function() {
+      function init() {
+        if (typeof Swiper !== 'undefined') {
+          new Swiper(".ts-swiper-final", {
+            slidesPerView: 1,
+            spaceBetween: 30,
+            centeredSlides: true,
+            loop: true,
+            autoplay: { delay: 5000, disableOnInteraction: false },
+            pagination: { el: ".ts-pag", clickable: true },
+            navigation: { nextEl: ".ts-go-next", prevEl: ".ts-go-prev" },
+          });
+        } else { setTimeout(init, 200); }
+      }
+      setTimeout(init, 500);
+    })();
+  </script>
+</section>
+
+<style>
+  .testimoni-section {
+    padding: 120px 0;
+    background: transparent;
+    transition: background 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto 60px auto;
+  }
+
+  .subtitle {
+    color: var(--primary-blue);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.85rem;
+    display: block;
+    margin-bottom: 15px;
+  }
+
+  h2 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 20px;
+  }
+
+  .text-gradient {
+    background: linear-gradient(90deg, var(--primary-blue), var(--primary-cyan));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .description {
+    color: var(--text-light);
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+
+  .ts-slider-wrapper {
+    position: relative;
+    max-width: 800px; /* Focused width to prevent text stretching */
+    margin: 0 auto;
+  }
+
+  .ts-swiper-final {
+    padding-bottom: 60px; /* Prevent dots from overlapping card */
+  }
+
+  .testi-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(15px);
+    border-radius: 40px;
+    padding: 50px 40px;
+    box-shadow: var(--shadow-soft);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    height: 100%;
+    transition: box-shadow 0.3s;
+  }
+
+  .swiper-slide {
+    height: auto; /* Allow consistent height scaling */
+  }
+
+  .stars {
+    color: #f59e0b;
+    margin-bottom: 25px;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+  }
+
+  .testi-text {
+    font-style: italic;
+    color: var(--text-main);
+    line-height: 1.8;
+    margin: 0 auto 35px auto;
+    max-width: 600px; /* Keep text contained and readable */
+    flex-grow: 1;
+    font-size: 1.25rem; /* Slightly reduced for elegance */
+    font-weight: 500;
+  }
+
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    padding-top: 30px;
+    border-top: 1px solid var(--card-border);
+  }
+
+  .user-img {
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--card-bg);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  }
+
+  .user-meta h4 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 5px;
+  }
+
+  .user-meta span {
+    font-size: 0.85rem;
+    color: var(--text-light);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* Navigation UI */
+  .ts-nav-btn {
+    position: absolute;
+    top: 45%;
+    width: 55px;
+    height: 55px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 50%;
+    color: var(--primary-blue);
+    cursor: pointer;
+    box-shadow: var(--shadow-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: 0.3s;
+    backdrop-filter: blur(10px);
+  }
+
+  .ts-nav-btn:hover {
+    background: var(--primary-blue);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .ts-go-prev { left: -70px; }
+  .ts-go-next { right: -70px; }
+
+  /* Swiper Pagination */
+  :global(.ts-pag) {
+    bottom: 0px !important;
+  }
+
+  :global(.ts-pag .swiper-pagination-bullet) {
+    width: 10px;
+    height: 10px;
+    background: var(--text-light) !important;
+    opacity: 0.3 !important;
+  }
+
+  :global(.ts-pag .swiper-pagination-bullet-active) {
+    width: 30px;
+    border-radius: 10px;
+    background: var(--primary-blue) !important;
+    opacity: 1 !important;
+  }
+
+  @media (max-width: 1100px) {
+    .ts-go-prev { left: -20px; }
+    .ts-go-next { right: -20px; }
+  }
+
+  @media (max-width: 768px) {
+    .testimoni-section { padding: 80px 0; }
+    h2 { font-size: 2.4rem; }
+    .ts-nav-btn { display: none; }
+    .testi-card { padding: 40px 25px; min-height: auto; border-radius: 30px; }
+    .testi-text { font-size: 1.1rem; }
+  }
+</style>

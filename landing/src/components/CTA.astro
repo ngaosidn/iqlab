@@ -1,0 +1,182 @@
+---
+---
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-wrapper">
+      <div class="cta-content">
+        <h2>Siap Untuk Mulai Belajar?</h2>
+        <p>Ribuan Sahabat Tahseena telah membuktikan kemajuan bacaan mereka. Kini giliran Anda! Pilih program yang sesuai dan mulai perjalanan Al-Qur'an yang menyenangkan.</p>
+        <div class="cta-actions">
+          <a href="https://wa.me/6281234567890?text=Assalamu%27alaikum%20Admin%2C%20saya%20tertarik%20untuk%20mendaftar%20program%20bimbingan%20Al-Qur%27an%20di%20Tahseena." target="_blank" class="btn-primary">Pilih Program</a>
+          <a href="https://wa.me/6281234567890?text=Assalamu%27alaikum%20Admin%2C%20saya%20ingin%20bertanya%20seputar%20pembelajaran%20di%20Tahseena." target="_blank" class="btn-secondary">
+            Hubungi Admin
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="whatsapp-icon"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+          </a>
+        </div>
+      </div>
+      <!-- Dekorasi Aksesn Kaca -->
+      <div class="cta-decoration"></div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta-section {
+    padding: 80px 0 120px 0;
+    font-family: var(--font-main);
+    background: var(--bg-body) !important;
+    transition: background 0.3s;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .cta-wrapper {
+    background: linear-gradient(135deg, #2876B4 0%, #26C6DA 100%);
+    border-radius: 40px;
+    padding: 70px 50px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(40, 118, 180, 0.2);
+    text-align: center;
+    border: 1px solid transparent;
+    transition: all 0.5s ease;
+  }
+
+  /* Dark Mode Aesthetic: Midnight Crystal */
+  :global([data-theme='dark']) .cta-wrapper {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(2, 6, 23, 0.95) 100%);
+    border-color: rgba(38, 198, 218, 0.3);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 30px rgba(38, 198, 218, 0.15), inset 0 0 20px rgba(38, 198, 218, 0.05);
+  }
+
+  .cta-content {
+    position: relative;
+    z-index: 2;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .cta-wrapper h2 {
+    color: white;
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin: 0 0 20px 0;
+    line-height: 1.2;
+  }
+
+  .cta-wrapper p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin: 0 0 40px 0;
+  }
+
+  .cta-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .btn-primary {
+    background: white;
+    color: #2876B4;
+    padding: 18px 40px;
+    border-radius: 100px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .btn-secondary {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: white;
+    padding: 16px 35px;
+    border-radius: 100px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: white;
+    transform: translateY(-5px);
+  }
+
+  .whatsapp-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Dekorasi artistik di background banner */
+  .cta-decoration {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+    top: -150px;
+    right: -100px;
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  .cta-wrapper::before {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+    bottom: -100px;
+    left: -100px;
+    border-radius: 50%;
+    z-index: 1;
+  }
+
+  @media (max-width: 768px) {
+    .cta-wrapper {
+      padding: 50px 30px;
+      border-radius: 30px;
+    }
+    .cta-wrapper h2 {
+      font-size: 2.22rem;
+    }
+    .cta-wrapper p {
+      font-size: 1rem;
+      margin-bottom: 30px;
+    }
+    .cta-actions {
+      flex-direction: column;
+      gap: 15px;
+    }
+    .btn-primary, .btn-secondary {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+      padding: 16px 20px;
+      font-size: 1rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .cta-section { padding-bottom: 80px; }
+    .cta-wrapper h2 { font-size: 1.8rem; }
+  }
+</style>
