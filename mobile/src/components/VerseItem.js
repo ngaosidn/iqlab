@@ -14,10 +14,6 @@ const VerseItem = React.memo(({
   fontFamily,
   onAuthRestricted,
   isLoggedIn,
-  isInteractiveActive,
-  isPassed,
-  isLocked,
-  onSend,
   onShare,
   fontSize,
   highlightKeyword,
@@ -135,31 +131,7 @@ const VerseItem = React.memo(({
             <Text style={[styles.tagTextBase, isLoggedIn ? (isDarkMode ? { color: '#93c5fd' } : styles.shareTagTextActive) : { color: theme.textSub }]}>Share</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity 
-            style={[
-              styles.tagBase, 
-              (isLoggedIn && isInteractiveActive) ? (isDarkMode ? { backgroundColor: '#064e3b', borderColor: '#065f46' } : styles.kirimTagActive) : 
-              (isLoggedIn && isPassed) ? (isDarkMode ? { backgroundColor: '#14532d', borderColor: '#166534' } : styles.passedTag) : 
-              [styles.grayTag, { backgroundColor: theme.btnBg, borderColor: theme.border }]
-            ]} 
-            onPress={() => onAuthRestricted(onSend)}
-            disabled={!isInteractiveActive}
-          >
-            <Feather 
-              name={isPassed ? "check-circle" : isLocked ? "lock" : "send"} 
-              size={13} 
-              color={(isLoggedIn && isInteractiveActive) ? (isDarkMode ? '#34d399' : '#059669') : (isLoggedIn && isPassed) ? (isDarkMode ? '#4ade80' : '#16a34a') : theme.textSub} 
-              style={{marginRight: 6}} 
-            />
-            <Text style={[
-              styles.tagTextBase, 
-              (isLoggedIn && isInteractiveActive) ? (isDarkMode ? { color: '#34d399' } : styles.kirimTagTextActive) : 
-              (isLoggedIn && isPassed) ? (isDarkMode ? { color: '#4ade80' } : styles.passedTagText) : 
-              { color: theme.textSub }
-            ]}>
-               {isPassed ? 'Lulus' : isLocked ? 'Terkunci' : 'Kirim'}
-            </Text>
-          </TouchableOpacity>
+
         </View>
 
         <View style={[styles.verseTextContainer, { borderBottomColor: theme.border }]}>
@@ -315,20 +287,7 @@ const styles = StyleSheet.create({
   shareTagTextActive: {
     color: '#2563eb',
   },
-  kirimTagActive: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#d1fae5',
-  },
-  kirimTagTextActive: {
-    color: '#059669',
-  },
-  passedTag: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
-  },
-  passedTagText: {
-    color: '#16a34a',
-  },
+
   verseTextContainer: {
     paddingBottom: 10,
     borderBottomWidth: 1,

@@ -29,7 +29,6 @@ const MushafModal = ({
   playingAyah,
   isLoggedIn,
   tafsirDataMap,
-  userProgress,
   fontSize,
   updateFontSize,
   targetScrollAyah,
@@ -44,25 +43,25 @@ const MushafModal = ({
 }) => {
   const { isDarkMode } = useTheme();
   const theme = isDarkMode ? {
-      modalBg: '#0f172a',
-      headerBg: '#1e293b',
-      border: '#334155',
-      textMain: '#f8fafc',
-      textSub: '#94a3b8',
-      textBold: '#f1f5f9',
-      btnBg: '#334155',
-      blueBg: '#1e3a8a',
-      blueBorder: '#1e40af',
+    modalBg: '#0f172a',
+    headerBg: '#1e293b',
+    border: '#334155',
+    textMain: '#f8fafc',
+    textSub: '#94a3b8',
+    textBold: '#f1f5f9',
+    btnBg: '#334155',
+    blueBg: '#1e3a8a',
+    blueBorder: '#1e40af',
   } : {
-      modalBg: '#e2e8f0',
-      headerBg: '#f8fafc',
-      border: '#cbd5e1',
-      textMain: '#0f172a',
-      textSub: '#64748b',
-      textBold: '#0f172a',
-      btnBg: '#ffffff',
-      blueBg: '#eff6ff',
-      blueBorder: '#bfdbfe',
+    modalBg: '#e2e8f0',
+    headerBg: '#f8fafc',
+    border: '#cbd5e1',
+    textMain: '#0f172a',
+    textSub: '#64748b',
+    textBold: '#0f172a',
+    btnBg: '#ffffff',
+    blueBg: '#eff6ff',
+    blueBorder: '#bfdbfe',
   };
 
   return (
@@ -93,9 +92,9 @@ const MushafModal = ({
                       if (!isNaN(num) && num > 0 && num <= versesData.length) {
                         const targetIndex = num - 1;
                         modalScrollRef.current?.scrollToIndex({
-                           index: targetIndex,
-                           animated: false,
-                           viewPosition: 0
+                          index: targetIndex,
+                          animated: false,
+                          viewPosition: 0
                         });
                         setTimeout(() => {
                           modalScrollRef.current?.scrollToIndex({
@@ -172,8 +171,6 @@ const MushafModal = ({
                   mushafType,
                   isLoggedIn,
                   tafsirDataMap,
-                  unlockedAyah: userProgress?.unlockedAyah,
-                  unlockedSurah: userProgress?.unlockedSurah,
                   bookmarks,
                   readingCheckpoint,
                   activeSurahUsers,

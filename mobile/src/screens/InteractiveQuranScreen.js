@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, Platform, Animated, Dimensions, ScrollView, TouchableOpacity, TextInput, KeyboardAvoidingView, Keyboard, LayoutAnimation, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { StatusBar } from 'expo-status-bar';
@@ -13,12 +13,10 @@ import { toastConfig } from '../lib/toastConfig';
 import { useInteractiveQuran } from '../hooks/useInteractiveQuran';
 import { useTheme } from '../context/ThemeContext';
 import VerseItem from '../components/VerseItem';
-import JitsiWebView from '../components/JitsiWebView';
 
 // New Modular Components
 import ChatBubble from '../components/quran/ChatBubble';
 import MushafModal from '../components/quran/MushafModal';
-import TeacherLobby from '../components/quran/TeacherLobby';
 import ShareModal from '../components/quran/ShareModal';
 
 export default function InteractiveQuranScreen({ navigation, session }) {
@@ -85,15 +83,6 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         sound,
         setSound,
         setPlayingAyah,
-        userProgress,
-        lobbyVisible,
-        setLobbyVisible,
-        activeTeachers,
-        fetchActiveTeachers,
-        joinTeacherClass,
-        inClassUrl,
-        setInClassUrl,
-        handleOpenLobby,
         fontSize,
         updateFontSize,
         targetScrollAyah,
@@ -109,7 +98,8 @@ export default function InteractiveQuranScreen({ navigation, session }) {
         toggleListening,
         voicePulseAnim,
         activeSurahUsers,
-        versePresenceMap
+        versePresenceMap,
+        clearReadingHistory
     } = quranHook;
 
     const [shareModalVisible, setShareModalVisible] = React.useState(false);
@@ -137,7 +127,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     // AUTO SCROLL LOGIC (Optimized for FlashList)
     useEffect(() => {
         if (playingAyah && isAutoPlay && modalScrollRef?.current) {
-            const indexInPage = playingAyah - 1; // Karena memuat semua ayat langsung
+            const indexInPage = playingAyah - 1; 
 
             if (indexInPage >= 0 && indexInPage < versesData.length) {
                 modalScrollRef.current.scrollToIndex({
@@ -151,10 +141,6 @@ export default function InteractiveQuranScreen({ navigation, session }) {
     }, [playingAyah, isAutoPlay, versesData.length]);
 
     const renderVerseItem = useCallback(({ item: verse }) => {
-        const isActiveAyah = selectedSurah?.id === userProgress.unlockedSurah && verse.ayat === userProgress.unlockedAyah;
-        const isPassedAyah = selectedSurah?.id < userProgress.unlockedSurah || (selectedSurah?.id === userProgress.unlockedSurah && verse.ayat < userProgress.unlockedAyah);
-        const isLocked = !isActiveAyah && !isPassedAyah;
-
         return (
             <VerseItem
                 verse={verse}
@@ -170,11 +156,7 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                 }
                 onAuthRestricted={checkAuth}
                 isLoggedIn={isLoggedIn}
-                isInteractiveActive={isActiveAyah}
-                isPassed={isPassedAyah}
-                isLocked={isLocked}
                 fontSize={fontSize}
-                onSend={() => checkAuth(() => handleOpenLobby(selectedSurah?.id, verse.ayat))}
                 onShare={() => checkAuth(() => handleShareVerse(verse))}
                 highlightKeyword={quranHook.searchHighlight}
                 onBookmark={() => toggleBookmark(verse)}
@@ -185,27 +167,9 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                 othersCount={versePresenceMap[verse.ayat] || 0}
             />
         );
-    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, userProgress, handleOpenLobby, fontSize, handleShareVerse, quranHook.searchHighlight, toggleBookmark, bookmarks, toggleCheckpoint, readingCheckpoint]);
+    }, [selectedSurah?.id, playingAyah, expandedTafsir, tafsirDataMap, handlePlayAyah, toggleTafsir, mushafType, isLoggedIn, fontSize, handleShareVerse, quranHook.searchHighlight, toggleBookmark, bookmarks, toggleCheckpoint, readingCheckpoint]);
 
 
-
-    if (inClassUrl) {
-        const currentSchedule = activeTeachers.find(t => t.meeting_link === inClassUrl);
-        return (
-            <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgFull, paddingBottom: 0 }}>
-                <JitsiWebView
-                    url={inClassUrl}
-                    onLeave={() => {
-                        setInClassUrl(null);
-                        setLobbyVisible(true);
-                    }}
-                    isTeacher={false}
-                    scheduleId={currentSchedule?.id || null}
-                    session={session}
-                />
-            </SafeAreaView>
-        );
-    }
 
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.topBarBg }}>
@@ -230,9 +194,14 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                                 <Text style={[styles.headerSubtitleLight, { color: theme.textSub }]}>Tadabbur Bersama AI</Text>
                             </View>
                         </View>
-                        <TouchableOpacity style={styles.iconBtnLight} onPress={handleClearHistory}>
-                            <Feather name="trash-2" size={18} color={theme.textSub} />
-                        </TouchableOpacity>
+                        <View style={styles.headerIcons}>
+                            <TouchableOpacity 
+                                style={styles.iconButton}
+                                onPress={clearReadingHistory}
+                            >
+                                <Feather name="trash-2" size={20} color={theme.textSub} />
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <View style={{ flex: 1 }}>
@@ -348,7 +317,6 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     playingAyah={playingAyah}
                     isLoggedIn={isLoggedIn}
                     tafsirDataMap={tafsirDataMap}
-                    userProgress={userProgress}
                     fontSize={fontSize}
                     updateFontSize={updateFontSize}
                     targetScrollAyah={targetScrollAyah}
@@ -362,14 +330,6 @@ export default function InteractiveQuranScreen({ navigation, session }) {
                     onAutoHistoryUpdate={onAutoHistoryUpdate}
                     activeSurahUsers={activeSurahUsers}
                     versePresenceMap={versePresenceMap}
-                />
-
-                <TeacherLobby
-                    visible={lobbyVisible}
-                    onClose={() => setLobbyVisible(false)}
-                    activeTeachers={activeTeachers}
-                    joinTeacherClass={joinTeacherClass}
-                    session={session}
                 />
 
                 <ShareModal
@@ -386,8 +346,6 @@ export default function InteractiveQuranScreen({ navigation, session }) {
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f8fafc' },
-    
-    // Modern Header Styles
     modernHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -417,13 +375,18 @@ const styles = StyleSheet.create({
     headerSubtitleLight: {
         fontSize: 12, fontWeight: '600', color: '#64748b'
     },
-    iconBtnLight: {
-        width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center'
+    headerIcons: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
-
+    iconButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     scrollContent: { padding: 20, paddingBottom: 100 },
-    
-    // Floating Input Dock
     bottomWrapper: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 16, zIndex: 20, backgroundColor: 'transparent' },
     floatingInputDock: {
         flexDirection: 'row',
@@ -441,7 +404,7 @@ const styles = StyleSheet.create({
         elevation: 10,
     },
     attachBtn: {
-        width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', display: 'none' // Hidden to clean up since trash is in header
+        width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', display: 'none' 
     },
     voiceBtn: {
         width: 40, height: 40, borderRadius: 20, backgroundColor: '#f8fafc', justifyContent: 'center', alignItems: 'center', marginRight: 8

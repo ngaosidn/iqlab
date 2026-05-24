@@ -27,7 +27,7 @@ export const quranService = {
     try {
       // 1. Prioritas Utama: SQLite (Sangat Cepat & Modern)
       const verses = await databaseService.getVerses(surahId, mushafType);
-      
+
       if (verses && verses.length > 0) {
         console.log(`🔌 Mode: SQLite (Memuat Surah ${surahId} - ${mushafType})`);
         return verses;
@@ -39,7 +39,7 @@ export const quranService = {
         const source = JSON_DATA[mushafType];
         return source?.[surahId]?.ayat || [];
       }
-      
+
       return [];
     } catch (error) {
       console.log('Error fetching verses:', error.message);
